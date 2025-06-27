@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { User, GraduationCap, FileText } from 'lucide-react';
+import { User, GraduationCap } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,11 +24,6 @@ export function Header() {
           ) : user ? (
             <span className="font-semibold text-sm hidden md:inline">Welcome, {user.name}</span>
           ) : null}
-          <Link href="/summarize" passHref>
-            <Button variant="outline" size="icon" aria-label="Summarize Document">
-              <FileText className="h-5 w-5" />
-            </Button>
-          </Link>
           <Link href="/profile" passHref>
             <Button variant="outline" size="icon" aria-label="User Profile">
               <User className="h-5 w-5" />

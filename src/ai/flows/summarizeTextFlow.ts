@@ -10,16 +10,16 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 // The input is the raw text content of the document.
-export const SummarizeTextInputSchema = z.string();
+const SummarizeTextInputSchema = z.string();
 export type SummarizeTextInput = z.infer<typeof SummarizeTextInputSchema>;
 
 // The output is the AI-generated summary.
-export const SummarizeTextOutputSchema = z.string();
+const SummarizeTextOutputSchema = z.string();
 export type SummarizeTextOutput = z.infer<typeof SummarizeTextOutputSchema>;
 
 /**
  * An exported wrapper function that calls the Genkit flow.
- * This is called by the Next.js API route.
+ * This is called by the Next.js client component.
  * @param documentContent The text content to summarize.
  * @returns The generated summary string.
  */
