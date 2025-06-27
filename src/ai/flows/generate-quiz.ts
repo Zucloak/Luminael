@@ -14,7 +14,6 @@ import {z} from 'genkit';
 const GenerateQuizInputSchema = z.object({
   content: z.string().describe('The content to generate the quiz from, potentially covering multiple subjects.'),
   numQuestions: z.number().describe('The number of questions to generate for this batch.'),
-  topics: z.string().describe('The topics to cover in the quiz.'),
   difficulty: z.string().describe('The difficulty level of the quiz.'),
   questionFormat: z.enum(['multipleChoice', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
   existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.')

@@ -50,7 +50,6 @@ export default function Home() {
           params = {
             content: fileContent,
             numQuestions: questionsInBatch,
-            topics: values.topics || 'general',
             difficulty: values.difficulty || 'Medium',
             questionFormat: values.questionFormat || 'multipleChoice',
             existingQuestions: existingQuestionTitles,

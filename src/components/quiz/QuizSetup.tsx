@@ -25,7 +25,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.j
 
 const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(100, "Maximum 100 questions."),
-  topics: z.string().min(3, "Topics must be at least 3 characters.").optional().or(z.literal("")),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
   questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
 });
@@ -48,7 +47,6 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     resolver: zodResolver(quizSetupSchema),
     defaultValues: {
       numQuestions: 10,
-      topics: "",
       difficulty: "Medium",
       questionFormat: "multipleChoice",
     },
@@ -208,19 +206,6 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                               <SelectItem value="mixed">Mixed</SelectItem>
                             </SelectContent>
                           </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="topics"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Topics to Cover (optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Chapter 1, Photosynthesis" {...field} disabled={isGenerating}/>
-                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
