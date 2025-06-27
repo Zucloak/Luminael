@@ -1,9 +1,4 @@
 'use server';
-/**
- * @fileOverview Extracts text from an image using AI.
- *
- * - extractTextFromImage - A function that handles the OCR process.
- */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
@@ -15,7 +10,7 @@ const ExtractTextFromImageInputSchema = z.object({
       "An image file encoded as a data URI. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
-export type ExtractTextFromImageInput = z.infer<typeof ExtractTextFromImageInputSchema>;
+type ExtractTextFromImageInput = z.infer<typeof ExtractTextFromImageInputSchema>;
 
 export async function extractTextFromImage(input: ExtractTextFromImageInput): Promise<string> {
   return extractTextFromImageFlow(input);
@@ -29,7 +24,7 @@ const extractTextFromImageFlow = ai.defineFlow(
   },
   async ({ imageDataUrl }) => {
     // Use a multimodal model capable of processing images.
-    const model = 'googleai/gemini-1.5-flash-latest';
+    const model = 'googleai/gemini-2.0-flash-preview';
     
     const { text } = await ai.generate({
       model: model,
