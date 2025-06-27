@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,8 +22,6 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Use a stable CDN and hardcode the version to match package.json to avoid version mismatch issues.
-// Use the .mjs build for compatibility with modern bundlers and to avoid "dynamically imported module" errors.
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
 async function ocrImage(imageDataUrl: string): Promise<string> {
@@ -32,37 +31,41 @@ async function ocrImage(imageDataUrl: string): Promise<string> {
     body: JSON.stringify({ imageDataUrl }),
   });
 
+  const responseText = await response.text();
   if (!response.ok) {
-    const errorText = await response.text(); // Read the response body as text once.
     let errorDetails;
     try {
-      // Try to parse the text as JSON, it might be a structured error.
-      const errorData = JSON.parse(errorText);
+      const errorData = JSON.parse(responseText);
       errorDetails = errorData.details || errorData.error || response.statusText;
     } catch (e) {
-      // If JSON parsing fails, the response is likely not JSON (e.g., an HTML error page).
-      // We'll use the raw text, but truncate it for readability.
-      errorDetails = errorText.substring(0, 200) + '...';
+      errorDetails = responseText.substring(0, 200) + '...';
     }
     throw new Error(`Failed to extract text from image. Server responded with status ${response.status}: ${errorDetails}`);
   }
 
-  const data = await response.json();
-  return data.extractedText;
+  try {
+    const data = JSON.parse(responseText);
+    return data.extractedText;
+  } catch (error) {
+    throw new Error("Failed to parse successful JSON response from server.");
+  }
 }
 
 function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
   const context = canvas.getContext('2d');
-  if (!context) return true; // Should not happen, but good practice
+  if (!context) return true;
 
   const pixelBuffer = new Uint32Array(
     context.getImageData(0, 0, canvas.width, canvas.height).data.buffer
   );
 
-  // A canvas is considered blank if all its pixels are white (0xFFFFFFFF) or fully transparent (0x00000000)
   return !pixelBuffer.some(color => color !== 0xFFFFFFFF && color !== 0);
 }
 
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+const RATE_LIMIT_DELAY = 4100; // ~14.6 requests/minute, safely under the 15 req/min free tier limit
 
 const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(100, "Maximum 100 questions."),
@@ -94,6 +97,86 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     },
   });
 
+  const processFile = (file: File): Promise<string> => {
+    return new Promise<string>(async (resolve, reject) => {
+      if (file.type === "text/plain" || file.type === "text/markdown") {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = () => reject(`Error reading ${file.name}.`);
+        reader.readAsText(file);
+      } else if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const text = await ocrImage(e.target?.result as string);
+            resolve(text);
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            reject(`Failed OCR on ${file.name}: ${message}`);
+          }
+        };
+        reader.onerror = () => reject(`Error reading ${file.name}.`);
+        reader.readAsDataURL(file);
+      } else if (file.type === "application/pdf") {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
+          try {
+            const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
+            const pdf = await pdfjsLib.getDocument(typedarray).promise;
+            
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              fullText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
+            }
+            
+            if (fullText.trim().length < 100 * pdf.numPages) {
+              fullText = '';
+              setOcrProgress({ current: 0, total: pdf.numPages, processing: true });
+              for (let i = 1; i <= pdf.numPages; i++) {
+                setOcrProgress(prev => ({ ...prev, current: i }));
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 2.0 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d')!;
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                const renderContext = {
+                  canvasContext: context,
+                  viewport: viewport
+                };
+                await page.render(renderContext).promise;
+
+                if (isCanvasBlank(canvas)) {
+                  continue;
+                }
+
+                const pageText = await ocrImage(canvas.toDataURL());
+                fullText += pageText + '\n\n';
+
+                if (i < pdf.numPages) {
+                  await delay(RATE_LIMIT_DELAY);
+                }
+              }
+            }
+            resolve(fullText);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error("Error processing PDF:", error);
+            reject(`Could not process PDF: ${file.name}. ${message}`);
+          }
+        };
+        reader.onerror = () => reject(`Error reading ${file.name}.`);
+        reader.readAsArrayBuffer(file);
+      } else {
+        reject(`Unsupported file type: ${file.name}. Please use .txt, .md, .pdf, or image files.`);
+      }
+    });
+  };
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -104,87 +187,19 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     const fileList = Array.from(files);
     setFileNames(fileList.map(f => f.name));
 
-    const readPromises = fileList.map(file => {
-      return new Promise<string>(async (resolve, reject) => {
-        if (file.type === "text/plain" || file.type === "text/markdown") {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.onerror = () => reject(`Error reading ${file.name}.`);
-          reader.readAsText(file);
-        } else if (file.type.startsWith("image/")) {
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            try {
-              const text = await ocrImage(e.target?.result as string);
-              resolve(text);
-            } catch (err) {
-              const message = err instanceof Error ? err.message : String(err);
-              reject(`Failed OCR on ${file.name}: ${message}`);
-            }
-          };
-          reader.onerror = () => reject(`Error reading ${file.name}.`);
-          reader.readAsDataURL(file);
-        } else if (file.type === "application/pdf") {
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
-            try {
-              const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
-              const pdf = await pdfjsLib.getDocument(typedarray).promise;
-              
-              // First, try text extraction
-              let fullText = '';
-              for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                fullText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
-              }
-              
-              // If text is minimal, fallback to OCR
-              if (fullText.trim().length < 100 * pdf.numPages) { // Heuristic to detect image-based PDF
-                fullText = '';
-                setOcrProgress({ current: 0, total: pdf.numPages, processing: true });
-                for (let i = 1; i <= pdf.numPages; i++) {
-                  setOcrProgress(prev => ({ ...prev, current: i }));
-                  const page = await pdf.getPage(i);
-                  const viewport = page.getViewport({ scale: 2.0 });
-                  const canvas = document.createElement('canvas');
-                  const context = canvas.getContext('2d')!;
-                  canvas.height = viewport.height;
-                  canvas.width = viewport.width;
-                  
-                  const renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                  };
-                  await page.render(renderContext).promise;
-
-                  if (isCanvasBlank(canvas)) {
-                    continue; // Skip blank pages
-                  }
-
-                  const pageText = await ocrImage(canvas.toDataURL());
-                  fullText += pageText + '\n\n';
-                }
-              }
-              resolve(fullText);
-            } catch (error) {
-              const message = error instanceof Error ? error.message : String(error);
-              console.error("Error processing PDF:", error);
-              reject(`Could not process PDF: ${file.name}. ${message}`);
-            }
-          };
-          reader.onerror = () => reject(`Error reading ${file.name}.`);
-          reader.readAsArrayBuffer(file);
-        } else {
-          reject(`Unsupported file type: ${file.name}. Please use .txt, .md, .pdf, or image files.`);
-        }
-      });
-    });
+    let allContents: string[] = [];
 
     try {
-      const contents = await Promise.all(readPromises);
-      setCombinedContent(contents.join("\n\n---\n\n"));
+      for (const [index, file] of fileList.entries()) {
+        const content = await processFile(file);
+        allContents.push(content);
+        
+        const needsOcr = file.type.startsWith("image/");
+        if (needsOcr && index < fileList.length - 1) {
+            await delay(RATE_LIMIT_DELAY);
+        }
+      }
+      setCombinedContent(allContents.join("\n\n---\n\n"));
       setFileError("");
     } catch (error) {
       const message = String(error);
@@ -196,6 +211,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
       setOcrProgress({ current: 0, total: 0, processing: false });
     }
   };
+
 
   function onSubmit(values: QuizSetupValues) {
     if (!combinedContent) {
