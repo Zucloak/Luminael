@@ -36,11 +36,12 @@ export default function Home() {
           numQuestions: values.numQuestions,
           topics: values.topics || 'general',
           difficulty: values.difficulty || 'Medium',
+          questionFormat: values.questionFormat || 'multipleChoice',
         });
       }
 
-      if (!result || !result.quiz) {
-        throw new Error("AI failed to generate a quiz.");
+      if (!result || !result.quiz || result.quiz.questions.length === 0) {
+        throw new Error("AI failed to generate a quiz or the quiz has no questions.");
       }
 
       setQuiz(result.quiz);

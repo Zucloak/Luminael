@@ -28,6 +28,7 @@ const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(20, "Maximum 20 questions."),
   topics: z.string().min(3, "Topics must be at least 3 characters.").optional().or(z.literal("")),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
+  questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
 });
 
 type QuizSetupValues = z.infer<typeof quizSetupSchema>;
@@ -50,6 +51,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
       numQuestions: 5,
       topics: "",
       difficulty: "Medium",
+      questionFormat: "multipleChoice",
     },
   });
 
@@ -188,6 +190,28 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                 </div>
                 {!isHellBound && (
                   <div className="space-y-4 animate-in fade-in-0 duration-300">
+                     <FormField
+                      control={form.control}
+                      name="questionFormat"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Question Format</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a format" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="multipleChoice">Multiple Choice</SelectItem>
+                              <SelectItem value="openEnded">Problem Solving</SelectItem>
+                              <SelectItem value="mixed">Mixed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={form.control}
                       name="topics"

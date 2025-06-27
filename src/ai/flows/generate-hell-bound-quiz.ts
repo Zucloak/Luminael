@@ -13,17 +13,27 @@ import {z} from 'genkit';
 const GenerateHellBoundQuizInputSchema = z.object({
   fileContent: z
     .string()
-    .describe('The content of the uploaded file (txt, pdf, ppt).'),
+    .describe('The content of the uploaded files, which may span multiple subjects.'),
   numQuestions: z.number().describe('The number of questions to generate.'),
 });
 export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInputSchema>;
 
 
-const QuestionSchema = z.object({
-    question: z.string().describe('The question text.'),
-    options: z.array(z.string()).describe('An array of 4 multiple-choice options.'),
-    answer: z.string().describe('The correct answer, which must be one of the provided options.'),
+const MultipleChoiceQuestionSchema = z.object({
+  questionType: z.literal('multipleChoice').describe("The type of the question."),
+  question: z.string().describe('The question text.'),
+  options: z.array(z.string()).length(4).describe('An array of 4 multiple-choice options.'),
+  answer: z.string().describe('The correct answer, which must be one of the provided options.'),
 });
+
+const OpenEndedQuestionSchema = z.object({
+  questionType: z.literal('openEnded').describe("The type of the question."),
+  question: z.string().describe('The problem-solving or open-ended question.'),
+  answer: z.string().describe('The detailed, correct solution to the problem.'),
+});
+
+const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionSchema]);
+
 
 const GenerateHellBoundQuizOutputSchema = z.object({
   quiz: z.object({
@@ -40,13 +50,14 @@ const prompt = ai.definePrompt({
   name: 'generateHellBoundQuizPrompt',
   input: {schema: GenerateHellBoundQuizInputSchema},
   output: {schema: GenerateHellBoundQuizOutputSchema},
-  prompt: `You are an AI quiz generator that specializes in creating extremely difficult, tricky, and nuanced multiple-choice quizzes based on provided content.
+  prompt: `You are an AI quiz generator that specializes in creating extremely difficult, tricky, and nuanced quizzes based on provided content which may span multiple subjects.
 
-  Your task is to generate a quiz with {{numQuestions}} questions based on the following content. The questions should be designed to catch someone who has only skimmed the material and reward those with a deep, precise understanding. Use subtle details, exceptions, and "all of the above" / "none of the above" style questions if they make sense.
+  Your task is to generate a quiz with {{numQuestions}} questions based on the following content. The questions should be a mix of multiple-choice and open-ended problem-solving questions, designed to catch someone who has only skimmed the material and reward those with a deep, precise understanding. The questions should be randomly drawn from all topics found in the content.
 
-  For each question, provide exactly 4 multiple-choice options. One of these options must be the correct answer.
+  - For multiple-choice questions, provide exactly 4 options. One of these options must be the correct answer. Use subtle details, exceptions, and "all of the above" / "none of the above" style questions.
+  - For open-ended questions, pose a complex problem that requires synthesis of information from the text, and provide a detailed, expert-level solution as the answer.
 
-  Ensure the output is a JSON object that strictly follows the provided schema. The 'answer' for each question must be one of the strings from the 'options' array.
+  Ensure the output is a JSON object that strictly follows the provided schema.
 
   Content:
   """

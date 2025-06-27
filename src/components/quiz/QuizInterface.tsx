@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -49,20 +50,34 @@ export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <RadioGroup
-          value={answers[currentQuestionIndex] || ''}
-          onValueChange={handleAnswerChange}
-          className="space-y-4"
-        >
-          {currentQuestion.options.map((option, index) => (
-            <div key={index} className="flex items-center space-x-3 p-4 border rounded-md has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-              <RadioGroupItem value={option} id={`q${currentQuestionIndex}-o${index}`} />
-              <Label htmlFor={`q${currentQuestionIndex}-o${index}`} className="font-normal text-base cursor-pointer flex-1">
-                {option}
-              </Label>
-            </div>
-          ))}
-        </RadioGroup>
+        {currentQuestion.questionType === 'multipleChoice' ? (
+          <RadioGroup
+            value={answers[currentQuestionIndex] || ''}
+            onValueChange={handleAnswerChange}
+            className="space-y-4"
+          >
+            {currentQuestion.options.map((option, index) => (
+              <div key={index} className="flex items-center space-x-3 p-4 border rounded-md has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                <RadioGroupItem value={option} id={`q${currentQuestionIndex}-o${index}`} />
+                <Label htmlFor={`q${currentQuestionIndex}-o${index}`} className="font-normal text-base cursor-pointer flex-1">
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        ) : (
+          <div className="space-y-2">
+            <Label htmlFor="open-ended-answer">Your Answer</Label>
+            <Textarea
+              id="open-ended-answer"
+              placeholder="Type your solution here..."
+              value={answers[currentQuestionIndex] || ''}
+              onChange={(e) => handleAnswerChange(e.target.value)}
+              rows={8}
+              className="text-base"
+            />
+          </div>
+        )}
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
         <Progress value={progress} className="w-full" />

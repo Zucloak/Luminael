@@ -1,10 +1,10 @@
 "use client";
 
-import type { Quiz, UserProfile } from '@/lib/types';
+import type { Quiz, UserProfile, Question } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Check, X, Award, RotateCw } from 'lucide-react';
+import { Check, X, Award, RotateCw, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -15,25 +15,30 @@ interface QuizResultsProps {
   user: UserProfile | null;
 }
 
+type Result = (Question & { userAnswer: string; isCorrect: boolean | null });
+
 export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps) {
   const { score, total, results } = useMemo(() => {
     let correctCount = 0;
-    const detailedResults = quiz.questions.map((q, index) => {
-      const userAnswer = answers[index];
-      const correctAnswer = q.answer;
-      const isCorrect = userAnswer === correctAnswer;
-      if (isCorrect) {
-        correctCount++;
+    const multipleChoiceQuestions = quiz.questions.filter(q => q.questionType === 'multipleChoice');
+    const totalMultipleChoice = multipleChoiceQuestions.length;
+
+    const detailedResults: Result[] = quiz.questions.map((q, index) => {
+      const userAnswer = answers[index] || 'No answer';
+      if (q.questionType === 'multipleChoice') {
+        const correctAnswer = q.answer;
+        const isCorrect = userAnswer === correctAnswer;
+        if (isCorrect) {
+          correctCount++;
+        }
+        return { ...q, userAnswer, isCorrect };
       }
-      return {
-        ...q,
-        userAnswer: userAnswer || 'No answer',
-        isCorrect,
-      };
+      return { ...q, userAnswer, isCorrect: null };
     });
+
     return {
       score: correctCount,
-      total: quiz.questions.length,
+      total: totalMultipleChoice,
       results: detailedResults,
     };
   }, [quiz, answers]);
@@ -47,10 +52,17 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
           <Award className="h-12 w-12 text-primary" />
         </div>
         <CardDescription className="font-semibold text-lg">Quiz Complete!</CardDescription>
-        <CardTitle className="font-headline text-5xl">
-          {percentage}%
-        </CardTitle>
-        <p className="text-xl text-muted-foreground">You scored {score} out of {total} correct.</p>
+        {total > 0 ? (
+          <>
+            <CardTitle className="font-headline text-5xl">{percentage}%</CardTitle>
+            <p className="text-xl text-muted-foreground">You scored {score} out of {total} multiple choice questions correct.</p>
+          </>
+        ) : (
+          <>
+            <CardTitle className="font-headline text-3xl">Quiz Reviewed</CardTitle>
+            <p className="text-xl text-muted-foreground">Your open-ended answers are ready for review below.</p>
+          </>
+        )}
         {user && <p className="text-sm text-muted-foreground pt-2">Results for {user.name} (ID: {user.studentId})</p>}
       </CardHeader>
       <CardContent>
@@ -58,39 +70,54 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
         <Accordion type="single" collapsible className="w-full">
           {results.map((result, index) => (
             <AccordionItem value={`item-${index}`} key={index}>
-              <AccordionTrigger className={cn("font-semibold text-left", result.isCorrect ? 'text-accent' : 'text-destructive')}>
+              <AccordionTrigger className={cn("font-semibold text-left", result.questionType === 'multipleChoice' && (result.isCorrect ? 'text-accent' : 'text-destructive'))}>
                 <div className="flex items-center gap-3">
-                  {result.isCorrect ? <Check className="h-5 w-5 text-accent" /> : <X className="h-5 w-5 text-destructive" />}
+                  {result.questionType === 'multipleChoice'
+                    ? (result.isCorrect ? <Check className="h-5 w-5 text-accent" /> : <X className="h-5 w-5 text-destructive" />)
+                    : <Pencil className="h-5 w-5 text-primary" />
+                  }
                   <span className="text-left flex-1">Question {index + 1}: {result.question}</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  {result.options.map((option, optionIndex) => {
-                    const isUserAnswer = option === result.userAnswer;
-                    const isCorrectAnswer = option === result.answer;
-                    
-                    return (
-                      <div
-                        key={optionIndex}
-                        className={cn(
-                          "p-3 rounded-md border text-left",
-                          isCorrectAnswer ? "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700" : "",
-                          isUserAnswer && !isCorrectAnswer ? "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700" : "",
-                          !isUserAnswer && !isCorrectAnswer ? "bg-muted/50" : ""
-                        )}
-                      >
-                         <p className="font-medium flex items-center gap-2">
-                          {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-accent"/> : <X className="h-4 w-4 text-destructive"/>)}
-                          {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-accent"/>}
-                          <span>{option}</span>
-                        </p>
-                        {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-destructive pl-6">Your answer</p>}
-                        {isCorrectAnswer && <p className="text-xs text-accent pl-6">Correct answer</p>}
-                      </div>
-                    )
-                  })}
-                </div>
+                {result.questionType === 'multipleChoice' ? (
+                  <div className="space-y-2">
+                    {result.options.map((option, optionIndex) => {
+                      const isUserAnswer = option === result.userAnswer;
+                      const isCorrectAnswer = option === result.answer;
+                      return (
+                        <div
+                          key={optionIndex}
+                          className={cn(
+                            "p-3 rounded-md border text-left",
+                            isCorrectAnswer ? "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700" : "",
+                            isUserAnswer && !isCorrectAnswer ? "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700" : "",
+                            !isUserAnswer && !isCorrectAnswer ? "bg-muted/50" : ""
+                          )}
+                        >
+                          <p className="font-medium flex items-center gap-2">
+                            {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-accent"/> : <X className="h-4 w-4 text-destructive"/>)}
+                            {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-accent"/>}
+                            <span>{option}</span>
+                          </p>
+                          {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-destructive pl-6">Your answer</p>}
+                          {isCorrectAnswer && <p className="text-xs text-accent pl-6">Correct answer</p>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2 text-muted-foreground">Your Answer:</h4>
+                      <div className="p-3 rounded-md border bg-muted/50 whitespace-pre-wrap">{result.userAnswer}</div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2 text-accent">Suggested Solution:</h4>
+                      <div className="p-3 rounded-md border border-accent/50 bg-accent/10 whitespace-pre-wrap">{result.answer}</div>
+                    </div>
+                  </div>
+                )}
               </AccordionContent>
             </AccordionItem>
           ))}
