@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Check, X, Award, RotateCw, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { MarkdownRenderer } from '../common/MarkdownRenderer';
 
 interface QuizResultsProps {
   quiz: Quiz;
@@ -71,12 +72,12 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
           {results.map((result, index) => (
             <AccordionItem value={`item-${index}`} key={index}>
               <AccordionTrigger className={cn("font-semibold text-left", result.questionType === 'multipleChoice' && (result.isCorrect ? 'text-accent' : 'text-destructive'))}>
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3 text-left">
                   {result.questionType === 'multipleChoice'
-                    ? (result.isCorrect ? <Check className="h-5 w-5 text-accent" /> : <X className="h-5 w-5 text-destructive" />)
-                    : <Pencil className="h-5 w-5 text-primary" />
+                    ? (result.isCorrect ? <Check className="h-5 w-5 text-accent flex-shrink-0 mt-1" /> : <X className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />)
+                    : <Pencil className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
                   }
-                  <span className="text-left flex-1">Question {index + 1}: {result.question}</span>
+                  <span className="flex-1">Question {index + 1}: <MarkdownRenderer>{result.question}</MarkdownRenderer></span>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
@@ -95,10 +96,10 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
                             !isUserAnswer && !isCorrectAnswer ? "bg-muted/50" : ""
                           )}
                         >
-                          <p className="font-medium flex items-center gap-2">
-                            {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-accent"/> : <X className="h-4 w-4 text-destructive"/>)}
-                            {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-accent"/>}
-                            <span>{option}</span>
+                          <p className="font-medium flex items-start gap-2">
+                            {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-accent flex-shrink-0 mt-1"/> : <X className="h-4 w-4 text-destructive flex-shrink-0 mt-1"/>)}
+                            {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-accent flex-shrink-0 mt-1"/>}
+                            <span className="flex-1"><MarkdownRenderer>{option}</MarkdownRenderer></span>
                           </p>
                           {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-destructive pl-6">Your answer</p>}
                           {isCorrectAnswer && <p className="text-xs text-accent pl-6">Correct answer</p>}
@@ -110,11 +111,11 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-semibold mb-2 text-muted-foreground">Your Answer:</h4>
-                      <div className="p-3 rounded-md border bg-muted/50 whitespace-pre-wrap">{result.userAnswer}</div>
+                      <div className="p-3 rounded-md border bg-muted/50"><MarkdownRenderer>{result.userAnswer}</MarkdownRenderer></div>
                     </div>
                     <div>
                       <h4 className="font-semibold mb-2 text-accent">Suggested Solution:</h4>
-                      <div className="p-3 rounded-md border border-accent/50 bg-accent/10 whitespace-pre-wrap">{result.answer}</div>
+                      <div className="p-3 rounded-md border border-accent/50 bg-accent/10"><MarkdownRenderer>{result.answer}</MarkdownRenderer></div>
                     </div>
                   </div>
                 )}

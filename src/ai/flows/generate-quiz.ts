@@ -56,6 +56,8 @@ const prompt = ai.definePrompt({
   Your task is to create a quiz with {{numQuestions}} questions that are randomly selected and mixed from all the topics found in the provided content. This will help the user review material from across their subjects in a single session.
   The quiz should be at a '{{difficulty}}' difficulty level.
 
+  IMPORTANT: For any mathematical formulas or equations, you must wrap them in LaTeX syntax. Use single dollar signs for inline math (e.g., $x^2 + y^2 = r^2$) and double dollar signs for block-level equations (e.g., $$ \int_a^b f(x) \,dx $$).
+
   {{#if existingQuestions}}
   IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
   {{#each existingQuestions}}

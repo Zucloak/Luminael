@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { MarkdownRenderer } from '../common/MarkdownRenderer';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -46,7 +47,7 @@ export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
       <CardHeader>
         <CardDescription>Question {currentQuestionIndex + 1} of {totalQuestions}</CardDescription>
         <CardTitle className="font-headline text-2xl md:text-3xl leading-tight">
-          {currentQuestion.question}
+          <MarkdownRenderer>{currentQuestion.question}</MarkdownRenderer>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -60,7 +61,7 @@ export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
               <div key={index} className="flex items-center space-x-3 p-4 border rounded-md has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
                 <RadioGroupItem value={option} id={`q${currentQuestionIndex}-o${index}`} />
                 <Label htmlFor={`q${currentQuestionIndex}-o${index}`} className="font-normal text-base cursor-pointer flex-1">
-                  {option}
+                  <MarkdownRenderer>{option}</MarkdownRenderer>
                 </Label>
               </div>
             ))}
