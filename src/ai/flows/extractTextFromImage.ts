@@ -24,7 +24,7 @@ const extractTextFromImageFlow = ai.defineFlow(
   },
   async ({ imageDataUrl }) => {
     // Use a multimodal model capable of processing images.
-    const model = 'googleai/gemini-2.0-flash-preview';
+    const model = 'googleai/gemini-2.0-flash';
     
     const { text } = await ai.generate({
       model: model,
