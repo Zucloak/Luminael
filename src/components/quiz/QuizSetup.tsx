@@ -25,7 +25,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const quizSetupSchema = z.object({
-  numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(20, "Maximum 20 questions."),
+  numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(50, "Maximum 50 questions."),
   topics: z.string().min(3, "Topics must be at least 3 characters.").optional().or(z.literal("")),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
   questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
@@ -137,7 +137,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
           <CardContent className="space-y-8 pt-2">
             <div className="space-y-2">
               <Label htmlFor="file-upload">1. Upload Content (.txt, .pdf)</Label>
-              <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf" className="pt-2 file:text-primary file:font-semibold" disabled={isParsingFile} />
+              <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf" className="pt-2 file:text-primary file:font-semibold" disabled={isParsingFile || isGenerating} />
               {isParsingFile && (
                  <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -170,7 +170,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                     <FormItem>
                       <FormLabel>Number of Questions</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" {...field} disabled={isGenerating}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -186,6 +186,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                     id="hell-bound-mode"
                     checked={isHellBound}
                     onCheckedChange={setIsHellBound}
+                    disabled={isGenerating}
                   />
                 </div>
                 {!isHellBound && (
@@ -196,7 +197,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Question Format</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isGenerating}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a format" />
@@ -219,7 +220,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                         <FormItem>
                           <FormLabel>Topics to Cover (optional)</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., Chapter 1, Photosynthesis" {...field} />
+                            <Input placeholder="e.g., Chapter 1, Photosynthesis" {...field} disabled={isGenerating}/>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -231,7 +232,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Difficulty</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isGenerating}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a difficulty" />
@@ -256,7 +257,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
             <Button type="submit" className="w-full text-lg py-6" disabled={isGenerating || isParsingFile}>
               {isGenerating ? (
                 <>
-                  <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Generating...
                 </>
               ) : isParsingFile ? (

@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from 'react';
-import type { Quiz, UserProfile } from '@/lib/types';
-import { generateQuiz } from '@/ai/flows/generate-quiz';
-import { generateHellBoundQuiz } from '@/ai/flows/generate-hell-bound-quiz';
+import type { Quiz, UserProfile, Question } from '@/lib/types';
+import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
+import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
 import { useToast } from "@/hooks/use-toast";
 import { Header } from '@/components/layout/Header';
 import { QuizSetup } from '@/components/quiz/QuizSetup';
 import { QuizInterface } from '@/components/quiz/QuizInterface';
 import { QuizResults } from '@/components/quiz/QuizResults';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/use-user';
+import { Progress } from '@/components/ui/progress';
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
@@ -18,33 +18,58 @@ export default function Home() {
   const [view, setView] = useState<View>('setup');
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
   const { user } = useUser();
 
   const handleQuizStart = async (fileContent: string, values: any, isHellBound: boolean) => {
+    const BATCH_SIZE = 5;
+    const totalQuestions = values.numQuestions;
+
     setView('generating');
+    setGenerationProgress({ current: 0, total: totalQuestions });
+
+    let allQuestions: Question[] = [];
+    let existingQuestionTitles: string[] = [];
+
     try {
-      let result;
-      if (isHellBound) {
-        result = await generateHellBoundQuiz({
-          fileContent,
-          numQuestions: values.numQuestions,
-        });
-      } else {
-        result = await generateQuiz({
-          content: fileContent,
-          numQuestions: values.numQuestions,
-          topics: values.topics || 'general',
-          difficulty: values.difficulty || 'Medium',
-          questionFormat: values.questionFormat || 'multipleChoice',
-        });
+      for (let i = 0; i < totalQuestions; i += BATCH_SIZE) {
+        const questionsInBatch = Math.min(BATCH_SIZE, totalQuestions - i);
+        setGenerationProgress(prev => ({ ...prev, current: i }));
+
+        const generatorFn = isHellBound ? generateHellBoundQuiz : generateQuiz;
+        
+        let params: GenerateQuizInput | GenerateHellBoundQuizInput;
+        if (isHellBound) {
+          params = {
+            fileContent,
+            numQuestions: questionsInBatch,
+            existingQuestions: existingQuestionTitles,
+          };
+        } else {
+          params = {
+            content: fileContent,
+            numQuestions: questionsInBatch,
+            topics: values.topics || 'general',
+            difficulty: values.difficulty || 'Medium',
+            questionFormat: values.questionFormat || 'multipleChoice',
+            existingQuestions: existingQuestionTitles,
+          };
+        }
+        
+        const result = await (generatorFn as any)(params);
+
+        if (!result || !result.quiz || result.quiz.questions.length === 0) {
+          throw new Error(`AI failed to generate questions in batch starting at ${i}.`);
+        }
+        
+        const newQuestions = result.quiz.questions;
+        allQuestions = [...allQuestions, ...newQuestions];
+        existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map(q => q.question)];
       }
 
-      if (!result || !result.quiz || result.quiz.questions.length === 0) {
-        throw new Error("AI failed to generate a quiz or the quiz has no questions.");
-      }
-
-      setQuiz(result.quiz);
+      setGenerationProgress(prev => ({ ...prev, current: totalQuestions }));
+      setQuiz({ questions: allQuestions });
       setUserAnswers({});
       setView('quiz');
 
@@ -53,9 +78,11 @@ export default function Home() {
       toast({
         variant: "destructive",
         title: "Error Generating Quiz",
-        description: "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again.",
+        description: "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again with fewer questions or different content.",
       });
       setView('setup');
+    } finally {
+      setGenerationProgress({ current: 0, total: 0 });
     }
   };
 
@@ -73,15 +100,13 @@ export default function Home() {
   const renderContent = () => {
     switch (view) {
       case 'generating':
+        const progressPercentage = generationProgress.total > 0 ? (generationProgress.current / generationProgress.total) * 100 : 0;
         return (
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-6 w-full max-w-2xl">
             <h2 className="text-2xl font-headline font-bold">Generating your masterpiece...</h2>
-            <p className="text-muted-foreground">The AI is thinking hard. This might take a moment.</p>
-            <div className="w-full max-w-3xl mx-auto space-y-8 mt-8">
-              <Skeleton className="h-48 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
+            <p className="text-muted-foreground">The AI is working hard. This might take a moment, especially for large quizzes.</p>
+            <Progress value={progressPercentage} className="w-full" />
+            <p className="text-sm font-medium">Generated {generationProgress.current} of {generationProgress.total} questions</p>
           </div>
         );
       case 'quiz':

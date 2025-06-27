@@ -13,10 +13,11 @@ import {z} from 'genkit';
 
 const GenerateQuizInputSchema = z.object({
   content: z.string().describe('The content to generate the quiz from, potentially covering multiple subjects.'),
-  numQuestions: z.number().describe('The number of questions to generate.'),
+  numQuestions: z.number().describe('The number of questions to generate for this batch.'),
   topics: z.string().describe('The topics to cover in the quiz.'),
   difficulty: z.string().describe('The difficulty level of the quiz.'),
-  questionFormat: z.enum(['multipleChoice', 'openEnded', 'mixed']).describe("The desired format for the quiz questions.")
+  questionFormat: z.enum(['multipleChoice', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
+  existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.')
 });
 export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 
@@ -54,6 +55,13 @@ const prompt = ai.definePrompt({
 
   Your task is to create a quiz with {{numQuestions}} questions that are randomly selected and mixed from all the topics found in the provided content. This will help the user review material from across their subjects in a single session.
   The quiz should be at a '{{difficulty}}' difficulty level.
+
+  {{#if existingQuestions}}
+  IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
+  {{#each existingQuestions}}
+  - {{{this}}}
+  {{/each}}
+  {{/if}}
 
   The questions should be generated in the following format: '{{questionFormat}}'.
   - If 'multipleChoice', generate only multiple-choice questions.

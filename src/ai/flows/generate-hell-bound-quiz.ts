@@ -14,7 +14,8 @@ const GenerateHellBoundQuizInputSchema = z.object({
   fileContent: z
     .string()
     .describe('The content of the uploaded files, which may span multiple subjects.'),
-  numQuestions: z.number().describe('The number of questions to generate.'),
+  numQuestions: z.number().describe('The number of questions to generate for this batch.'),
+  existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
 });
 export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInputSchema>;
 
@@ -53,6 +54,13 @@ const prompt = ai.definePrompt({
   prompt: `You are an AI quiz generator that specializes in creating extremely difficult, tricky, and nuanced quizzes based on provided content which may span multiple subjects.
 
   Your task is to generate a quiz with {{numQuestions}} questions based on the following content. The questions should be a mix of multiple-choice and open-ended problem-solving questions, designed to catch someone who has only skimmed the material and reward those with a deep, precise understanding. The questions should be randomly drawn from all topics found in the content.
+
+  {{#if existingQuestions}}
+  IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
+  {{#each existingQuestions}}
+  - {{{this}}}
+  {{/each}}
+  {{/if}}
 
   - For multiple-choice questions, provide exactly 4 options. One of these options must be the correct answer. Use subtle details, exceptions, and "all of the above" / "none of the above" style questions.
   - For open-ended questions, pose a complex problem that requires synthesis of information from the text, and provide a detailed, expert-level solution as the answer.
