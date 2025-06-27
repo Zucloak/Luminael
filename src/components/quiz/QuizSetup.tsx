@@ -4,12 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
-import { FileText, BrainCircuit, Sparkles, Wand2, Loader2, BookUp, RefreshCcw } from "lucide-react";
+import { FileText, BrainCircuit, Sparkles, Wand2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,9 +19,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { summarizeText } from "@/ai/flows/summarizeTextFlow";
-import { useToast } from "@/hooks/use-toast";
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -42,15 +38,12 @@ interface QuizSetupProps {
 }
 
 export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
-  const [fileContent, setFileContent] = useState<string>("");
-  const [originalContent, setOriginalContent] = useState<string>("");
+  const [combinedContent, setCombinedContent] = useState<string>("");
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string>("");
   const [isHellBound, setIsHellBound] = useState<boolean>(false);
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
-  const [isSummarizing, setIsSummarizing] = useState<boolean>(false);
-  const { toast } = useToast();
-
+  
   const form = useForm<QuizSetupValues>({
     resolver: zodResolver(quizSetupSchema),
     defaultValues: {
@@ -64,8 +57,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      setFileContent("");
-      setOriginalContent("");
+      setCombinedContent("");
       const fileList = Array.from(files);
       setFileNames(fileList.map(f => f.name));
       setFileError("");
@@ -107,54 +99,26 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
 
       try {
         const contents = await Promise.all(readPromises);
-        const combinedContent = contents.join("\n\n---\n\n");
-        setFileContent(combinedContent);
-        setOriginalContent(combinedContent);
+        setCombinedContent(contents.join("\n\n---\n\n"));
         setFileError("");
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         setFileError(message);
         setFileNames([]);
-        setFileContent("");
-        setOriginalContent("");
+        setCombinedContent("");
       } finally {
         setIsParsingFile(false);
       }
     }
   };
-
-  const handleSummarize = async () => {
-    if (!fileContent) {
-      toast({ variant: 'destructive', title: 'No Content', description: 'Please upload a file first.' });
-      return;
-    }
-    setIsSummarizing(true);
-    try {
-      const summary = await summarizeText(fileContent);
-      setFileContent(summary);
-      toast({ title: 'Content Summarized', description: 'The quiz will now be generated from the summary.' });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An unknown error occurred.';
-      toast({ variant: 'destructive', title: 'Summarization Failed', description: message });
-    } finally {
-      setIsSummarizing(false);
-    }
-  };
   
-  const handleUseOriginal = () => {
-    setFileContent(originalContent);
-    toast({ title: 'Using Original Content', description: 'The quiz will be generated from the full original text.' });
-  }
-
   function onSubmit(values: QuizSetupValues) {
-    if (!fileContent) {
+    if (!combinedContent) {
       setFileError("Please upload one or more files and wait for them to be processed.");
       return;
     }
-    onQuizStart(fileContent, values, isHellBound);
+    onQuizStart(combinedContent, values, isHellBound);
   }
-
-  const isSummarized = fileContent !== originalContent && originalContent !== "";
 
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
@@ -164,14 +128,14 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
         </div>
         <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
         <CardDescription className="text-lg">
-          Upload your study materials, optionally summarize, and let AI create a custom quiz.
+          Upload your materials and the AI will create a custom quiz.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-8 pt-2">
+          <CardContent className="space-y-8 pt-6">
             <div className="space-y-2">
-              <Label>1. Upload Content (.txt, .pdf, .md)</Label>
+              <Label className="text-lg font-semibold">1. Upload Content (.txt, .pdf, .md)</Label>
               <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md" className="pt-2 file:text-primary file:font-semibold" disabled={isParsingFile || isGenerating} />
               {isParsingFile && (
                  <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
@@ -195,32 +159,8 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
               {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
             </div>
 
-            {originalContent && !isParsingFile && (
-              <div className="space-y-4 animate-in fade-in-50">
-                <Label>2. Review &amp; Summarize (Optional)</Label>
-                <div className="p-4 border rounded-md space-y-4 bg-background">
-                  <Textarea value={fileContent} readOnly rows={8} className="bg-muted/50" />
-                  <div className="flex flex-wrap gap-2">
-                     <Button type="button" onClick={handleSummarize} disabled={isSummarizing || isGenerating || isSummarized}>
-                        {isSummarizing ? <Loader2 className="animate-spin" /> : <BookUp />}
-                        {isSummarized ? "Content is Summarized" : "Summarize Content"}
-                    </Button>
-                    {isSummarized && (
-                       <Button type="button" variant="outline" onClick={handleUseOriginal} disabled={isGenerating}>
-                          <RefreshCcw />
-                          Use Original
-                      </Button>
-                    )}
-                  </div>
-                   <FormDescription>
-                    {isSummarized ? "The quiz will be based on the summary. Click 'Use Original' to revert." : "You can summarize long documents to focus the quiz on key points."}
-                  </FormDescription>
-                </div>
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label>3. Configure Your Quiz</Label>
+              <Label className="text-lg font-semibold">2. Configure Your Quiz</Label>
               <div className="p-4 border rounded-md space-y-4 bg-background">
                 <FormField
                   control={form.control}
