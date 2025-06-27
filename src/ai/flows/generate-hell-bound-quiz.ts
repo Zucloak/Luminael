@@ -8,7 +8,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const GenerateHellBoundQuizInputSchema = z.object({
   fileContent: z
@@ -21,14 +21,14 @@ export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInp
 
 
 const MultipleChoiceQuestionSchema = z.object({
-  questionType: z.literal('multipleChoice').describe("The type of the question."),
+  questionType: z.enum(['multipleChoice']).describe("The type of the question."),
   question: z.string().describe('The question text.'),
   options: z.array(z.string()).length(4).describe('An array of 4 multiple-choice options.'),
   answer: z.string().describe('The correct answer, which must be one of the provided options.'),
 });
 
 const OpenEndedQuestionSchema = z.object({
-  questionType: z.literal('openEnded').describe("The type of the question."),
+  questionType: z.enum(['openEnded']).describe("The type of the question."),
   question: z.string().describe('The problem-solving or open-ended question.'),
   answer: z.string().describe('The detailed, correct solution to the problem.'),
 });
