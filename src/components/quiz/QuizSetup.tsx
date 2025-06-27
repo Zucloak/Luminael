@@ -36,13 +36,28 @@ interface QuizSetupProps {
   isGenerating: boolean;
 }
 
+async function ocrImage(imageDataUrl: string): Promise<string> {
+  const response = await fetch('/api/extract-text-from-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageDataUrl }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Failed to extract text from image: ${errorData.details || response.statusText}`);
+  }
+  const data = await response.json();
+  return data.extractedText;
+}
+
 export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   const [combinedContent, setCombinedContent] = useState<string>("");
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string>("");
   const [isHellBound, setIsHellBound] = useState<boolean>(false);
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
-  
+  const [ocrProgress, setOcrProgress] = useState({ current: 0, total: 0, processing: false });
+
   const form = useForm<QuizSetupValues>({
     resolver: zodResolver(quizSetupSchema),
     defaultValues: {
@@ -54,62 +69,101 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files && files.length > 0) {
-      setCombinedContent("");
-      const fileList = Array.from(files);
-      setFileNames(fileList.map(f => f.name));
-      setFileError("");
-      setIsParsingFile(true);
+    if (!files || files.length === 0) return;
 
-      const readPromises = fileList.map(file => {
-        return new Promise<string>((resolve, reject) => {
-          if (file.type === "text/plain" || file.type === "text/markdown") {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.onerror = () => reject(`Error reading ${file.name}.`);
-            reader.readAsText(file);
-          } else if (file.type === "application/pdf") {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-              try {
-                if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
-                const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
-                const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                  const page = await pdf.getPage(i);
-                  const textContent = await page.getTextContent();
-                  fullText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
-                }
-                resolve(fullText);
-              } catch (error) {
-                console.error("Error parsing PDF:", error);
-                reject(`Could not read text from PDF: ${file.name}. It might be image-based.`);
+    setCombinedContent("");
+    setFileError("");
+    setIsParsingFile(true);
+    const fileList = Array.from(files);
+    setFileNames(fileList.map(f => f.name));
+
+    const readPromises = fileList.map(file => {
+      return new Promise<string>(async (resolve, reject) => {
+        if (file.type === "text/plain" || file.type === "text/markdown") {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = () => reject(`Error reading ${file.name}.`);
+          reader.readAsText(file);
+        } else if (file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            try {
+              const text = await ocrImage(e.target?.result as string);
+              resolve(text);
+            } catch (err) {
+              const message = err instanceof Error ? err.message : String(err);
+              reject(`Failed OCR on ${file.name}: ${message}`);
+            }
+          };
+          reader.onerror = () => reject(`Error reading ${file.name}.`);
+          reader.readAsDataURL(file);
+        } else if (file.type === "application/pdf") {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
+            try {
+              const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
+              const pdf = await pdfjsLib.getDocument(typedarray).promise;
+              
+              // First, try text extraction
+              let fullText = '';
+              for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
               }
-            };
-            reader.onerror = () => reject(`Error reading ${file.name}.`);
-            reader.readAsArrayBuffer(file);
-          } else {
-            reject(`Unsupported file type: ${file.name}. Please use .txt, .md, or .pdf.`);
-          }
-        });
+              
+              // If text is minimal, fallback to OCR
+              if (fullText.trim().length < 100 * pdf.numPages) { // Heuristic to detect image-based PDF
+                fullText = '';
+                setOcrProgress({ current: 0, total: pdf.numPages, processing: true });
+                for (let i = 1; i <= pdf.numPages; i++) {
+                  setOcrProgress(prev => ({ ...prev, current: i }));
+                  const page = await pdf.getPage(i);
+                  const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+                  const canvas = document.createElement('canvas');
+                  const context = canvas.getContext('2d')!;
+                  canvas.height = viewport.height;
+                  canvas.width = viewport.width;
+                  const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                  };
+                  await page.render(renderContext).promise;
+                  const pageText = await ocrImage(canvas.toDataURL());
+                  fullText += pageText + '\n\n';
+                }
+              }
+              resolve(fullText);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              console.error("Error processing PDF:", error);
+              reject(`Could not process PDF: ${file.name}. ${message}`);
+            }
+          };
+          reader.onerror = () => reject(`Error reading ${file.name}.`);
+          reader.readAsArrayBuffer(file);
+        } else {
+          reject(`Unsupported file type: ${file.name}. Please use .txt, .md, .pdf, or image files.`);
+        }
       });
+    });
 
-      try {
-        const contents = await Promise.all(readPromises);
-        setCombinedContent(contents.join("\n\n---\n\n"));
-        setFileError("");
-      } catch (error) {
-        const message = String(error);
-        setFileError(message);
-        setFileNames([]);
-        setCombinedContent("");
-      } finally {
-        setIsParsingFile(false);
-      }
+    try {
+      const contents = await Promise.all(readPromises);
+      setCombinedContent(contents.join("\n\n---\n\n"));
+      setFileError("");
+    } catch (error) {
+      const message = String(error);
+      setFileError(message);
+      setFileNames([]);
+      setCombinedContent("");
+    } finally {
+      setIsParsingFile(false);
+      setOcrProgress({ current: 0, total: 0, processing: false });
     }
   };
-  
+
   function onSubmit(values: QuizSetupValues) {
     if (!combinedContent) {
       setFileError("Please upload one or more files and wait for them to be processed.");
@@ -117,6 +171,8 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     }
     onQuizStart(combinedContent, values, isHellBound);
   }
+
+  const isProcessing = isGenerating || isParsingFile;
 
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
@@ -126,19 +182,22 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
         </div>
         <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
         <CardDescription className="text-lg">
-          Upload your materials and the AI will create a custom quiz.
+          Upload your materials (.txt, .pdf, .md, .png, .jpg) and the AI will create a custom quiz.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-8 pt-6">
             <div className="space-y-2">
-              <Label className="text-lg font-semibold">1. Upload Content (.txt, .pdf, .md)</Label>
-              <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md" className="pt-2 file:text-primary file:font-semibold" disabled={isParsingFile || isGenerating} />
+              <Label className="text-lg font-semibold">1. Upload Content</Label>
+              <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing} />
               {isParsingFile && (
                  <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing files...
+                  {ocrProgress.processing 
+                    ? `Performing OCR on PDF... Page ${ocrProgress.current} of ${ocrProgress.total}`
+                    : "Processing files..."
+                  }
                  </p>
               )}
               {fileNames.length > 0 && !isParsingFile && (
@@ -167,7 +226,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                     <FormItem>
                       <FormLabel>Number of Questions</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} disabled={isGenerating}/>
+                        <Input type="number" {...field} disabled={isProcessing}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -183,7 +242,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                     id="hell-bound-mode"
                     checked={isHellBound}
                     onCheckedChange={setIsHellBound}
-                    disabled={isGenerating}
+                    disabled={isProcessing}
                   />
                 </div>
                 {!isHellBound && (
@@ -194,7 +253,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Question Format</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isGenerating}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a format" />
@@ -216,7 +275,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Difficulty</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isGenerating}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a difficulty" />
@@ -238,7 +297,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full text-lg py-6" disabled={isGenerating || isParsingFile}>
+            <Button type="submit" className="w-full text-lg py-6" disabled={isProcessing}>
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
