@@ -1,0 +1,143 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useUser } from "@/hooks/use-user";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Header } from "@/components/layout/Header";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+
+const profileFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters.").max(50, "Name is too long."),
+  studentId: z.string().min(1, "Student ID is required.").max(20, "Student ID is too long."),
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
+
+export default function ProfilePage() {
+  const { user, saveUser, clearUser, loading } = useUser();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: { name: "", studentId: "" },
+    values: user || { name: "", studentId: "" },
+  });
+
+  function onSubmit(data: ProfileFormValues) {
+    saveUser(data);
+    toast({
+      title: "Profile Saved",
+      description: "Your information has been updated successfully.",
+    });
+    router.push('/');
+  }
+
+  function handleLogout() {
+    clearUser();
+    toast({
+      title: "Logged Out",
+      description: "Your profile information has been cleared.",
+    });
+    form.reset({ name: "", studentId: "" });
+  }
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <main className="container mx-auto p-4 md:p-8">
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>User Profile</CardTitle>
+              <CardDescription>Manage your personal information.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-24" />
+            </CardContent>
+          </Card>
+        </main>
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
+        <Card className="w-full max-w-2xl shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-headline text-3xl">User Profile</CardTitle>
+            <CardDescription>
+              Manage your personal information. This is stored only in your browser.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Jane Doe" {...field} />
+                      </FormControl>
+                      <FormDescription>Your full name.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="studentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Student ID</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. 12345678" {...field} />
+                      </FormControl>
+                      <FormDescription>Your student identification number.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-between items-center">
+                  <Button type="submit">Save Profile</Button>
+                  {user && (
+                    <Button type="button" variant="ghost" onClick={handleLogout}>
+                      Clear Profile Data
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}
