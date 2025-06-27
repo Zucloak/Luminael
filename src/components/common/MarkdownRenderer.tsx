@@ -16,7 +16,7 @@ export function MarkdownRenderer({ children, className }: MarkdownRendererProps)
     <ReactMarkdown
       className={cn("markdown-renderer", className)}
       remarkPlugins={[remarkMath]}
-      rehypePlugins={[rehypeKatex]}
+      rehypePlugins={[[rehypeKatex, { throwOnError: false }]]}
       components={{
         p: React.Fragment,
       }}

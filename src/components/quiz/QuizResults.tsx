@@ -19,7 +19,7 @@ interface QuizResultsProps {
 type Result = (Question & { userAnswer: string; isCorrect: boolean | null });
 
 export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps) {
-  const { score, total, results } = useMemo(() => {
+  const { score, total, results, percentage } = useMemo(() => {
     let correctCount = 0;
     const multipleChoiceQuestions = quiz.questions.filter(q => q.questionType === 'multipleChoice');
     const totalMultipleChoice = multipleChoiceQuestions.length;
@@ -36,15 +36,24 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
       }
       return { ...q, userAnswer, isCorrect: null };
     });
+    
+    const calculatedPercentage = totalMultipleChoice > 0 ? Math.round((correctCount / totalMultipleChoice) * 100) : 0;
 
     return {
       score: correctCount,
       total: totalMultipleChoice,
       results: detailedResults,
+      percentage: calculatedPercentage,
     };
   }, [quiz, answers]);
 
-  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+  const getResultMessage = (percentage: number) => {
+    if (total <= 0) return "Quiz Reviewed";
+    if (percentage >= 90) return "Excellent Work!";
+    if (percentage >= 70) return "Great Job!";
+    if (percentage >= 50) return "Good Effort!";
+    return "Keep Reviewing!";
+  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
@@ -52,17 +61,14 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
         <div className="bg-primary/10 p-4 rounded-full w-fit mb-4">
           <Award className="h-12 w-12 text-primary" />
         </div>
-        <CardDescription className="font-semibold text-lg">Quiz Complete!</CardDescription>
+        <CardTitle className="font-headline text-3xl">{getResultMessage(percentage)}</CardTitle>
         {total > 0 ? (
           <>
-            <CardTitle className="font-headline text-5xl">{percentage}%</CardTitle>
-            <p className="text-xl text-muted-foreground">You scored {score} out of {total} multiple choice questions correct.</p>
+            <p className="text-5xl font-bold text-foreground">{percentage}%</p>
+            <CardDescription className="text-xl text-muted-foreground">You scored {score} out of {total} multiple choice questions correct.</CardDescription>
           </>
         ) : (
-          <>
-            <CardTitle className="font-headline text-3xl">Quiz Reviewed</CardTitle>
-            <p className="text-xl text-muted-foreground">Your open-ended answers are ready for review below.</p>
-          </>
+          <CardDescription className="text-xl text-muted-foreground">Your open-ended answers are ready for review below.</CardDescription>
         )}
         {user && <p className="text-sm text-muted-foreground pt-2">Results for {user.name} (ID: {user.studentId})</p>}
       </CardHeader>
