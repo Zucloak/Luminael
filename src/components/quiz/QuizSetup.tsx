@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as pdfjsLib from 'pdfjs-dist';
+import Tesseract from 'tesseract.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -102,24 +103,51 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     },
   });
 
-  const processFile = (file: File): Promise<string> => {
-    return new Promise<string>(async (resolve, reject) => {
+  const processFile = (file: File): Promise<{ content: string; aiCallMade: boolean; }> => {
+    return new Promise(async (resolve, reject) => {
       if (file.type === "text/plain" || file.type === "text/markdown") {
         const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onload = (e) => resolve({ content: e.target?.result as string, aiCallMade: false });
         reader.onerror = () => reject(`Error reading ${file.name}.`);
         reader.readAsText(file);
       } else if (file.type.startsWith("image/")) {
-        setParseProgress({ current: 1, total: 1, message: "Performing OCR on image..." });
         const reader = new FileReader();
         reader.onload = async (e) => {
-          try {
-            const text = await ocrImage(e.target?.result as string);
-            resolve(text);
-          } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            reject(`Failed OCR on ${file.name}: ${message}`);
-          }
+            if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
+            const imageDataUrl = e.target.result as string;
+
+            try {
+                // Step 1: Try local OCR with Tesseract.js first
+                setParseProgress({ current: 0, total: 100, message: "Attempting local OCR..." });
+                const { data: { text: localText, confidence } } = await Tesseract.recognize(
+                    imageDataUrl,
+                    'eng', // language
+                    {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                const progress = Math.floor(m.progress * 100);
+                                setParseProgress({ current: progress, total: 100, message: `Local OCR: ${m.status} (${progress}%)` });
+                            }
+                        }
+                    }
+                );
+
+                // Step 2: If local OCR is good enough, use it.
+                if (localText && localText.trim().length > 20 && confidence > 60) {
+                    setParseProgress({ current: 100, total: 100, message: "Local OCR successful!" });
+                    resolve({ content: localText, aiCallMade: false });
+                    return;
+                }
+
+                // Step 3: If local OCR fails or is poor, fall back to AI OCR.
+                setParseProgress({ current: 1, total: 1, message: "Local OCR insufficient. Falling back to AI OCR..." });
+                const aiText = await ocrImage(imageDataUrl);
+                resolve({ content: aiText, aiCallMade: true });
+
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                reject(`OCR failed for ${file.name}: ${message}`);
+            }
         };
         reader.onerror = () => reject(`Error reading ${file.name}.`);
         reader.readAsDataURL(file);
@@ -132,19 +160,20 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
             const pdf = await pdfjsLib.getDocument(typedarray).promise;
             
             let allPagesText: string[] = [];
+            let anyAiCallMade = false;
             setParseProgress({ current: 0, total: pdf.numPages, message: "Reading PDF..." });
 
             for (let i = 1; i <= pdf.numPages; i++) {
-              setParseProgress(prev => ({ ...prev, current: i, message: "Reading PDF page..." }));
+              setParseProgress(prev => ({ ...prev, current: i, message: `Processing page ${i} of ${pdf.numPages}` }));
               const page = await pdf.getPage(i);
               const textContent = await page.getTextContent();
               let pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
               
-              let ocrAttempted = false;
-              // If local text extraction fails, use AI OCR
+              let ocrAttemptedOnPage = false;
               if (pageText.length < 20) {
-                ocrAttempted = true;
-                setParseProgress(prev => ({ ...prev, current: i, message: "Image detected, performing OCR..." }));
+                ocrAttemptedOnPage = true;
+                anyAiCallMade = true;
+                setParseProgress(prev => ({ ...prev, current: i, message: `Page ${i} is image-based, using AI OCR...` }));
                 const viewport = page.getViewport({ scale: 2.0 });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d')!;
@@ -162,8 +191,10 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                     const ocrText = await ocrImage(canvas.toDataURL());
                     pageText = ocrText;
                    } catch (err) {
-                     console.error(`OCR failed for page ${i} of ${file.name}:`, err);
+                     const message = err instanceof Error ? err.message : String(err);
+                     console.error(`OCR failed for page ${i} of ${file.name}:`, message);
                      pageText = ""; // Default to empty string on OCR failure
+                     setFileError(`OCR on page ${i} failed: ${message.substring(0,100)}...`);
                    }
                 } else {
                   pageText = ""; // Page was blank
@@ -172,12 +203,12 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
               
               allPagesText.push(pageText);
 
-              // If we made an AI call, and there are more pages, wait to avoid rate limiting.
-              if (ocrAttempted && i < pdf.numPages) {
+              if (ocrAttemptedOnPage && i < pdf.numPages) {
+                setParseProgress(prev => ({ ...prev, current: i, message: `Waiting to avoid rate limits...` }));
                 await delay(RATE_LIMIT_DELAY);
               }
             }
-            resolve(allPagesText.join('\n\n---\n\n'));
+            resolve({ content: allPagesText.join('\n\n---\n\n'), aiCallMade: anyAiCallMade });
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             console.error("Error processing PDF:", error);
@@ -207,16 +238,15 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
 
     try {
       for (const [index, file] of fileList.entries()) {
-        const content = await processFile(file);
+        const { content, aiCallMade } = await processFile(file);
         allContents.push(content);
         
-        const needsDelay = file.type.startsWith("image/");
-        if (needsDelay && index < fileList.length - 1) {
+        if (aiCallMade && index < fileList.length - 1) {
+            setParseProgress(prev => ({ ...prev, message: `Waiting to avoid rate limits...` }));
             await delay(RATE_LIMIT_DELAY);
         }
       }
       setCombinedContent(allContents.join("\n\n---\n\n"));
-      setFileError("");
     } catch (error) {
       const message = String(error);
       setFileError(message);
@@ -260,7 +290,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                  <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {parseProgress.message}
-                  {parseProgress.total > 0 && ` (Page ${parseProgress.current} of ${parseProgress.total})`}
+                  {parseProgress.total > 1 && ` (${parseProgress.current} of ${parseProgress.total})`}
                  </p>
               )}
               {fileNames.length > 0 && !isParsingFile && (
