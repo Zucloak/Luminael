@@ -24,7 +24,7 @@ import { extractTextFromImage } from '@/ai/flows/extractTextFromImage';
 
 // Use a stable CDN and hardcode the version to match package.json to avoid version mismatch issues.
 // Use the .mjs build for compatibility with modern bundlers and to avoid "dynamically imported module" errors.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.mjs`;
 
 async function ocrImage(imageDataUrl: string): Promise<string> {
   const response = await fetch('/api/extract-text-from-image', {
@@ -32,10 +32,20 @@ async function ocrImage(imageDataUrl: string): Promise<string> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageDataUrl }),
   });
+
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(`Failed to extract text from image: ${errorData.details || response.statusText}`);
+    let errorDetails = `Server responded with status ${response.status}`;
+    try {
+      // Try to parse the error response as JSON
+      const errorData = await response.json();
+      errorDetails = errorData.details || errorData.error || response.statusText;
+    } catch (e) {
+      // If parsing fails, it's likely an HTML error page, so we use the raw text
+      errorDetails = await response.text();
+    }
+    throw new Error(`Failed to extract text from image. Server response: ${errorDetails}`);
   }
+
   const data = await response.json();
   return data.extractedText;
 }
