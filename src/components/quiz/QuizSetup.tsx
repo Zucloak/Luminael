@@ -31,24 +31,20 @@ async function ocrImage(imageDataUrl: string): Promise<string> {
     body: JSON.stringify({ imageDataUrl }),
   });
 
-  const responseText = await response.text();
   if (!response.ok) {
+    const errorText = await response.text();
     let errorDetails;
     try {
-      const errorData = JSON.parse(responseText);
+      const errorData = JSON.parse(errorText);
       errorDetails = errorData.details || errorData.error || response.statusText;
     } catch (e) {
-      errorDetails = responseText.substring(0, 200) + '...';
+      errorDetails = errorText.substring(0, 200) + '...';
     }
     throw new Error(`Failed to extract text from image. Server responded with status ${response.status}: ${errorDetails}`);
   }
 
-  try {
-    const data = JSON.parse(responseText);
-    return data.extractedText;
-  } catch (error) {
-    throw new Error("Failed to parse successful JSON response from server.");
-  }
+  const data = await response.json();
+  return data.extractedText;
 }
 
 function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
@@ -86,7 +82,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   const [fileError, setFileError] = useState<string>("");
   const [isHellBound, setIsHellBound] = useState<boolean>(false);
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
-  const [ocrProgress, setOcrProgress] = useState({ current: 0, total: 0, processing: false });
+  const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, message: "" });
 
   const form = useForm<QuizSetupValues>({
     resolver: zodResolver(quizSetupSchema),
@@ -105,6 +101,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
         reader.onerror = () => reject(`Error reading ${file.name}.`);
         reader.readAsText(file);
       } else if (file.type.startsWith("image/")) {
+        setParseProgress({ current: 1, total: 1, message: "Performing OCR on image..." });
         const reader = new FileReader();
         reader.onload = async (e) => {
           try {
@@ -125,19 +122,20 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
             const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
             const pdf = await pdfjsLib.getDocument(typedarray).promise;
             
-            let fullText = '';
+            let allPagesText: string[] = [];
+            setParseProgress({ current: 0, total: pdf.numPages, message: "Reading PDF..." });
+
             for (let i = 1; i <= pdf.numPages; i++) {
+              setParseProgress(prev => ({ ...prev, current: i, message: "Reading PDF page..." }));
               const page = await pdf.getPage(i);
               const textContent = await page.getTextContent();
-              fullText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
-            }
-            
-            if (fullText.trim().length < 100 * pdf.numPages) {
-              fullText = '';
-              setOcrProgress({ current: 0, total: pdf.numPages, processing: true });
-              for (let i = 1; i <= pdf.numPages; i++) {
-                setOcrProgress(prev => ({ ...prev, current: i }));
-                const page = await pdf.getPage(i);
+              let pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
+              
+              let ocrAttempted = false;
+              // If local text extraction fails, use AI OCR
+              if (pageText.length < 20) {
+                ocrAttempted = true;
+                setParseProgress(prev => ({ ...prev, current: i, message: "Image detected, performing OCR..." }));
                 const viewport = page.getViewport({ scale: 2.0 });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d')!;
@@ -150,19 +148,27 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                 };
                 await page.render(renderContext).promise;
 
-                if (isCanvasBlank(canvas)) {
-                  continue;
-                }
-
-                const pageText = await ocrImage(canvas.toDataURL());
-                fullText += pageText + '\n\n';
-
-                if (i < pdf.numPages) {
-                  await delay(RATE_LIMIT_DELAY);
+                if (!isCanvasBlank(canvas)) {
+                   try {
+                    const ocrText = await ocrImage(canvas.toDataURL());
+                    pageText = ocrText;
+                   } catch (err) {
+                     console.error(`OCR failed for page ${i} of ${file.name}:`, err);
+                     pageText = ""; // Default to empty string on OCR failure
+                   }
+                } else {
+                  pageText = ""; // Page was blank
                 }
               }
+              
+              allPagesText.push(pageText);
+
+              // If we made an AI call, and there are more pages, wait to avoid rate limiting.
+              if (ocrAttempted && i < pdf.numPages) {
+                await delay(RATE_LIMIT_DELAY);
+              }
             }
-            resolve(fullText);
+            resolve(allPagesText.join('\n\n---\n\n'));
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             console.error("Error processing PDF:", error);
@@ -184,6 +190,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     setCombinedContent("");
     setFileError("");
     setIsParsingFile(true);
+    setParseProgress({ current: 0, total: 0, message: "Processing files..." });
     const fileList = Array.from(files);
     setFileNames(fileList.map(f => f.name));
 
@@ -194,8 +201,8 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
         const content = await processFile(file);
         allContents.push(content);
         
-        const needsOcr = file.type.startsWith("image/");
-        if (needsOcr && index < fileList.length - 1) {
+        const needsDelay = file.type.startsWith("image/");
+        if (needsDelay && index < fileList.length - 1) {
             await delay(RATE_LIMIT_DELAY);
         }
       }
@@ -208,7 +215,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
       setCombinedContent("");
     } finally {
       setIsParsingFile(false);
-      setOcrProgress({ current: 0, total: 0, processing: false });
+      setParseProgress({ current: 0, total: 0, message: "" });
     }
   };
 
@@ -243,10 +250,8 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
               {isParsingFile && (
                  <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {ocrProgress.processing 
-                    ? `Performing OCR on PDF... Page ${ocrProgress.current} of ${ocrProgress.total}`
-                    : "Processing files..."
-                  }
+                  {parseProgress.message}
+                  {parseProgress.total > 0 && ` (Page ${parseProgress.current} of ${parseProgress.total})`}
                  </p>
               )}
               {fileNames.length > 0 && !isParsingFile && (
