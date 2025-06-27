@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
-import { FileText, BrainCircuit, Sparkles, Wand2 } from "lucide-react";
+import { FileText, BrainCircuit, Sparkles, Wand2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -20,6 +20,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(20, "Maximum 20 questions."),
@@ -39,6 +42,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   const [fileName, setFileName] = useState<string>("");
   const [fileError, setFileError] = useState<string>("");
   const [isHellBound, setIsHellBound] = useState<boolean>(false);
+  const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
 
   const form = useForm<QuizSetupValues>({
     resolver: zodResolver(quizSetupSchema),
@@ -49,29 +53,62 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setFileContent("");
+      setFileName("");
+      setFileError("");
+      setIsParsingFile(true);
+      setFileName(file.name);
+
       if (file.type === "text/plain") {
         const reader = new FileReader();
         reader.onload = (e) => {
           const content = e.target?.result as string;
           setFileContent(content);
-          setFileName(file.name);
-          setFileError("");
+          setIsParsingFile(false);
         };
         reader.readAsText(file);
+      } else if (file.type === "application/pdf") {
+        try {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            if (!e.target?.result) {
+              setFileError("Failed to read file.");
+              setIsParsingFile(false);
+              return;
+            }
+            const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
+            const pdf = await pdfjsLib.getDocument(typedarray).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              fullText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
+              fullText += '\n';
+            }
+            setFileContent(fullText);
+            setFileError("");
+            setIsParsingFile(false);
+          };
+          reader.readAsArrayBuffer(file);
+        } catch (error) {
+          console.error("Error parsing PDF:", error);
+          setFileError("Could not read text from PDF. The file might be corrupted or image-based.");
+          setIsParsingFile(false);
+        }
       } else {
-        setFileError("Please upload a .txt file.");
-        setFileContent("");
+        setFileError("Please upload a .txt or .pdf file.");
         setFileName("");
+        setIsParsingFile(false);
       }
     }
   };
 
   function onSubmit(values: QuizSetupValues) {
     if (!fileContent) {
-      setFileError("Please upload a file to generate a quiz from.");
+      setFileError("Please upload a file and wait for it to be processed.");
       return;
     }
     onQuizStart(fileContent, values, isHellBound);
@@ -92,9 +129,15 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-8 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="file-upload">1. Upload Content (.txt only)</Label>
-              <Input id="file-upload" type="file" onChange={handleFileChange} accept=".txt" className="pt-2 file:text-primary file:font-semibold" />
-              {fileName && <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2"><FileText className="h-4 w-4" /> {fileName}</p>}
+              <Label htmlFor="file-upload">1. Upload Content (.txt, .pdf)</Label>
+              <Input id="file-upload" type="file" onChange={handleFileChange} accept=".txt,.pdf" className="pt-2 file:text-primary file:font-semibold" disabled={isParsingFile} />
+              {isParsingFile && (
+                 <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing {fileName}...
+                 </p>
+              )}
+              {fileName && !isParsingFile && <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2"><FileText className="h-4 w-4" /> {fileName}</p>}
               {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
             </div>
 
@@ -169,11 +212,16 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full text-lg py-6" disabled={isGenerating}>
+            <Button type="submit" className="w-full text-lg py-6" disabled={isGenerating || isParsingFile}>
               {isGenerating ? (
                 <>
                   <Sparkles className="mr-2 h-5 w-5 animate-spin" />
                   Generating...
+                </>
+              ) : isParsingFile ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Processing file...
                 </>
               ) : (
                 <>
