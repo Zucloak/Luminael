@@ -31,20 +31,29 @@ async function ocrImage(imageDataUrl: string): Promise<string> {
     body: JSON.stringify({ imageDataUrl }),
   });
 
+  const responseText = await response.text();
+
   if (!response.ok) {
-    const errorText = await response.text();
-    let errorDetails;
-    try {
-      const errorData = JSON.parse(errorText);
-      errorDetails = errorData.details || errorData.error || response.statusText;
-    } catch (e) {
-      errorDetails = errorText.substring(0, 200) + '...';
+    if (response.status === 429 || responseText.includes('quota')) {
+      throw new Error("You've exceeded the AI processing quota for the free tier, which has a daily limit. Please try again with a smaller document or try again tomorrow.");
     }
-    throw new Error(`Failed to extract text from image. Server responded with status ${response.status}: ${errorDetails}`);
+    
+    let errorDetails = responseText;
+    try {
+      const errorData = JSON.parse(responseText);
+      errorDetails = errorData.details || errorData.error || "An unknown server error occurred.";
+    } catch (e) {
+      errorDetails = responseText.substring(0, 200) + '...';
+    }
+    throw new Error(`Failed to extract text from image: ${errorDetails}`);
   }
 
-  const data = await response.json();
-  return data.extractedText;
+  try {
+    const data = JSON.parse(responseText);
+    return data.extractedText;
+  } catch (e) {
+    throw new Error("Failed to parse successful server response.");
+  }
 }
 
 function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
@@ -61,7 +70,7 @@ function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-const RATE_LIMIT_DELAY = 4100; // ~14.6 requests/minute, safely under the 15 req/min free tier limit
+const RATE_LIMIT_DELAY = 5000; // ~12 requests/minute, safely under the 15 req/min free tier limit
 
 const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(100, "Maximum 100 questions."),
