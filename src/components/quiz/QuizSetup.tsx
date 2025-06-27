@@ -39,7 +39,7 @@ interface QuizSetupProps {
 
 export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   const [fileContent, setFileContent] = useState<string>("");
-  const [fileName, setFileName] = useState<string>("");
+  const [fileNames, setFileNames] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string>("");
   const [isHellBound, setIsHellBound] = useState<boolean>(false);
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
@@ -54,61 +54,66 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   });
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
       setFileContent("");
-      setFileName("");
+      const fileList = Array.from(files);
+      setFileNames(fileList.map(f => f.name));
       setFileError("");
       setIsParsingFile(true);
-      setFileName(file.name);
 
-      if (file.type === "text/plain") {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          setFileContent(content);
-          setIsParsingFile(false);
-        };
-        reader.readAsText(file);
-      } else if (file.type === "application/pdf") {
-        try {
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            if (!e.target?.result) {
-              setFileError("Failed to read file.");
-              setIsParsingFile(false);
-              return;
-            }
-            const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
-            const pdf = await pdfjsLib.getDocument(typedarray).promise;
-            let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i);
-              const textContent = await page.getTextContent();
-              fullText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
-              fullText += '\n';
-            }
-            setFileContent(fullText);
-            setFileError("");
-            setIsParsingFile(false);
-          };
-          reader.readAsArrayBuffer(file);
-        } catch (error) {
-          console.error("Error parsing PDF:", error);
-          setFileError("Could not read text from PDF. The file might be corrupted or image-based.");
-          setIsParsingFile(false);
-        }
-      } else {
-        setFileError("Please upload a .txt or .pdf file.");
-        setFileName("");
+      const readPromises = fileList.map(file => {
+        return new Promise<string>((resolve, reject) => {
+          if (file.type === "text/plain") {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = () => reject(`Error reading ${file.name}.`);
+            reader.readAsText(file);
+          } else if (file.type === "application/pdf") {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+              try {
+                if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
+                const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
+                const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                  const page = await pdf.getPage(i);
+                  const textContent = await page.getTextContent();
+                  fullText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
+                }
+                resolve(fullText);
+              } catch (error) {
+                console.error("Error parsing PDF:", error);
+                reject(`Could not read text from PDF: ${file.name}. It might be image-based.`);
+              }
+            };
+            reader.onerror = () => reject(`Error reading ${file.name}.`);
+            reader.readAsArrayBuffer(file);
+          } else {
+            reject(`Unsupported file type: ${file.name}. Please use .txt or .pdf.`);
+          }
+        });
+      });
+
+      try {
+        const contents = await Promise.all(readPromises);
+        setFileContent(contents.join("\n\n---\n\n"));
+        setFileError("");
+      } catch (error) {
+        setFileError(error as string);
+        setFileNames([]);
+        setFileContent("");
+      } finally {
         setIsParsingFile(false);
       }
     }
   };
 
+
   function onSubmit(values: QuizSetupValues) {
     if (!fileContent) {
-      setFileError("Please upload a file and wait for it to be processed.");
+      setFileError("Please upload one or more files and wait for them to be processed.");
       return;
     }
     onQuizStart(fileContent, values, isHellBound);
@@ -122,7 +127,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
         </div>
         <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
         <CardDescription className="text-lg">
-          Upload your study material and let our AI create a custom quiz for you.
+          Upload your study materials and let our AI create a custom quiz for you.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -130,14 +135,26 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
           <CardContent className="space-y-8 pt-2">
             <div className="space-y-2">
               <Label htmlFor="file-upload">1. Upload Content (.txt, .pdf)</Label>
-              <Input id="file-upload" type="file" onChange={handleFileChange} accept=".txt,.pdf" className="pt-2 file:text-primary file:font-semibold" disabled={isParsingFile} />
+              <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf" className="pt-2 file:text-primary file:font-semibold" disabled={isParsingFile} />
               {isParsingFile && (
                  <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing {fileName}...
+                  Processing files...
                  </p>
               )}
-              {fileName && !isParsingFile && <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2"><FileText className="h-4 w-4" /> {fileName}</p>}
+              {fileNames.length > 0 && !isParsingFile && (
+                <div className="text-sm text-muted-foreground pt-2 space-y-2">
+                  <strong>Uploaded files:</strong>
+                  <ul className="list-disc pl-5 space-y-1 max-h-24 overflow-y-auto">
+                    {fileNames.map((name) => (
+                      <li key={name} className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary shrink-0" />
+                        <span className="truncate" title={name}>{name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
             </div>
 
@@ -221,7 +238,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
               ) : isParsingFile ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Processing file...
+                  Processing files...
                 </>
               ) : (
                 <>
