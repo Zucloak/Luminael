@@ -8,7 +8,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ExtractTextFromImageInputSchema = z.object({
+const ExtractTextFromImageInputSchema = z.object({
   imageDataUrl: z
     .string()
     .describe(
