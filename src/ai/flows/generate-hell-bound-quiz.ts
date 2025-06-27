@@ -88,7 +88,6 @@ const generateHellBoundQuizFlow = ai.defineFlow(
 
     if (processedContent.length > CONTENT_THRESHOLD) {
       const { text } = await ai.generate({
-        model: 'gemini-2.0-flash',
         prompt: `Summarize the following text concisely, retaining all key facts, names, dates, concepts, and especially any subtle or tricky details. The goal is to reduce length while preserving the core information needed for a very difficult quiz. Only provide the summary, with no extra commentary or introduction. \n\nTEXT: ${processedContent}`,
       });
       processedContent = text;
