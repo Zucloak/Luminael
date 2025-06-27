@@ -24,7 +24,7 @@ import { extractTextFromImage } from '@/ai/flows/extractTextFromImage';
 
 // Use a stable CDN and hardcode the version to match package.json to avoid version mismatch issues.
 // Use the .mjs build for compatibility with modern bundlers and to avoid "dynamically imported module" errors.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
 async function ocrImage(imageDataUrl: string): Promise<string> {
   const response = await fetch('/api/extract-text-from-image', {
