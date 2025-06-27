@@ -20,11 +20,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as pdfjsLib from 'pdfjs-dist';
-import { extractTextFromImage } from '@/ai/flows/extractTextFromImage';
 
 // Use a stable CDN and hardcode the version to match package.json to avoid version mismatch issues.
 // Use the .mjs build for compatibility with modern bundlers and to avoid "dynamically imported module" errors.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
 async function ocrImage(imageDataUrl: string): Promise<string> {
   const response = await fetch('/api/extract-text-from-image', {
@@ -34,16 +33,18 @@ async function ocrImage(imageDataUrl: string): Promise<string> {
   });
 
   if (!response.ok) {
-    let errorDetails = `Server responded with status ${response.status}`;
+    const errorText = await response.text(); // Read the response body as text once.
+    let errorDetails;
     try {
-      // Try to parse the error response as JSON
-      const errorData = await response.json();
+      // Try to parse the text as JSON, it might be a structured error.
+      const errorData = JSON.parse(errorText);
       errorDetails = errorData.details || errorData.error || response.statusText;
     } catch (e) {
-      // If parsing fails, it's likely an HTML error page, so we use the raw text
-      errorDetails = await response.text();
+      // If JSON parsing fails, the response is likely not JSON (e.g., an HTML error page).
+      // We'll use the raw text, but truncate it for readability.
+      errorDetails = errorText.substring(0, 200) + '...';
     }
-    throw new Error(`Failed to extract text from image. Server response: ${errorDetails}`);
+    throw new Error(`Failed to extract text from image. Server responded with status ${response.status}: ${errorDetails}`);
   }
 
   const data = await response.json();
