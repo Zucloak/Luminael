@@ -20,23 +20,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as pdfjsLib from 'pdfjs-dist';
+import { extractTextFromImage } from '@/ai/flows/extractTextFromImage';
 
 // Use a stable CDN and hardcode the version to match package.json to avoid version mismatch issues.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.js`;
-
-
-const quizSetupSchema = z.object({
-  numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(100, "Maximum 100 questions."),
-  difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
-  questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
-});
-
-type QuizSetupValues = z.infer<typeof quizSetupSchema>;
-
-interface QuizSetupProps {
-  onQuizStart: (fileContent: string, values: QuizSetupValues, isHellBound: boolean) => Promise<void>;
-  isGenerating: boolean;
-}
+// Use the .mjs build for compatibility with modern bundlers and to avoid "dynamically imported module" errors.
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.mjs`;
 
 async function ocrImage(imageDataUrl: string): Promise<string> {
   const response = await fetch('/api/extract-text-from-image', {
@@ -64,6 +52,19 @@ function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
   return !pixelBuffer.some(color => color !== 0xFFFFFFFF && color !== 0);
 }
 
+
+const quizSetupSchema = z.object({
+  numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(100, "Maximum 100 questions."),
+  difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
+  questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
+});
+
+type QuizSetupValues = z.infer<typeof quizSetupSchema>;
+
+interface QuizSetupProps {
+  onQuizStart: (fileContent: string, values: QuizSetupValues, isHellBound: boolean) => Promise<void>;
+  isGenerating: boolean;
+}
 
 export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   const [combinedContent, setCombinedContent] = useState<string>("");
