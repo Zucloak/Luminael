@@ -18,8 +18,17 @@ const GenerateHellBoundQuizInputSchema = z.object({
 });
 export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInputSchema>;
 
+
+const QuestionSchema = z.object({
+    question: z.string().describe('The question text.'),
+    options: z.array(z.string()).describe('An array of 4 multiple-choice options.'),
+    answer: z.string().describe('The correct answer, which must be one of the provided options.'),
+});
+
 const GenerateHellBoundQuizOutputSchema = z.object({
-  quiz: z.string().describe('The generated quiz in JSON format.'),
+  quiz: z.object({
+      questions: z.array(QuestionSchema),
+  }).describe('The generated quiz.'),
 });
 export type GenerateHellBoundQuizOutput = z.infer<typeof GenerateHellBoundQuizOutputSchema>;
 
@@ -31,15 +40,18 @@ const prompt = ai.definePrompt({
   name: 'generateHellBoundQuizPrompt',
   input: {schema: GenerateHellBoundQuizInputSchema},
   output: {schema: GenerateHellBoundQuizOutputSchema},
-  prompt: `You are an AI quiz generator that specializes in creating extremely difficult quizzes based on provided content.
+  prompt: `You are an AI quiz generator that specializes in creating extremely difficult, tricky, and nuanced multiple-choice quizzes based on provided content.
 
-  Your task is to generate a quiz with {{numQuestions}} questions based on the following content:
+  Your task is to generate a quiz with {{numQuestions}} questions based on the following content. The questions should be designed to catch someone who has only skimmed the material and reward those with a deep, precise understanding. Use subtle details, exceptions, and "all of the above" / "none of the above" style questions if they make sense.
 
-  {{fileContent}}
+  For each question, provide exactly 4 multiple-choice options. One of these options must be the correct answer.
 
-  The quiz should be challenging and designed to test the user's deep understanding of the material.
+  Ensure the output is a JSON object that strictly follows the provided schema. The 'answer' for each question must be one of the strings from the 'options' array.
 
-  The quiz should be returned in JSON format with a 'questions' array. Each question object should have a 'question' field and an 'answer' field.
+  Content:
+  """
+  {{{fileContent}}}
+  """
   `,
 });
 

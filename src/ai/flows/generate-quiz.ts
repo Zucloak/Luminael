@@ -19,8 +19,16 @@ const GenerateQuizInputSchema = z.object({
 });
 export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 
+const QuestionSchema = z.object({
+    question: z.string().describe('The question text.'),
+    options: z.array(z.string()).describe('An array of 4 multiple-choice options.'),
+    answer: z.string().describe('The correct answer, which must be one of the provided options.'),
+});
+
 const GenerateQuizOutputSchema = z.object({
-  quiz: z.string().describe('The generated quiz in JSON format.'),
+  quiz: z.object({
+      questions: z.array(QuestionSchema),
+  }).describe('The generated quiz.'),
 });
 export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
 
@@ -32,14 +40,20 @@ const prompt = ai.definePrompt({
   name: 'generateQuizPrompt',
   input: {schema: GenerateQuizInputSchema},
   output: {schema: GenerateQuizOutputSchema},
-  prompt: `You are a quiz generator. You will generate a quiz based on the content provided.
+  prompt: `You are a helpful AI assistant that generates multiple choice quizzes.
 
-Content: {{{content}}}
-Number of Questions: {{{numQuestions}}}
-Topics: {{{topics}}}
-Difficulty: {{{difficulty}}}
+  Based on the following content, please generate a quiz with {{numQuestions}} questions.
+  The quiz should cover the topics of '{{topics}}' at a '{{difficulty}}' difficulty level.
 
-Generate the quiz in JSON format with questions and answers.`,
+  For each question, provide exactly 4 multiple-choice options.
+  One of these options must be the correct answer.
+
+  Ensure the output is a JSON object that strictly follows the provided schema. The 'answer' for each question must be one of the strings from the 'options' array.
+
+  Content:
+  """
+  {{{content}}}
+  """`,
 });
 
 const generateQuizFlow = ai.defineFlow(

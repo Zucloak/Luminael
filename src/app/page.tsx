@@ -43,8 +43,7 @@ export default function Home() {
         throw new Error("AI failed to generate a quiz.");
       }
 
-      const parsedQuiz = JSON.parse(result.quiz);
-      setQuiz(parsedQuiz);
+      setQuiz(result.quiz);
       setUserAnswers({});
       setView('quiz');
 

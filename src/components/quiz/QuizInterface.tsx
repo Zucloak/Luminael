@@ -4,9 +4,10 @@ import { useState } from 'react';
 import type { Quiz } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -20,10 +21,10 @@ export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
-  const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleAnswerChange = (value: string) => {
     setAnswers({
       ...answers,
-      [currentQuestionIndex]: e.target.value,
+      [currentQuestionIndex]: value,
     });
   };
 
@@ -48,12 +49,20 @@ export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Textarea
-          placeholder="Type your answer here..."
+        <RadioGroup
           value={answers[currentQuestionIndex] || ''}
-          onChange={handleAnswerChange}
-          className="min-h-[150px] text-base"
-        />
+          onValueChange={handleAnswerChange}
+          className="space-y-4"
+        >
+          {currentQuestion.options.map((option, index) => (
+            <div key={index} className="flex items-center space-x-3 p-4 border rounded-md has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+              <RadioGroupItem value={option} id={`q${currentQuestionIndex}-o${index}`} />
+              <Label htmlFor={`q${currentQuestionIndex}-o${index}`} className="font-normal text-base cursor-pointer flex-1">
+                {option}
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
         <Progress value={progress} className="w-full" />
