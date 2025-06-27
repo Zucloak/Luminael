@@ -50,6 +50,19 @@ async function ocrImage(imageDataUrl: string): Promise<string> {
   return data.extractedText;
 }
 
+function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
+  const context = canvas.getContext('2d');
+  if (!context) return true; // Should not happen, but good practice
+
+  const pixelBuffer = new Uint32Array(
+    context.getImageData(0, 0, canvas.width, canvas.height).data.buffer
+  );
+
+  // A canvas is considered blank if all its pixels are white (0xFFFFFFFF) or fully transparent (0x00000000)
+  return !pixelBuffer.some(color => color !== 0xFFFFFFFF && color !== 0);
+}
+
+
 export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   const [combinedContent, setCombinedContent] = useState<string>("");
   const [fileNames, setFileNames] = useState<string[]>([]);
@@ -120,16 +133,22 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                 for (let i = 1; i <= pdf.numPages; i++) {
                   setOcrProgress(prev => ({ ...prev, current: i }));
                   const page = await pdf.getPage(i);
-                  const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+                  const viewport = page.getViewport({ scale: 2.0 });
                   const canvas = document.createElement('canvas');
                   const context = canvas.getContext('2d')!;
                   canvas.height = viewport.height;
                   canvas.width = viewport.width;
+                  
                   const renderContext = {
                     canvasContext: context,
                     viewport: viewport
                   };
                   await page.render(renderContext).promise;
+
+                  if (isCanvasBlank(canvas)) {
+                    continue; // Skip blank pages
+                  }
+
                   const pageText = await ocrImage(canvas.toDataURL());
                   fullText += pageText + '\n\n';
                 }
