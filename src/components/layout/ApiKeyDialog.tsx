@@ -17,8 +17,9 @@ import { Label } from "@/components/ui/label";
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { KeyRound } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export function ApiKeyDialog() {
+export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean }) {
   const { apiKey, setApiKey } = useApiKey();
   const [keyInput, setKeyInput] = useState(apiKey || "");
   const { toast } = useToast();
@@ -38,7 +39,7 @@ export function ApiKeyDialog() {
           <KeyRound className="h-5 w-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className={cn("sm:max-w-[425px]", isHellBound && "hell-bound")}>
         <DialogHeader>
           <DialogTitle>Gemini API Key</DialogTitle>
           <DialogDescription>

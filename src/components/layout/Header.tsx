@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiKeyDialog } from './ApiKeyDialog';
 
-export function Header() {
+export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
   const { user, loading } = useUser();
 
   return (
@@ -34,7 +34,7 @@ export function Header() {
           ) : user ? (
             <span className="font-semibold text-sm hidden md:inline">Welcome, {user.name}</span>
           ) : null}
-          <ApiKeyDialog />
+          <ApiKeyDialog isHellBound={isHellBound} />
           <Link href="/profile" passHref>
             <Button variant="outline" size="icon" aria-label="User Profile">
               <User className="h-5 w-5" />

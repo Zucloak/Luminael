@@ -133,7 +133,7 @@ export default function Home() {
 
   return (
     <div className={cn("min-h-screen flex flex-col bg-background transition-colors duration-1000", isHellBound && "hell-bound")}>
-      <Header />
+      <Header isHellBound={isHellBound} />
       <main className="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
         {renderContent()}
       </main>
