@@ -22,6 +22,8 @@ const GenerateHellBoundQuizInputSchema = z.object({
 });
 export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInputSchema>;
 
+// This schema is for the prompt itself, excluding the API key.
+const GenerateHellBoundQuizPromptInputSchema = GenerateHellBoundQuizInputSchema.omit({ apiKey: true });
 
 const MultipleChoiceQuestionSchema = z.object({
   questionType: z.enum(['multipleChoice']).describe("The type of the question."),
@@ -77,7 +79,7 @@ const generateHellBoundQuizFlow = ai.defineFlow(
 
     const prompt = runner.definePrompt({
       name: 'generateHellBoundQuizPrompt',
-      input: {schema: GenerateHellBoundQuizInputSchema},
+      input: {schema: GenerateHellBoundQuizPromptInputSchema},
       output: {schema: GenerateHellBoundQuizOutputSchema},
       prompt: `You are an AI quiz generator that specializes in creating extremely difficult, tricky, and nuanced quizzes based on provided content which may span multiple subjects.
 

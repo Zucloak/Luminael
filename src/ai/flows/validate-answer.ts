@@ -26,6 +26,13 @@ export const ValidateAnswerOutputSchema = z.object({
 });
 export type ValidateAnswerOutput = z.infer<typeof ValidateAnswerOutputSchema>;
 
+// This schema is for the prompt itself, excluding the API key.
+const ValidateAnswerPromptInputSchema = z.object({
+    question: z.string().describe("The original quiz question."),
+    userAnswer: z.string().describe("The answer provided by the user."),
+    correctAnswer: z.string().describe("The reference correct answer for the question."),
+});
+
 export async function validateAnswer(input: ValidateAnswerInput): Promise<ValidateAnswerOutput> {
   return validateAnswerFlow(input);
 }
@@ -47,7 +54,7 @@ const validateAnswerFlow = ai.defineFlow(
 
     const prompt = runner.definePrompt({
         name: 'validateAnswerPrompt',
-        input: {schema: ValidateAnswerInputSchema},
+        input: {schema: ValidateAnswerPromptInputSchema},
         output: {schema: ValidateAnswerOutputSchema},
         prompt: `You are an expert quiz validator. Your task is to assess a user's answer to a question against the provided correct answer.
 

@@ -23,6 +23,9 @@ const GenerateQuizInputSchema = z.object({
 });
 export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 
+// This schema is for the prompt itself, excluding the API key.
+const GenerateQuizPromptInputSchema = GenerateQuizInputSchema.omit({ apiKey: true });
+
 const MultipleChoiceQuestionSchema = z.object({
   questionType: z.enum(['multipleChoice']).describe("The type of the question."),
   question: z.string().describe('The question text.'),
@@ -76,7 +79,7 @@ const generateQuizFlow = ai.defineFlow(
     
     const prompt = runner.definePrompt({
       name: 'generateQuizPrompt',
-      input: {schema: GenerateQuizInputSchema},
+      input: {schema: GenerateQuizPromptInputSchema},
       output: {schema: GenerateQuizOutputSchema},
       prompt: `You are a helpful AI assistant that generates quizzes from diverse study materials. The user has uploaded content that may cover multiple different subjects.
 
