@@ -78,7 +78,7 @@ function delay(ms: number) {
 const RATE_LIMIT_DELAY = 5000; // ~12 requests/minute, safely under the 15 req/min free tier limit
 
 const quizSetupSchema = z.object({
-  numQuestions: z.coerce.number().min(1, "Must have at least 1 question.").max(100, "Maximum 100 questions."),
+  numQuestions: z.coerce.number().min(1, "Must be at least 1 question.").max(100, "Maximum 100 questions."),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
   questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
 });
@@ -347,7 +347,10 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 const value = e.target.value;
                                 if (Number(value) > 100) {
                                     field.onChange(100);
-                                } else {
+                                } else if (Number(value) < 1 && value !== '') {
+                                    field.onChange(1);
+                                }
+                                else {
                                     field.onChange(value);
                                 }
                             }}
