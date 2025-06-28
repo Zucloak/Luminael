@@ -43,6 +43,26 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const [isOcrRunning, setIsOcrRunning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  if (!quiz?.questions?.length) {
+    return (
+      <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
+        <CardHeader className="text-center">
+          <CardTitle>Empty Quiz</CardTitle>
+          <CardDescription>No questions were found for this quiz.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <p className="text-center">The AI may have failed to generate questions. Please go back and try again.</p>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+            <Button onClick={onExit}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Back to Setup
+            </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
   const totalQuestions = quiz.questions.length;
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
@@ -159,7 +179,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
 
   const goToPrevious = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 

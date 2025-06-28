@@ -87,6 +87,10 @@ export default function Home() {
         existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map(q => q.question)];
       }
 
+      if (allQuestions.length === 0) {
+        throw new Error("The AI failed to generate any questions. Please check your content or settings and try again.");
+      }
+
       setGenerationProgress(prev => ({ ...prev, current: totalQuestions }));
       setQuiz({ questions: allQuestions });
       setUserAnswers({});
@@ -94,10 +98,11 @@ export default function Home() {
 
     } catch (error) {
       console.error(error);
+      const message = error instanceof Error ? error.message : "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again.";
       toast({
         variant: "destructive",
         title: "Error Generating Quiz",
-        description: "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again with fewer questions or different content.",
+        description: message,
       });
       setView('setup');
     } finally {
