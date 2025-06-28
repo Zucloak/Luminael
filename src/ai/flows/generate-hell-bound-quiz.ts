@@ -94,6 +94,7 @@ const generateHellBoundQuizFlow = ai.defineFlow(
         - For a fraction, write: "$\\\\frac{a}{b}$"
         - For a square root, write: "$\\\\sqrt{x}$"
         - For "less than or equal to", write: "$\\\\leq$"
+        - For the greek letter theta, write: "$\\\\theta$"
 
       {{#if existingQuestions}}
       IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
