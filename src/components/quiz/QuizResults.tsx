@@ -75,8 +75,13 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
               }),
             });
             if (!res.ok) {
-              const errorData = await res.json();
-              throw new Error(errorData.details || errorData.error || `Validation failed with status ${res.status}`);
+              const errorText = await res.text();
+              try {
+                const errorData = JSON.parse(errorText);
+                throw new Error(errorData.details || errorData.error || `Validation failed with status ${res.status}`);
+              } catch (jsonError) {
+                throw new Error(`Validation failed: The server returned an unexpected response. Status: ${res.status}`);
+              }
             }
             const validationResult: ValidationResult = await res.json();
             
