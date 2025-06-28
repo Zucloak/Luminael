@@ -310,7 +310,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   return (
     <div className="relative w-full max-w-3xl mx-auto">
       {isHellBound && (
-        <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-red-500 to-orange-500 opacity-60" />
+        <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-red-500 to-orange-500 opacity-60 animate-supercharged-border bg-[length:400%_400%]" />
       )}
       <Card className={cn(
         "w-full relative animate-in fade-in-50 duration-500",
