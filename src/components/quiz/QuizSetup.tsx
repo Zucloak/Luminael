@@ -418,7 +418,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
               <div className="space-y-2">
                 <Label className="text-lg font-semibold">2. Configure Your Quiz</Label>
                 <div className="p-4 border rounded-md space-y-4 bg-background/50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:items-start">
                     <FormField
                       control={form.control}
                       name="numQuestions"
@@ -456,7 +456,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 Max
                             </Button>
                           </div>
-                          <FormMessage />
+                          {isClient && <FormMessage />}
                         </FormItem>
                       )}
                     />
@@ -516,7 +516,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                               )}
                             />
                           </div>
-                          <FormMessage />
+                          {isClient && <FormMessage />}
                         </FormItem>
                       )}
                     />
@@ -554,7 +554,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 <SelectItem value="mixed">Mixed</SelectItem>
                               </SelectContent>
                             </Select>
-                            <FormMessage />
+                            {isClient && <FormMessage />}
                           </FormItem>
                         )}
                       />
@@ -576,7 +576,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 <SelectItem value="Hard">Hard</SelectItem>
                               </SelectContent>
                             </Select>
-                            <FormMessage />
+                            {isClient && <FormMessage />}
                           </FormItem>
                         )}
                       />
