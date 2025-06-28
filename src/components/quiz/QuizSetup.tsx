@@ -285,183 +285,188 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const isProcessing = isGenerating || isParsingFile;
 
   return (
-    <Card className={cn(
-      "w-full max-w-3xl mx-auto animate-in fade-in-50 duration-500",
-      isHellBound ? "shadow-none animate-hell-shadow-pulse" : "shadow-2xl"
-    )}>
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 relative h-16 w-16 flex items-center justify-center">
-          <div className={cn("absolute inset-0 transition-opacity duration-500", isHellBound ? "opacity-0" : "opacity-100")}>
-            <PulsingCore className="h-16 w-16" />
-          </div>
-          <div className={cn("absolute inset-0 transition-opacity duration-500", isHellBound ? "opacity-100" : "opacity-0")}>
-            <PulsingCoreRed className="h-16 w-16" />
-          </div>
-        </div>
-        <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
-        <CardDescription className="text-lg">
-          Upload your materials (.txt, .pdf, .md, .png, .jpg) and the AI will create a custom quiz.
-        </CardDescription>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-8 pt-6">
-            <div className="space-y-2">
-              <Label className="text-lg font-semibold">1. Upload Content</Label>
-              <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing} />
-              {isParsingFile && (
-                 <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {parseProgress.message}
-                  {parseProgress.total > 1 && ` (${parseProgress.current} of ${parseProgress.total})`}
-                 </p>
-              )}
-              {fileNames.length > 0 && !isParsingFile && (
-                <div className="text-sm text-muted-foreground pt-2 space-y-2">
-                  <strong>Uploaded files:</strong>
-                  <ul className="list-disc pl-5 space-y-1 max-h-24 overflow-y-auto">
-                    {fileNames.map((name) => (
-                      <li key={name} className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary shrink-0" />
-                        <span className="truncate" title={name}>{name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
+    <div className="relative w-full max-w-3xl mx-auto">
+      {isHellBound && (
+        <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-red-500 to-orange-500 opacity-60 blur-2xl animate-background-pan bg-[length:200%_auto]" />
+      )}
+      <Card className={cn(
+        "w-full relative animate-in fade-in-50 duration-500",
+        isHellBound ? "bg-card/80 backdrop-blur-sm border-0" : "shadow-2xl"
+      )}>
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 relative h-16 w-16 flex items-center justify-center">
+            <div className={cn("absolute inset-0 transition-opacity duration-500", isHellBound ? "opacity-0" : "opacity-100")}>
+              <PulsingCore className="h-16 w-16" />
             </div>
-
-            <div className="space-y-2">
-              <Label className="text-lg font-semibold">2. Configure Your Quiz</Label>
-              <div className="p-4 border rounded-md space-y-4 bg-background">
-                <FormField
-                  control={form.control}
-                  name="numQuestions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Number of Questions</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                if (Number(value) > 100) {
-                                    field.onChange(100);
-                                } else if (Number(value) < 1 && value !== '') {
-                                    field.onChange(1);
-                                }
-                                else {
-                                    field.onChange(value);
-                                }
-                            }}
-                            max="100"
-                            disabled={isProcessing}
-                          />
-                        </FormControl>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            form.setValue('numQuestions', 100, { shouldValidate: true });
-                          }}
-                          disabled={isProcessing}
-                        >
-                          Max
-                        </Button>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex items-center space-x-4 p-4 bg-destructive/10 rounded-md border border-destructive/20">
-                  <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
-                  <div className="flex-1 space-y-1">
-                    <Label htmlFor="hell-bound-mode" className="text-destructive font-bold">HELL BOUND MODE</Label>
-                    <p className="text-xs text-destructive/80">Generate an extremely difficult quiz to truly test your knowledge.</p>
-                  </div>
-                  <Switch
-                    id="hell-bound-mode"
-                    checked={isHellBound}
-                    onCheckedChange={onHellBoundToggle}
-                    disabled={isProcessing}
-                  />
-                </div>
-                {!isHellBound && (
-                  <div className="space-y-4 animate-in fade-in-0 duration-300">
-                     <FormField
-                      control={form.control}
-                      name="questionFormat"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Question Format</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a format" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="multipleChoice">Multiple Choice</SelectItem>
-                              <SelectItem value="openEnded">Problem Solving</SelectItem>
-                              <SelectItem value="mixed">Mixed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="difficulty"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Difficulty</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a difficulty" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Easy">Easy</SelectItem>
-                              <SelectItem value="Medium">Medium</SelectItem>
-                              <SelectItem value="Hard">Hard</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            <div className={cn("absolute inset-0 transition-opacity duration-500", isHellBound ? "opacity-100" : "opacity-0")}>
+              <PulsingCoreRed className="h-16 w-16" />
+            </div>
+          </div>
+          <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
+          <CardDescription className="text-lg">
+            Upload your materials (.txt, .pdf, .md, .png, .jpg) and the AI will create a custom quiz.
+          </CardDescription>
+        </CardHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent className="space-y-8 pt-6">
+              <div className="space-y-2">
+                <Label className="text-lg font-semibold">1. Upload Content</Label>
+                <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing} />
+                {isParsingFile && (
+                  <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {parseProgress.message}
+                    {parseProgress.total > 1 && ` (${parseProgress.current} of ${parseProgress.total})`}
+                  </p>
+                )}
+                {fileNames.length > 0 && !isParsingFile && (
+                  <div className="text-sm text-muted-foreground pt-2 space-y-2">
+                    <strong>Uploaded files:</strong>
+                    <ul className="list-disc pl-5 space-y-1 max-h-24 overflow-y-auto">
+                      {fileNames.map((name) => (
+                        <li key={name} className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-primary shrink-0" />
+                          <span className="truncate" title={name}>{name}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
+                {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
               </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full text-lg py-6" disabled={isProcessing}>
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Generating...
-                </>
-              ) : isParsingFile ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Processing files...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  Start Quiz
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
+
+              <div className="space-y-2">
+                <Label className="text-lg font-semibold">2. Configure Your Quiz</Label>
+                <div className="p-4 border rounded-md space-y-4 bg-background/50">
+                  <FormField
+                    control={form.control}
+                    name="numQuestions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Number of Questions</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (Number(value) > 100) {
+                                      field.onChange(100);
+                                  } else if (Number(value) < 1 && value !== '') {
+                                      field.onChange(1);
+                                  }
+                                  else {
+                                      field.onChange(value);
+                                  }
+                              }}
+                              max="100"
+                              disabled={isProcessing}
+                            />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              form.setValue('numQuestions', 100, { shouldValidate: true });
+                            }}
+                            disabled={isProcessing}
+                          >
+                            Max
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex items-center space-x-4 p-4 bg-destructive/10 rounded-md border border-destructive/20">
+                    <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <Label htmlFor="hell-bound-mode" className="text-destructive font-bold">HELL BOUND MODE</Label>
+                      <p className="text-xs text-destructive/80">Generate an extremely difficult quiz to truly test your knowledge.</p>
+                    </div>
+                    <Switch
+                      id="hell-bound-mode"
+                      checked={isHellBound}
+                      onCheckedChange={onHellBoundToggle}
+                      disabled={isProcessing}
+                    />
+                  </div>
+                  {!isHellBound && (
+                    <div className="space-y-4 animate-in fade-in-0 duration-300">
+                      <FormField
+                        control={form.control}
+                        name="questionFormat"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Question Format</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a format" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="multipleChoice">Multiple Choice</SelectItem>
+                                <SelectItem value="openEnded">Problem Solving</SelectItem>
+                                <SelectItem value="mixed">Mixed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="difficulty"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Difficulty</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a difficulty" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Easy">Easy</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="Hard">Hard</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full text-lg py-6" disabled={isProcessing}>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Generating...
+                  </>
+                ) : isParsingFile ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Processing files...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Start Quiz
+                  </>
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Form>
+      </Card>
+    </div>
   );
 }
