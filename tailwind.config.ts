@@ -102,8 +102,8 @@ export default {
           '100%': { backgroundPosition: '64px 32px' },
         },
         'hell-shadow-pulse': {
-          '0%, 100%': { 'box-shadow': '0 0 15px 0px hsla(var(--accent-foreground), 0.4)' },
-          '50%': { 'box-shadow': '0 0 25px 5px hsla(var(--accent-foreground), 0.6)' },
+          '0%, 100%': { 'box-shadow': '0 0 15px 0px hsl(var(--accent-foreground) / 0.4)' },
+          '50%': { 'box-shadow': '0 0 25px 5px hsl(var(--accent-foreground) / 0.6)' },
         },
       },
       animation: {
