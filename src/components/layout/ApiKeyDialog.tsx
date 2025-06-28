@@ -68,7 +68,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             aria-label="API Key Settings"
             className={cn(
               isHellBound && "text-foreground",
-              !apiKey && !loading && "animate-blue-glow"
+              !apiKey && !loading
             )}
           >
             <KeyRound className="h-5 w-5" />

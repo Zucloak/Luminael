@@ -101,7 +101,7 @@ export default function ProfilePage() {
       <main className="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
         <div className="relative w-full max-w-2xl mx-auto">
           {isHellBound && (
-            <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-red-500 to-orange-500 opacity-60 blur-2xl animate-background-pan bg-[length:200%_auto]" />
+            <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-red-500 to-orange-500 opacity-60" />
           )}
           <Card className={cn(
               "w-full relative",

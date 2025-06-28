@@ -97,21 +97,9 @@ export default {
           '0%, 100%': { transform: 'scale(1)', opacity: '0.6' },
           '50%': { transform: 'scale(1.2)', opacity: '1' },
         },
-        'molten-cracks': {
-          '0%': { backgroundPosition: '0 0' },
-          '100%': { backgroundPosition: '64px 32px' },
-        },
-        'background-pan': {
-          '0%': { backgroundPosition: '0% center' },
-          '100%': { backgroundPosition: '-200% center' },
-        },
         'progress-fluid': {
           '0%': { backgroundPosition: '200% center' },
           '100%': { backgroundPosition: '-200% center' },
-        },
-        'blue-glow': {
-          '0%, 100%': { 'box-shadow': '0 0 10px #3b82f6' },
-          '50%': { 'box-shadow': '0 0 25px #3b82f6' },
         },
         'supercharged-border': {
             '0%, 100%': { 'background-position': '0% 50%' },
@@ -123,10 +111,7 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-core': 'pulse-core 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'pulse-glow': 'pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'molten-cracks': 'molten-cracks 15s linear infinite',
-        'background-pan': 'background-pan 10s linear infinite',
         'progress-fluid': 'progress-fluid 3s linear infinite',
-        'blue-glow': 'blue-glow 2s ease-in-out infinite',
         'supercharged-border': 'supercharged-border 4s ease infinite',
       },
     },

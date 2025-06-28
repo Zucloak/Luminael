@@ -310,7 +310,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   return (
     <div className="relative w-full max-w-3xl mx-auto">
       {isHellBound && (
-        <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-red-500 to-orange-500 opacity-60 blur-2xl animate-background-pan bg-[length:200%_auto]" />
+        <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-red-500 to-orange-500 opacity-60" />
       )}
       <Card className={cn(
         "w-full relative animate-in fade-in-50 duration-500",
@@ -346,7 +346,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                 ) : isApiKeyMissing && (
                   <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                    <span className="flex-1">Please set your Gemini API key in the header to enable file uploads. The key icon is glowing to help you find it!</span>
+                    <span className="flex-1">Please set your Gemini API key in the header to enable file uploads. An indicator will appear on the key icon.</span>
                   </div>
                 )}
                 <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing || isApiKeyMissing || apiKeyLoading} />
