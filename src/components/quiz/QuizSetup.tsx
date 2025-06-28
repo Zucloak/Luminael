@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
-import { FileText, BrainCircuit, Sparkles, Wand2, Loader2 } from "lucide-react";
+import { FileText, Sparkles, Wand2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import * as pdfjsLib from 'pdfjs-dist';
 import Tesseract from 'tesseract.js';
 import { useApiKey } from "@/hooks/use-api-key";
+import { PulsingCore } from "@/components/common/PulsingCore";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -283,8 +284,8 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
       <CardHeader className="text-center">
-        <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit mb-4">
-          <BrainCircuit className="h-10 w-10 text-primary" />
+        <div className="mx-auto w-fit mb-4 flex items-center justify-center">
+          <PulsingCore className="h-16 w-16" />
         </div>
         <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
         <CardDescription className="text-lg">
