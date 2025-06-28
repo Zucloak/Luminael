@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -303,7 +302,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             </div>
           </div>
           <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
-          <CardDescription className="text-lg">
+          <CardDescription>
             Upload your materials (.txt, .pdf, .md, .png, .jpg) and the AI will create a custom quiz.
           </CardDescription>
         </CardHeader>
