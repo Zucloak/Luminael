@@ -155,7 +155,7 @@ export default function Home() {
           </div>
         );
       case 'quiz':
-        return quiz && <QuizInterface quiz={quiz} timer={timer} onSubmit={handleQuizSubmit} onExit={handleRestart} />;
+        return quiz && <QuizInterface quiz={quiz} timer={timer} onSubmit={handleQuizSubmit} onExit={handleRestart} isHellBound={isHellBound} />;
       case 'results':
         return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={handleRestart} onRetake={handleRetake} user={user} />;
       case 'setup':

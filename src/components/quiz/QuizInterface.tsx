@@ -21,15 +21,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { cn } from '@/lib/utils';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
   timer: number;
   onSubmit: (answers: Record<number, string>) => void;
   onExit: () => void;
+  isHellBound?: boolean;
 }
 
-export function QuizInterface({ quiz, timer, onSubmit, onExit }: QuizInterfaceProps) {
+export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = false }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(timer);
@@ -101,7 +103,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit }: QuizInterfacePr
                     Exit
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className={cn(isHellBound && "hell-bound text-foreground")}>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure you want to exit?</AlertDialogTitle>
                     <AlertDialogDescription>

@@ -85,16 +85,15 @@ const generateHellBoundQuizFlow = ai.defineFlow(
 
       Your task is to generate a quiz with {{numQuestions}} questions based on the following content. The questions should be a mix of multiple-choice and open-ended problem-solving questions, designed to catch someone who has only skimmed the material and reward those with a deep, precise understanding. The questions should be randomly drawn from all topics found in the content.
 
-      IMPORTANT: For any mathematical content, you must use proper LaTeX syntax.
-      - Wrap all inline mathematical expressions with single dollar signs (e.g., $E=mc^2$).
-      - Wrap all block-level equations with double dollar signs (e.g., $$ \int_a^b f(x) \\,dx $$).
-      - Use LaTeX commands for all mathematical symbols. For example:
-        - Use \`\\int\` for integrals, not "int".
-        - Use \`\\frac{a}{b}\` for fractions, not "a/b".
-        - Use \`\\sqrt{x}\` for square roots.
-        - Use \`\\sum\` for summations.
-        - Use \`\\lim\` for limits.
-      - Ensure that all special characters within LaTeX are correctly escaped if necessary.
+      CRITICAL: All mathematical content must be rendered using correct LaTeX syntax, and all backslashes must be properly escaped for JSON output.
+      - Inline math uses single dollar signs: $...$
+      - Block math uses double dollar signs: $$...$$
+      - A backslash must be escaped with another backslash within the JSON string. For example, to generate the fraction \\frac{a}{b}, you must write "\\\\frac{a}{b}" in the JSON string value.
+      - Examples:
+        - For an integral, write: "$$ \\\\int_a^b f(x) dx $$"
+        - For a fraction, write: "$\\\\frac{a}{b}$"
+        - For a square root, write: "$\\\\sqrt{x}$"
+        - For "less than or equal to", write: "$\\\\leq$"
 
       {{#if existingQuestions}}
       IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
