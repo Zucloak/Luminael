@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { User } from 'lucide-react';
+import { User, Home } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,8 +32,13 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
           {loading ? (
             <Skeleton className="h-10 w-24 rounded-md" />
           ) : user ? (
-            <span className="font-semibold text-sm hidden md:inline">Welcome, {user.name}</span>
+            <span className="font-semibold text-sm hidden md:inline text-foreground">Welcome, {user.name}</span>
           ) : null}
+          <Link href="/" passHref>
+            <Button variant="outline" size="icon" aria-label="Home">
+              <Home className="h-5 w-5" />
+            </Button>
+          </Link>
           <ApiKeyDialog isHellBound={isHellBound} />
           <Link href="/profile" passHref>
             <Button variant="outline" size="icon" aria-label="User Profile">
