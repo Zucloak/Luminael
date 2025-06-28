@@ -45,25 +45,36 @@ interface LoadingQuotesProps {
 
 export function LoadingQuotes({ className }: LoadingQuotesProps) {
   const [quote, setQuote] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     // Set initial quote
-    setQuote(hellBoundQuotes[Math.floor(Math.random() * hellBoundQuotes.length)]);
+    const randomQuote = hellBoundQuotes[Math.floor(Math.random() * hellBoundQuotes.length)];
+    setQuote(randomQuote);
 
     const intervalId = setInterval(() => {
-      setQuote(hellBoundQuotes[Math.floor(Math.random() * hellBoundQuotes.length)]);
+      const newRandomQuote = hellBoundQuotes[Math.floor(Math.random() * hellBoundQuotes.length)];
+      setQuote(newRandomQuote);
     }, 4000); // Change quote every 4 seconds
 
     return () => clearInterval(intervalId);
   }, []);
 
-  if (!quote) return null;
+  // To prevent hydration mismatch, we render a placeholder on the server
+  // and on the initial client render. The actual content is rendered only
+  // after the component has mounted on the client.
+  if (!isClient) {
+    return <div className="h-10" />; // Placeholder to prevent layout shift
+  }
 
   return (
     <div className="h-10 flex items-center justify-center">
+      {quote && (
         <p key={quote} className={cn("text-muted-foreground italic text-center animate-in fade-in-500", className)}>
-        &ldquo;{quote}&rdquo;
+          &ldquo;{quote}&rdquo;
         </p>
+      )}
     </div>
   );
 }
