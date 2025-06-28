@@ -113,6 +113,10 @@ export default {
           '0%, 100%': { 'box-shadow': '0 0 10px #3b82f6' },
           '50%': { 'box-shadow': '0 0 25px #3b82f6' },
         },
+        'supercharged-border': {
+            '0%, 100%': { 'background-position': '0% 50%' },
+            '50%': { 'background-position': '100% 50%' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -123,6 +127,7 @@ export default {
         'background-pan': 'background-pan 10s linear infinite',
         'progress-fluid': 'progress-fluid 3s linear infinite',
         'blue-glow': 'blue-glow 2s ease-in-out infinite',
+        'supercharged-border': 'supercharged-border 4s ease infinite',
       },
     },
   },

@@ -38,6 +38,8 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
     });
   };
 
+  const isSupercharged = apiKey && !loading;
+
   return (
     <Dialog onOpenChange={(open) => {
       if (!open) {
@@ -45,17 +47,35 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
       }
     }}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="API Key Settings"
-          className={cn(
-            isHellBound && "text-foreground",
-            !apiKey && !loading && "animate-blue-glow"
-          )}
-        >
-          <KeyRound className="h-5 w-5" />
-        </Button>
+        {isSupercharged ? (
+          <button className={cn(
+            "relative inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+            "h-10 w-10 p-[2px] overflow-hidden bg-transparent"
+          )}>
+            <div className={cn(
+                "absolute inset-0 -z-10",
+                isHellBound
+                    ? "bg-gradient-to-r from-amber-400 via-red-500 to-yellow-500"
+                    : "bg-gradient-to-r from-blue-400 via-purple-500 to-cyan-400",
+                "animate-supercharged-border bg-[length:400%_400%]"
+            )} />
+            <div className="flex h-full w-full items-center justify-center rounded-sm bg-background text-foreground hover:bg-accent hover:text-accent-foreground">
+                <KeyRound className="h-5 w-5" />
+            </div>
+          </button>
+        ) : (
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="API Key Settings"
+            className={cn(
+              isHellBound && "text-foreground",
+              !apiKey && !loading && "animate-blue-glow"
+            )}
+          >
+            <KeyRound className="h-5 w-5" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className={cn("sm:max-w-[425px]", isHellBound && "hell-bound text-foreground")}>
         <DialogHeader>
