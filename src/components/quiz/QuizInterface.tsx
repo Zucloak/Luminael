@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Quiz } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Timer } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,15 +13,43 @@ import { MarkdownRenderer } from '../common/MarkdownRenderer';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
+  timer: number;
   onSubmit: (answers: Record<number, string>) => void;
 }
 
-export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
+export function QuizInterface({ quiz, timer, onSubmit }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [timeLeft, setTimeLeft] = useState(timer);
+
   const totalQuestions = quiz.questions.length;
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+
+  useEffect(() => {
+    if (timer <= 0) return;
+
+    setTimeLeft(timer); // Reset timer for new question
+
+    const intervalId = setInterval(() => {
+      setTimeLeft(prevTime => {
+        if (prevTime <= 1) {
+          clearInterval(intervalId);
+          // Time's up, move to next question or submit
+          if (currentQuestionIndex < totalQuestions - 1) {
+            setCurrentQuestionIndex(currentQuestionIndex + 1);
+          } else {
+            onSubmit(answers);
+          }
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+
+    // Cleanup interval on component unmount or when question changes
+    return () => clearInterval(intervalId);
+  }, [currentQuestionIndex, timer, totalQuestions, answers, onSubmit]);
 
   const handleAnswerChange = (value: string) => {
     setAnswers({
@@ -45,8 +73,16 @@ export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
       <CardHeader>
-        <CardDescription>Question {currentQuestionIndex + 1} of {totalQuestions}</CardDescription>
-        <CardTitle className="font-headline text-2xl md:text-3xl leading-tight">
+        <div className="flex justify-between items-center">
+            <CardDescription>Question {currentQuestionIndex + 1} of {totalQuestions}</CardDescription>
+            {timer > 0 && (
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground rounded-full bg-muted px-3 py-1">
+                    <Timer className="h-4 w-4" />
+                    <span>{timeLeft}s left</span>
+                </div>
+            )}
+        </div>
+        <CardTitle className="font-headline text-2xl md:text-3xl leading-tight pt-2">
           <MarkdownRenderer>{currentQuestion.question}</MarkdownRenderer>
         </CardTitle>
       </CardHeader>
@@ -91,7 +127,7 @@ export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
               Next <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={() => onSubmit(answers)}>
+            <Button onClick={() => onSubmit(answers)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <CheckCircle className="mr-2 h-4 w-4" /> Submit Quiz
             </Button>
           )}

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
-import { FileText, Sparkles, Loader2, AlertTriangle } from "lucide-react";
+import { FileText, Sparkles, Loader2, AlertTriangle, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -81,6 +81,10 @@ const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must be at least 1 question.").max(100, "Maximum 100 questions."),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
   questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
+  timerPerQuestion: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.coerce.number().int().nonnegative("Timer must be a positive number.").optional()
+  )
 });
 
 type QuizSetupValues = z.infer<typeof quizSetupSchema>;
@@ -106,6 +110,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
       numQuestions: 10,
       difficulty: "Medium",
       questionFormat: "multipleChoice",
+      timerPerQuestion: undefined
     },
   });
 
@@ -358,47 +363,73 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
               <div className="space-y-2">
                 <Label className="text-lg font-semibold">2. Configure Your Quiz</Label>
                 <div className="p-4 border rounded-md space-y-4 bg-background/50">
-                  <FormField
-                    control={form.control}
-                    name="numQuestions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Questions</FormLabel>
-                        <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="numQuestions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Questions</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <FormControl>
+                              <Input
+                                type="number"
+                                {...field}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (Number(value) > 100) {
+                                        field.onChange(100);
+                                    } else if (Number(value) < 1 && value !== '') {
+                                        field.onChange(1);
+                                    }
+                                    else {
+                                        field.onChange(value);
+                                    }
+                                }}
+                                max="100"
+                                disabled={isProcessing || isApiKeyMissing}
+                              />
+                            </FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                form.setValue('numQuestions', 100, { shouldValidate: true });
+                              }}
+                              disabled={isProcessing || isApiKeyMissing}
+                            >
+                              Max
+                            </Button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="timerPerQuestion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1.5">
+                            <Timer className="h-4 w-4" />
+                            Timer per Question (sec)
+                          </FormLabel>
                           <FormControl>
                             <Input
                               type="number"
+                              placeholder="Optional: e.g. 30"
                               {...field}
-                              onChange={(e) => {
-                                  const value = e.target.value;
-                                  if (Number(value) > 100) {
-                                      field.onChange(100);
-                                  } else if (Number(value) < 1 && value !== '') {
-                                      field.onChange(1);
-                                  }
-                                  else {
-                                      field.onChange(value);
-                                  }
-                              }}
-                              max="100"
+                              onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                              value={field.value ?? ""}
+                              min="0"
                               disabled={isProcessing || isApiKeyMissing}
                             />
                           </FormControl>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              form.setValue('numQuestions', 100, { shouldValidate: true });
-                            }}
-                            disabled={isProcessing || isApiKeyMissing}
-                          >
-                            Max
-                          </Button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <div className="flex items-center space-x-4 p-4 bg-destructive/10 rounded-md border border-destructive/20">
                     <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
                     <div className="flex-1 space-y-1">

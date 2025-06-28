@@ -25,6 +25,7 @@ export default function Home() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+  const [timer, setTimer] = useState<number>(0);
   const { isHellBound, setIsHellBound } = useTheme();
   const { toast } = useToast();
   const { user } = useUser();
@@ -42,7 +43,8 @@ export default function Home() {
 
     const BATCH_SIZE = 5;
     const totalQuestions = values.numQuestions;
-
+    
+    setTimer(values.timerPerQuestion || 0);
     setView('generating');
     setGenerationProgress({ current: 0, total: totalQuestions });
 
@@ -110,6 +112,7 @@ export default function Home() {
   const handleRestart = () => {
     setQuiz(null);
     setUserAnswers({});
+    setTimer(0);
     setView('setup');
   };
 
@@ -151,7 +154,7 @@ export default function Home() {
           </div>
         );
       case 'quiz':
-        return quiz && <QuizInterface quiz={quiz} onSubmit={handleQuizSubmit} />;
+        return quiz && <QuizInterface quiz={quiz} timer={timer} onSubmit={handleQuizSubmit} />;
       case 'results':
         return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={handleRestart} onRetake={handleRetake} user={user} />;
       case 'setup':
