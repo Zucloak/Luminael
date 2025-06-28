@@ -142,7 +142,11 @@ export default function Home() {
             <PulsingCore className="h-24 w-24 mx-auto" />
             <h2 className="text-2xl font-headline font-bold">Generating your masterpiece...</h2>
             <p className="text-muted-foreground">The AI is working hard. This might take a moment, especially for large quizzes.</p>
-            <Progress value={progressPercentage} className="w-full" />
+            <Progress 
+              value={progressPercentage} 
+              className="w-full"
+              indicatorClassName="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-[length:200%_200%] animate-progress-fluid"
+            />
             <p className="text-sm font-medium">Generated {generationProgress.current} of {generationProgress.total} questions</p>
           </div>
         );
