@@ -4,7 +4,7 @@ import type { Quiz, UserProfile, Question } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Check, X, Award, RotateCw, Pencil } from 'lucide-react';
+import { Check, X, Award, RotateCw, Pencil, Sparkles } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
@@ -13,12 +13,13 @@ interface QuizResultsProps {
   quiz: Quiz;
   answers: Record<number, string>;
   onRestart: () => void;
+  onRetake: () => void;
   user: UserProfile | null;
 }
 
 type Result = (Question & { userAnswer: string; isCorrect: boolean | null });
 
-export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps) {
+export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizResultsProps) {
   const { score, total, results, percentage } = useMemo(() => {
     let correctCount = 0;
     const multipleChoiceQuestions = quiz.questions.filter(q => q.questionType === 'multipleChoice');
@@ -129,9 +130,12 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
             </AccordionItem>
           ))}
         </Accordion>
-        <div className="text-center mt-8">
+        <div className="text-center mt-8 flex flex-wrap justify-center gap-4">
+          <Button onClick={onRetake} size="lg" variant="outline">
+            <RotateCw className="mr-2 h-4 w-4" /> Retake Quiz
+          </Button>
           <Button onClick={onRestart} size="lg">
-            <RotateCw className="mr-2 h-4 w-4" /> Try Another Quiz
+            <Sparkles className="mr-2 h-4 w-4" /> Create New Quiz
           </Button>
         </div>
       </CardContent>

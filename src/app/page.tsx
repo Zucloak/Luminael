@@ -113,6 +113,11 @@ export default function Home() {
     setView('setup');
   };
 
+  const handleRetake = () => {
+    setUserAnswers({});
+    setView('quiz');
+  };
+
   const renderContent = () => {
     switch (view) {
       case 'generating':
@@ -144,7 +149,7 @@ export default function Home() {
       case 'quiz':
         return quiz && <QuizInterface quiz={quiz} onSubmit={handleQuizSubmit} />;
       case 'results':
-        return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={handleRestart} user={user} />;
+        return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={handleRestart} onRetake={handleRetake} user={user} />;
       case 'setup':
       default:
         return <QuizSetup onQuizStart={(fileContent, values) => handleQuizStart(fileContent, values)} isGenerating={view === 'generating'} isHellBound={isHellBound} onHellBoundToggle={setIsHellBound} />;
