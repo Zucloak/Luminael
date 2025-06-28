@@ -35,17 +35,17 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
           ) : user ? (
             <span className={cn(
               "font-semibold text-sm hidden md:inline",
-              isHellBound ? "text-accent-foreground" : "text-foreground"
+              isHellBound ? "text-accent" : "text-foreground"
             )}>Welcome, {user.name}</span>
           ) : null}
           <Link href="/" passHref>
-            <Button variant="outline" size="icon" aria-label="Home" className={cn(isHellBound && "text-foreground")}>
+            <Button variant="outline" size="icon" aria-label="Home" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
               <Home className="h-5 w-5" />
             </Button>
           </Link>
           <ApiKeyDialog isHellBound={isHellBound} />
           <Link href="/profile" passHref>
-            <Button variant="outline" size="icon" aria-label="User Profile" className={cn(isHellBound && "text-foreground")}>
+            <Button variant="outline" size="icon" aria-label="User Profile" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
               <User className="h-5 w-5" />
             </Button>
           </Link>

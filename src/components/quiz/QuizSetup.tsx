@@ -338,9 +338,34 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Number of Questions</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} disabled={isProcessing}/>
-                      </FormControl>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (Number(value) > 100) {
+                                    field.onChange(100);
+                                } else {
+                                    field.onChange(value);
+                                }
+                            }}
+                            max="100"
+                            disabled={isProcessing}
+                          />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            form.setValue('numQuestions', 100, { shouldValidate: true });
+                          }}
+                          disabled={isProcessing}
+                        >
+                          Max
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
