@@ -4,10 +4,11 @@ import type { Quiz, UserProfile, Question } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Check, X, Award, RotateCw, Pencil, Sparkles } from 'lucide-react';
-import { useMemo } from 'react';
+import { Check, X, Award, RotateCw, Pencil, Sparkles, BrainCircuit, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
+import { useApiKey } from '@/hooks/use-api-key';
 
 interface QuizResultsProps {
   quiz: Quiz;
@@ -17,25 +18,110 @@ interface QuizResultsProps {
   user: UserProfile | null;
 }
 
-type Result = (Question & { userAnswer: string; isCorrect: boolean | null });
+type ValidationStatus = 'Correct' | 'Partially Correct' | 'Incorrect' | null;
+
+interface ValidationResult {
+  status: ValidationStatus;
+  explanation: string;
+}
+
+type Result = (Question & { 
+  userAnswer: string; 
+  isCorrect: boolean | null;
+  validation?: ValidationResult;
+  isValidating?: boolean;
+});
 
 export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizResultsProps) {
-  const { score, total, results, percentage } = useMemo(() => {
-    let correctCount = 0;
-    const multipleChoiceQuestions = quiz.questions.filter(q => q.questionType === 'multipleChoice');
-    const totalMultipleChoice = multipleChoiceQuestions.length;
-
-    const detailedResults: Result[] = quiz.questions.map((q, index) => {
+  const { apiKey } = useApiKey();
+  const [detailedResults, setDetailedResults] = useState<Result[]>([]);
+  
+  useEffect(() => {
+    const initialResults: Result[] = quiz.questions.map((q, index) => {
       const userAnswer = answers[index] || 'No answer';
       if (q.questionType === 'multipleChoice') {
-        const correctAnswer = q.answer;
-        const isCorrect = userAnswer === correctAnswer;
-        if (isCorrect) {
-          correctCount++;
-        }
-        return { ...q, userAnswer, isCorrect };
+        const isCorrect = userAnswer === q.answer;
+        return { ...q, userAnswer, isCorrect, isValidating: false };
       }
-      return { ...q, userAnswer, isCorrect: null };
+      return { ...q, userAnswer, isCorrect: null, isValidating: true };
+    });
+    setDetailedResults(initialResults);
+  }, [quiz, answers]);
+
+  useEffect(() => {
+    const validateAnswers = async () => {
+      if (!apiKey) {
+        setDetailedResults(prevResults =>
+          prevResults.map(r =>
+            r.questionType === 'openEnded' && r.isValidating
+              ? { ...r, isValidating: false, validation: { status: 'Incorrect', explanation: 'An API key is required for AI validation.' } }
+              : r
+          )
+        );
+        return;
+      }
+      
+      for (const [index, result] of detailedResults.entries()) {
+        if (result.questionType === 'openEnded' && result.isValidating) {
+          try {
+            const res = await fetch('/api/validate-answer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                question: result.question,
+                userAnswer: result.userAnswer,
+                correctAnswer: result.answer,
+                apiKey,
+              }),
+            });
+            if (!res.ok) {
+              const errorData = await res.json();
+              throw new Error(errorData.details || errorData.error || `Validation failed with status ${res.status}`);
+            }
+            const validationResult: ValidationResult = await res.json();
+            
+            setDetailedResults(prevResults => {
+              const newResults = [...prevResults];
+              newResults[index] = {
+                ...newResults[index],
+                isValidating: false,
+                validation: validationResult,
+              };
+              return newResults;
+            });
+          } catch (error) {
+            console.error("Validation error for question:", result.question, error);
+            const message = error instanceof Error ? error.message : 'An error occurred during AI validation.';
+            setDetailedResults(prevResults => {
+              const newResults = [...prevResults];
+              newResults[index] = {
+                ...newResults[index],
+                isValidating: false,
+                validation: { status: 'Incorrect', explanation: message },
+              };
+              return newResults;
+            });
+          }
+        }
+      }
+    };
+
+    if (detailedResults.some(r => r.isValidating)) {
+      validateAnswers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailedResults, apiKey]);
+
+
+  const { score, total, percentage } = useMemo(() => {
+    let correctCount = 0;
+    const multipleChoiceQuestions = detailedResults.filter(q => q.questionType === 'multipleChoice');
+    const totalMultipleChoice = multipleChoiceQuestions.length;
+
+    multipleChoiceQuestions.forEach(r => {
+        if(r.isCorrect) {
+            correctCount++;
+        }
     });
     
     const calculatedPercentage = totalMultipleChoice > 0 ? Math.round((correctCount / totalMultipleChoice) * 100) : 0;
@@ -43,10 +129,9 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
     return {
       score: correctCount,
       total: totalMultipleChoice,
-      results: detailedResults,
       percentage: calculatedPercentage,
     };
-  }, [quiz, answers]);
+  }, [detailedResults]);
 
   const getResultMessage = (percentage: number) => {
     if (total <= 0) return "Quiz Reviewed";
@@ -76,13 +161,29 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
       <CardContent>
         <h3 className="text-xl font-headline mb-4 text-center">Review Your Answers</h3>
         <Accordion type="single" collapsible className="w-full">
-          {results.map((result, index) => (
+          {detailedResults.map((result, index) => (
             <AccordionItem value={`item-${index}`} key={index}>
-              <AccordionTrigger className={cn("font-semibold text-left", result.questionType === 'multipleChoice' && (result.isCorrect ? 'text-green-600' : 'text-destructive'))}>
+              <AccordionTrigger className={cn(
+                "font-semibold text-left",
+                result.questionType === 'multipleChoice' && (result.isCorrect ? 'text-green-600' : 'text-destructive'),
+                result.questionType === 'openEnded' && !result.isValidating && result.validation && (
+                    result.validation.status === 'Correct' ? 'text-green-600' :
+                    result.validation.status === 'Partially Correct' ? 'text-yellow-600' :
+                    'text-destructive'
+                )
+              )}>
                 <div className="flex items-start gap-3 text-left">
                   {result.questionType === 'multipleChoice'
                     ? (result.isCorrect ? <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" /> : <X className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />)
-                    : <Pencil className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+                    : result.isValidating 
+                      ? <BrainCircuit className="h-5 w-5 text-primary flex-shrink-0 mt-1 animate-pulse" />
+                      : result.validation?.status === 'Correct'
+                        ? <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                        : result.validation?.status === 'Partially Correct'
+                          ? <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-1" />
+                          : result.validation?.status === 'Incorrect'
+                            ? <XCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />
+                            : <Pencil className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
                   }
                   <span className="flex-1">Question {index + 1}: <MarkdownRenderer>{result.question}</MarkdownRenderer></span>
                 </div>
@@ -119,6 +220,34 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
                     <div>
                       <h4 className="font-semibold mb-2 text-muted-foreground">Your Answer:</h4>
                       <div className="p-3 rounded-md border bg-muted/50"><MarkdownRenderer>{result.userAnswer}</MarkdownRenderer></div>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold mb-2 text-primary">AI Validation:</h4>
+                        {result.isValidating ? (
+                            <div className="p-3 rounded-md border border-dashed flex items-center gap-3 animate-pulse">
+                                <BrainCircuit className="h-5 w-5 text-primary" />
+                                <span className="text-muted-foreground font-medium">Validating your answer with AI...</span>
+                            </div>
+                        ) : result.validation ? (
+                            <div className={cn(
+                                "p-3 rounded-md border space-y-2",
+                                result.validation.status === 'Correct' && "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700",
+                                result.validation.status === 'Partially Correct' && "bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700",
+                                result.validation.status === 'Incorrect' && "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700",
+                            )}>
+                                <div className="flex items-center gap-2 font-bold">
+                                    {result.validation.status === 'Correct' && <CheckCircle className="h-5 w-5 text-green-600" />}
+                                    {result.validation.status === 'Partially Correct' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
+                                    {result.validation.status === 'Incorrect' && <XCircle className="h-5 w-5 text-destructive" />}
+                                    <span className={cn(
+                                        result.validation.status === 'Correct' && "text-green-700 dark:text-green-300",
+                                        result.validation.status === 'Partially Correct' && "text-yellow-700 dark:text-yellow-300",
+                                        result.validation.status === 'Incorrect' && "text-destructive",
+                                    )}>{result.validation.status}</span>
+                                </div>
+                                <div className="text-sm text-foreground/80 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
+                            </div>
+                        ) : null}
                     </div>
                     <div>
                       <h4 className="font-semibold mb-2 text-green-600">Suggested Solution:</h4>
