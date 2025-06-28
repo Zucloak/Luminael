@@ -39,13 +39,13 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
             )}>Welcome, {user.name}</span>
           ) : null}
           <Link href="/" passHref>
-            <Button variant="outline" size="icon" aria-label="Home">
+            <Button variant="outline" size="icon" aria-label="Home" className={cn(isHellBound && "text-foreground")}>
               <Home className="h-5 w-5" />
             </Button>
           </Link>
           <ApiKeyDialog isHellBound={isHellBound} />
           <Link href="/profile" passHref>
-            <Button variant="outline" size="icon" aria-label="User Profile">
+            <Button variant="outline" size="icon" aria-label="User Profile" className={cn(isHellBound && "text-foreground")}>
               <User className="h-5 w-5" />
             </Button>
           </Link>

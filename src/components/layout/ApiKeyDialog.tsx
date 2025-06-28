@@ -35,7 +35,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="API Key Settings">
+        <Button variant="outline" size="icon" aria-label="API Key Settings" className={cn(isHellBound && "text-foreground")}>
           <KeyRound className="h-5 w-5" />
         </Button>
       </DialogTrigger>
