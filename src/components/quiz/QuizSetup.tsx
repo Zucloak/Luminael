@@ -287,11 +287,11 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
       <CardHeader className="text-center">
-        <div className="mx-auto w-fit mb-4 flex items-center justify-center">
-          <div className={cn("transition-opacity duration-500", !isHellBound ? "opacity-100" : "opacity-0 absolute")}>
+        <div className="mx-auto mb-4 relative h-16 w-16 flex items-center justify-center">
+          <div className={cn("absolute inset-0 transition-opacity duration-500", isHellBound ? "opacity-0" : "opacity-100")}>
             <PulsingCore className="h-16 w-16" />
           </div>
-          <div className={cn("transition-opacity duration-500", isHellBound ? "opacity-100" : "opacity-0")}>
+          <div className={cn("absolute inset-0 transition-opacity duration-500", isHellBound ? "opacity-100" : "opacity-0")}>
             <PulsingCoreRed className="h-16 w-16" />
           </div>
         </div>
