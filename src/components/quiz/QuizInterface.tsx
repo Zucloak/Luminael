@@ -91,7 +91,7 @@ export function QuizInterface({ quiz, onSubmit }: QuizInterfaceProps) {
               Next <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={() => onSubmit(answers)} className="bg-accent hover:bg-accent/90">
+            <Button onClick={() => onSubmit(answers)}>
               <CheckCircle className="mr-2 h-4 w-4" /> Submit Quiz
             </Button>
           )}
