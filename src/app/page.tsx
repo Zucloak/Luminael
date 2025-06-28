@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -17,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/use-theme';
 import { PulsingCore } from '@/components/common/PulsingCore';
 import { PulsingCoreRed } from '@/components/common/PulsingCoreRed';
+import { LoadingQuotes } from '@/components/quiz/LoadingQuotes';
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
@@ -122,7 +122,7 @@ export default function Home() {
             <div className="text-center space-y-6 w-full max-w-2xl">
               <PulsingCoreRed className="h-24 w-24 mx-auto" />
               <h2 className="text-3xl font-headline font-bold text-destructive animate-pulse">Forging Your Trial...</h2>
-              <p className="text-muted-foreground italic">Patience. The inferno requires fuel.</p>
+              <LoadingQuotes />
               <Progress value={progressPercentage} className="w-full" />
               <p className="text-sm font-medium">Conjured {generationProgress.current} of {generationProgress.total} torments</p>
             </div>

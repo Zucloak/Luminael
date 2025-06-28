@@ -16,12 +16,12 @@ export function PulsingCoreRed({ className, ...props }: React.SVGProps<SVGSVGEle
     >
       <defs>
         <radialGradient id={gradientId}>
-          <stop offset="0%" stopColor="#f87171" />
-          <stop offset="100%" stopColor="#dc2626" />
+          <stop offset="0%" stopColor="#facc15" />
+          <stop offset="100%" stopColor="#f97316" />
         </radialGradient>
         <radialGradient id={glowId}>
-          <stop offset="50%" stopColor="#ef4444" stopOpacity="0.7" />
-          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+          <stop offset="50%" stopColor="#fb923c" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#fb923c" stopOpacity="0" />
         </radialGradient>
       </defs>
       
