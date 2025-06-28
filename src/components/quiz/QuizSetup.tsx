@@ -424,7 +424,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                       name="numQuestions"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Number of Questions</FormLabel>
+                          <FormLabel className="h-6">Number of Questions</FormLabel>
                           <div className="relative">
                             <FormControl>
                               <Input
@@ -467,7 +467,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                         <FormItem>
                           <FormLabel
                             htmlFor="timer-input"
-                            className="flex items-center gap-1.5"
+                            className="flex items-center gap-1.5 h-6"
                           >
                             <Timer className="h-4 w-4" />
                             Timer per Question (sec)
@@ -616,5 +616,3 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     </div>
   );
 }
-
-    
