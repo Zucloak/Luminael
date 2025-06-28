@@ -39,7 +39,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
           <KeyRound className="h-5 w-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className={cn("sm:max-w-[425px]", isHellBound && "hell-bound")}>
+      <DialogContent className={cn("sm:max-w-[425px]", isHellBound && "hell-bound text-foreground")}>
         <DialogHeader>
           <DialogTitle>Gemini API Key</DialogTitle>
           <DialogDescription>
