@@ -67,11 +67,17 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             size="icon"
             aria-label="API Key Settings"
             className={cn(
-              isHellBound && "text-foreground",
-              !apiKey && !loading
+              "relative",
+              isHellBound && "text-foreground"
             )}
           >
             <KeyRound className="h-5 w-5" />
+            {!apiKey && !loading && (
+              <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive"></span>
+              </span>
+            )}
           </Button>
         )}
       </DialogTrigger>
