@@ -1,67 +1,17 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { useUser } from "@/hooks/use-user";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
-
-const profileFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters.").max(50, "Name is too long."),
-  studentId: z.string().min(1, "Student ID is required.").max(20, "Student ID is too long."),
-});
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+import { BrainCircuit, Sparkles, ShieldCheck, Mail } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
-  const { user, saveUser, clearUser, loading: userLoading } = useUser();
-  const { toast } = useToast();
-  const router = useRouter();
   const { isHellBound, loading: themeLoading } = useTheme();
 
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues: { name: "", studentId: "" },
-    values: user || { name: "", studentId: "" },
-  });
-
-  function onSubmit(data: ProfileFormValues) {
-    saveUser(data);
-    toast({
-      title: "Profile Saved",
-      description: "Your information has been updated successfully.",
-    });
-    router.push('/');
-  }
-
-  function handleLogout() {
-    clearUser();
-    toast({
-      title: "Logged Out",
-      description: "Your profile information has been cleared.",
-    });
-    form.reset({ name: "", studentId: "" });
-  }
-
-  const loading = userLoading || themeLoading;
+  const loading = themeLoading;
 
   if (loading) {
     return (
@@ -74,15 +24,8 @@ export default function ProfilePage() {
               <Skeleton className="h-4 w-4/5" />
             </CardHeader>
             <CardContent className="space-y-8 pt-6">
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-16 w-full" />
             </CardContent>
           </Card>
         </main>
@@ -108,52 +51,42 @@ export default function ProfilePage() {
               isHellBound ? "bg-card/80 backdrop-blur-sm border-0" : "shadow-lg"
             )}>
             <CardHeader>
-              <CardTitle className="font-headline text-3xl">User Profile</CardTitle>
+              <CardTitle className="font-headline text-3xl">Welcome, Pioneer!</CardTitle>
               <CardDescription>
-                Manage your personal information. This is stored only in your browser.
+                You're at the forefront of AI-powered learning. Here's how we're building a smarter, more efficient tool for you.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Jane Doe" {...field} />
-                        </FormControl>
-                        <FormDescription>Your full name.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="studentId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Student ID</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. 12345678" {...field} />
-                        </FormControl>
-                        <FormDescription>Your student identification number.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex justify-between items-center">
-                    <Button type="submit">Save Profile</Button>
-                    {user && (
-                      <Button type="button" variant="ghost" onClick={handleLogout}>
-                        Clear Profile Data
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </Form>
+            <CardContent className="space-y-6">
+                <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> The Luminael Method</h3>
+                    <div className="p-4 rounded-md border bg-muted/30 space-y-4">
+                        <div className="flex items-start gap-3">
+                            <BrainCircuit className="h-5 w-5 mt-1 flex-shrink-0 text-muted-foreground" />
+                            <div>
+                                <h4 className="font-semibold">Intelligent Content Processing</h4>
+                                <p className="text-sm text-muted-foreground">Luminael uses a hybrid approach to understand your files. We use powerful on-device processing first, only calling on advanced AI when necessary. This saves your Gemini API quota while delivering fast, accurate results.</p>
+                            </div>
+                        </div>
+                         <div className="flex items-start gap-3">
+                            <ShieldCheck className="h-5 w-5 mt-1 flex-shrink-0 text-muted-foreground" />
+                            <div>
+                                <h4 className="font-semibold">Your Privacy is Paramount</h4>
+                                <p className="text-sm text-muted-foreground">Your API key is stored exclusively in your browser—never on our servers. Uploaded study materials are processed for your quiz and then immediately discarded. Your data is yours alone.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2"><Mail className="h-5 w-5 text-primary" /> You are a Beta Tester</h3>
+                     <div className="p-4 rounded-md border bg-muted/30">
+                        <p className="text-sm text-muted-foreground">Your feedback is critical as we build the future of personalized education. If you find a bug or have a suggestion, please let us know.</p>
+                        <p className="text-sm mt-2">
+                           Send bug reports to: <a href="mailto:synpps@gmail.com" className="font-semibold underline hover:text-primary">synpps@gmail.com</a>
+                        </p>
+                     </div>
+                </div>
+
             </CardContent>
           </Card>
         </div>
