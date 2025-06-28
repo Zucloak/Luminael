@@ -6,6 +6,7 @@ import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiKeyDialog } from './ApiKeyDialog';
+import { cn } from '@/lib/utils';
 
 export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
   const { user, loading } = useUser();
@@ -32,7 +33,10 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
           {loading ? (
             <Skeleton className="h-10 w-24 rounded-md" />
           ) : user ? (
-            <span className="font-semibold text-sm hidden md:inline text-foreground">Welcome, {user.name}</span>
+            <span className={cn(
+              "font-semibold text-sm hidden md:inline",
+              isHellBound ? "text-accent-foreground" : "text-foreground"
+            )}>Welcome, {user.name}</span>
           ) : null}
           <Link href="/" passHref>
             <Button variant="outline" size="icon" aria-label="Home">
