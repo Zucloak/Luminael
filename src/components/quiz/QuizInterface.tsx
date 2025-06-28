@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Quiz } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, CheckCircle, Timer, LogOut } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Timer, LogOut, ImageUp, Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +22,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
+import { useApiKey } from '@/hooks/use-api-key';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -35,6 +38,10 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(timer);
+  const { apiKey } = useApiKey();
+  const { toast } = useToast();
+  const [isOcrRunning, setIsOcrRunning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalQuestions = quiz.questions.length;
   const currentQuestion = quiz.questions[currentQuestionIndex];
@@ -72,6 +79,78 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
     });
   };
 
+  const handleImageAnswerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please set your Gemini API key to use OCR.",
+      });
+      return;
+    }
+    
+    setIsOcrRunning(true);
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const imageDataUrl = reader.result as string;
+      try {
+        const response = await fetch('/api/extract-text-from-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageDataUrl, apiKey }),
+        });
+
+        const responseText = await response.text();
+        if (!response.ok) {
+           let errorDetails = "Failed to extract text.";
+          try {
+            const errorJson = JSON.parse(responseText);
+            errorDetails = errorJson.details || errorJson.error || errorDetails;
+          } catch (e) {
+            // responseText is not JSON, use it as is
+            errorDetails = responseText;
+          }
+          throw new Error(errorDetails);
+        }
+
+        const { extractedText } = JSON.parse(responseText);
+        handleAnswerChange(extractedText);
+        toast({
+            title: "Text Extracted",
+            description: "The text from your image has been added to the answer box. You can now edit it if needed."
+        });
+      } catch (error) {
+        console.error("OCR Error:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred during OCR.";
+        toast({
+          variant: "destructive",
+          title: "OCR Failed",
+          description: message,
+        });
+      } finally {
+        setIsOcrRunning(false);
+        // Reset file input so user can upload the same file again
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+      }
+    };
+    reader.onerror = (error) => {
+      console.error("File Reader Error:", error);
+      toast({
+        variant: "destructive",
+        title: "File Error",
+        description: "Could not read the selected image file.",
+      });
+      setIsOcrRunning(false);
+    };
+  };
+
   const goToNext = () => {
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -80,7 +159,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
 
   const goToPrevious = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
@@ -140,10 +219,34 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
           </RadioGroup>
         ) : (
           <div className="space-y-2">
-            <Label htmlFor="open-ended-answer">Your Answer</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="open-ended-answer">Your Answer</Label>
+              <Input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleImageAnswerUpload}
+                  disabled={isOcrRunning}
+              />
+              <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isOcrRunning}
+              >
+                  {isOcrRunning ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                      <ImageUp className="mr-2 h-4 w-4" />
+                  )}
+                  Upload Image
+              </Button>
+            </div>
             <Textarea
               id="open-ended-answer"
-              placeholder="Type your solution here..."
+              placeholder="Type your solution here, or upload an image of your work."
               value={answers[currentQuestionIndex] || ''}
               onChange={(e) => handleAnswerChange(e.target.value)}
               rows={8}
