@@ -20,6 +20,8 @@ import { Header } from "@/components/layout/Header";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters.").max(50, "Name is too long."),
@@ -29,9 +31,10 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfilePage() {
-  const { user, saveUser, clearUser, loading } = useUser();
+  const { user, saveUser, clearUser, loading: userLoading } = useUser();
   const { toast } = useToast();
   const router = useRouter();
+  const { isHellBound, loading: themeLoading } = useTheme();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -57,17 +60,19 @@ export default function ProfilePage() {
     form.reset({ name: "", studentId: "" });
   }
 
+  const loading = userLoading || themeLoading;
+
   if (loading) {
     return (
-      <>
-        <Header />
-        <main className="container mx-auto p-4 md:p-8">
-          <Card className="max-w-2xl mx-auto">
+      <div className={cn("theme-container min-h-screen flex flex-col bg-background transition-colors duration-1000", isHellBound && "hell-bound")}>
+        <Header isHellBound={isHellBound} />
+        <main className="container mx-auto p-4 md:p-8 flex items-center justify-center">
+          <Card className="max-w-2xl mx-auto w-full">
             <CardHeader>
-              <CardTitle>User Profile</CardTitle>
-              <CardDescription>Manage your personal information.</CardDescription>
+              <Skeleton className="h-8 w-3/5" />
+              <Skeleton className="h-4 w-4/5" />
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-8 pt-6">
               <div className="space-y-2">
                 <Skeleton className="h-5 w-20" />
                 <Skeleton className="h-10 w-full" />
@@ -80,65 +85,83 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </main>
-      </>
+        <footer className="text-center p-4 text-sm text-muted-foreground">
+            <p>
+            Made by <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer: Mr. K. M.
+            </p>
+        </footer>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <div className={cn("theme-container min-h-screen flex flex-col bg-background transition-colors duration-1000", isHellBound && "hell-bound")}>
+      <Header isHellBound={isHellBound} />
       <main className="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
-        <Card className="w-full max-w-2xl shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">User Profile</CardTitle>
-            <CardDescription>
-              Manage your personal information. This is stored only in your browser.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Jane Doe" {...field} />
-                      </FormControl>
-                      <FormDescription>Your full name.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="studentId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Student ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 12345678" {...field} />
-                      </FormControl>
-                      <FormDescription>Your student identification number.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-between items-center">
-                  <Button type="submit">Save Profile</Button>
-                  {user && (
-                    <Button type="button" variant="ghost" onClick={handleLogout}>
-                      Clear Profile Data
-                    </Button>
-                  )}
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+        <div className="relative w-full max-w-2xl mx-auto">
+          {isHellBound && (
+            <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-red-500 to-orange-500 opacity-60 blur-2xl animate-background-pan bg-[length:200%_auto]" />
+          )}
+          <Card className={cn(
+              "w-full relative",
+              isHellBound ? "bg-card/80 backdrop-blur-sm border-0" : "shadow-lg"
+            )}>
+            <CardHeader>
+              <CardTitle className="font-headline text-3xl">User Profile</CardTitle>
+              <CardDescription>
+                Manage your personal information. This is stored only in your browser.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Jane Doe" {...field} />
+                        </FormControl>
+                        <FormDescription>Your full name.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="studentId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Student ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 12345678" {...field} />
+                        </FormControl>
+                        <FormDescription>Your student identification number.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-between items-center">
+                    <Button type="submit">Save Profile</Button>
+                    {user && (
+                      <Button type="button" variant="ghost" onClick={handleLogout}>
+                        Clear Profile Data
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
       </main>
+      <footer className="text-center p-4 text-sm text-muted-foreground">
+        <p>
+          Made by <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer: Mr. K. M.
+        </p>
+      </footer>
     </div>
   );
 }

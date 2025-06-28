@@ -13,6 +13,7 @@ import { useUser } from '@/hooks/use-user';
 import { Progress } from '@/components/ui/progress';
 import { useApiKey } from '@/hooks/use-api-key';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/hooks/use-theme';
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
@@ -21,7 +22,7 @@ export default function Home() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
-  const [isHellBound, setIsHellBound] = useState(false);
+  const { isHellBound, setIsHellBound } = useTheme();
   const { toast } = useToast();
   const { user } = useUser();
   const { apiKey } = useApiKey();
