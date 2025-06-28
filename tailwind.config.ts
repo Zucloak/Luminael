@@ -105,6 +105,10 @@ export default {
           '0%': { backgroundPosition: '0% center' },
           '100%': { backgroundPosition: '-200% center' },
         },
+        'progress-fluid': {
+          '0%': { backgroundPosition: '200% center' },
+          '100%': { backgroundPosition: '-200% center' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -113,6 +117,7 @@ export default {
         'pulse-glow': 'pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'molten-cracks': 'molten-cracks 15s linear infinite',
         'background-pan': 'background-pan 10s linear infinite',
+        'progress-fluid': 'progress-fluid 3s linear infinite',
       },
     },
   },

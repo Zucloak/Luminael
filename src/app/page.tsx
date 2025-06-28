@@ -123,7 +123,11 @@ export default function Home() {
               <PulsingCoreRed className="h-24 w-24 mx-auto" />
               <h2 className="text-3xl font-headline font-bold text-destructive animate-pulse">Forging Your Trial...</h2>
               <LoadingQuotes />
-              <Progress value={progressPercentage} className="w-full" />
+              <Progress 
+                value={progressPercentage} 
+                className="w-full bg-destructive/30"
+                indicatorClassName="bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 bg-[length:200%_200%] animate-progress-fluid"
+              />
               <p className="text-sm font-medium">Conjured {generationProgress.current} of {generationProgress.total} torments</p>
             </div>
           );
