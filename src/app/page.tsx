@@ -11,6 +11,7 @@ import { QuizInterface } from '@/components/quiz/QuizInterface';
 import { QuizResults } from '@/components/quiz/QuizResults';
 import { useUser } from '@/hooks/use-user';
 import { Progress } from '@/components/ui/progress';
+import { useApiKey } from '@/hooks/use-api-key';
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
@@ -21,8 +22,18 @@ export default function Home() {
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
   const { user } = useUser();
+  const { apiKey } = useApiKey();
 
   const handleQuizStart = async (fileContent: string, values: any, isHellBound: boolean) => {
+    if (!apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please set your Gemini API key in the header before generating a quiz.",
+      });
+      return;
+    }
+
     const BATCH_SIZE = 5;
     const totalQuestions = values.numQuestions;
 
@@ -39,7 +50,7 @@ export default function Home() {
 
         const generatorFn = isHellBound ? generateHellBoundQuiz : generateQuiz;
         
-        let params: GenerateQuizInput | GenerateHellBoundQuizInput;
+        let params: Omit<GenerateQuizInput, 'apiKey'> | Omit<GenerateHellBoundQuizInput, 'apiKey'>;
         if (isHellBound) {
           params = {
             fileContent,
@@ -56,7 +67,7 @@ export default function Home() {
           };
         }
         
-        const result = await (generatorFn as any)(params);
+        const result = await (generatorFn as any)({...params, apiKey});
 
         if (!result || !result.quiz || result.quiz.questions.length === 0) {
           throw new Error(`AI failed to generate questions in batch starting at ${i}.`);
@@ -125,7 +136,9 @@ export default function Home() {
         {renderContent()}
       </main>
       <footer className="text-center p-4 text-sm text-muted-foreground">
-        <p>Powered by Firebase and Genkit. Have fun studying!</p>
+        <p>
+          Made by <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer: Mr. K. M.
+        </p>
       </footer>
     </div>
   );

@@ -3,13 +3,13 @@ import { extractTextFromImage } from '@/ai/flows/extractTextFromImage';
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageDataUrl } = await req.json();
+    const { imageDataUrl, apiKey } = await req.json();
 
     if (!imageDataUrl) {
       return NextResponse.json({ error: 'imageDataUrl is required' }, { status: 400 });
     }
 
-    const extractedText = await extractTextFromImage({ imageDataUrl });
+    const extractedText = await extractTextFromImage({ imageDataUrl, apiKey });
 
     return NextResponse.json({ extractedText });
   } catch (error) {

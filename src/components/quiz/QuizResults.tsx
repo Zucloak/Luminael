@@ -77,10 +77,10 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
         <Accordion type="single" collapsible className="w-full">
           {results.map((result, index) => (
             <AccordionItem value={`item-${index}`} key={index}>
-              <AccordionTrigger className={cn("font-semibold text-left", result.questionType === 'multipleChoice' && (result.isCorrect ? 'text-accent' : 'text-destructive'))}>
+              <AccordionTrigger className={cn("font-semibold text-left", result.questionType === 'multipleChoice' && (result.isCorrect ? 'text-green-600' : 'text-destructive'))}>
                 <div className="flex items-start gap-3 text-left">
                   {result.questionType === 'multipleChoice'
-                    ? (result.isCorrect ? <Check className="h-5 w-5 text-accent flex-shrink-0 mt-1" /> : <X className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />)
+                    ? (result.isCorrect ? <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" /> : <X className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />)
                     : <Pencil className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
                   }
                   <span className="flex-1">Question {index + 1}: <MarkdownRenderer>{result.question}</MarkdownRenderer></span>
@@ -103,12 +103,12 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
                           )}
                         >
                           <p className="font-medium flex items-start gap-2">
-                            {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-accent flex-shrink-0 mt-1"/> : <X className="h-4 w-4 text-destructive flex-shrink-0 mt-1"/>)}
-                            {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-accent flex-shrink-0 mt-1"/>}
+                            {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/> : <X className="h-4 w-4 text-destructive flex-shrink-0 mt-1"/>)}
+                            {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/>}
                             <span className="flex-1"><MarkdownRenderer>{option}</MarkdownRenderer></span>
                           </p>
                           {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-destructive pl-6">Your answer</p>}
-                          {isCorrectAnswer && <p className="text-xs text-accent pl-6">Correct answer</p>}
+                          {isCorrectAnswer && <p className="text-xs text-green-600 pl-6">Correct answer</p>}
                         </div>
                       )
                     })}
@@ -120,8 +120,8 @@ export function QuizResults({ quiz, answers, onRestart, user }: QuizResultsProps
                       <div className="p-3 rounded-md border bg-muted/50"><MarkdownRenderer>{result.userAnswer}</MarkdownRenderer></div>
                     </div>
                     <div>
-                      <h4 className="font-semibold mb-2 text-accent">Suggested Solution:</h4>
-                      <div className="p-3 rounded-md border border-accent/50 bg-accent/10"><MarkdownRenderer>{result.answer}</MarkdownRenderer></div>
+                      <h4 className="font-semibold mb-2 text-green-600">Suggested Solution:</h4>
+                      <div className="p-3 rounded-md border border-green-600/50 bg-green-500/10"><MarkdownRenderer>{result.answer}</MarkdownRenderer></div>
                     </div>
                   </div>
                 )}

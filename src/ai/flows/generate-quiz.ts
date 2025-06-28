@@ -10,13 +10,16 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import {genkit} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const GenerateQuizInputSchema = z.object({
   content: z.string().describe('The content to generate the quiz from, potentially covering multiple subjects.'),
   numQuestions: z.number().describe('The number of questions to generate for this batch.'),
   difficulty: z.string().describe('The difficulty level of the quiz.'),
   questionFormat: z.enum(['multipleChoice', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
-  existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.')
+  existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
+  apiKey: z.string().optional().describe('Optional Gemini API key.'),
 });
 export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 
@@ -46,58 +49,66 @@ export async function generateQuiz(input: GenerateQuizInput): Promise<GenerateQu
   return generateQuizFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateQuizPrompt',
-  input: {schema: GenerateQuizInputSchema},
-  output: {schema: GenerateQuizOutputSchema},
-  prompt: `You are a helpful AI assistant that generates quizzes from diverse study materials. The user has uploaded content that may cover multiple different subjects.
-
-  Your task is to create a quiz with {{numQuestions}} questions that are randomly selected and mixed from all the topics found in the provided content. This will help the user review material from across their subjects in a single session.
-  The quiz should be at a '{{difficulty}}' difficulty level.
-
-  IMPORTANT: For any mathematical formulas or equations, you must wrap them in LaTeX syntax. Use single dollar signs for inline math (e.g., $x^2 + y^2 = r^2$) and double dollar signs for block-level equations (e.g., $$ \int_a^b f(x) \,dx $$).
-
-  {{#if existingQuestions}}
-  IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
-  {{#each existingQuestions}}
-  - {{{this}}}
-  {{/each}}
-  {{/if}}
-
-  The questions should be generated in the following format: '{{questionFormat}}'.
-  - If 'multipleChoice', generate only multiple-choice questions.
-  - If 'openEnded', generate only open-ended or problem-solving questions.
-  - If 'mixed', generate a combination of both multiple-choice and open-ended questions.
-
-  For 'multipleChoice' questions, provide exactly 4 options and a correct answer.
-  For 'openEnded' questions, provide a detailed correct solution as the answer.
-
-  Ensure the output is a JSON object that strictly follows the provided schema.
-
-  Content:
-  """
-  {{{content}}}
-  """`,
-});
-
 const generateQuizFlow = ai.defineFlow(
   {
     name: 'generateQuizFlow',
     inputSchema: GenerateQuizInputSchema,
     outputSchema: GenerateQuizOutputSchema,
   },
-  async input => {
+  async (input) => {
+    const {apiKey, ...promptInput} = input;
+    const runner = apiKey
+      ? genkit({
+          plugins: [googleAI({apiKey})],
+          model: 'googleai/gemini-2.0-flash',
+        })
+      : ai;
+
     const CONTENT_THRESHOLD = 20000;
     let processedContent = input.content;
 
     if (processedContent.length > CONTENT_THRESHOLD) {
-      const { text } = await ai.generate({
+      const { text } = await runner.generate({
         prompt: `Summarize the following text concisely, retaining all key facts, names, dates, and concepts. The goal is to reduce length while preserving the core information needed for a quiz. Only provide the summary, with no extra commentary or introduction. \n\nTEXT: ${processedContent}`,
       });
       processedContent = text;
     }
+    
+    const prompt = runner.definePrompt({
+      name: 'generateQuizPrompt',
+      input: {schema: GenerateQuizInputSchema},
+      output: {schema: GenerateQuizOutputSchema},
+      prompt: `You are a helpful AI assistant that generates quizzes from diverse study materials. The user has uploaded content that may cover multiple different subjects.
 
-    const {output} = await prompt({...input, content: processedContent});
+      Your task is to create a quiz with {{numQuestions}} questions that are randomly selected and mixed from all the topics found in the provided content. This will help the user review material from across their subjects in a single session.
+      The quiz should be at a '{{difficulty}}' difficulty level.
+
+      IMPORTANT: For any mathematical formulas or equations, you must wrap them in LaTeX syntax. Use single dollar signs for inline math (e.g., $x^2 + y^2 = r^2$) and double dollar signs for block-level equations (e.g., $$ \int_a^b f(x) \,dx $$).
+
+      {{#if existingQuestions}}
+      IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
+      {{#each existingQuestions}}
+      - {{{this}}}
+      {{/each}}
+      {{/if}}
+
+      The questions should be generated in the following format: '{{questionFormat}}'.
+      - If 'multipleChoice', generate only multiple-choice questions.
+      - If 'openEnded', generate only open-ended or problem-solving questions.
+      - If 'mixed', generate a combination of both multiple-choice and open-ended questions.
+
+      For 'multipleChoice' questions, provide exactly 4 options and a correct answer.
+      For 'openEnded' questions, provide a detailed correct solution as the answer.
+
+      Ensure the output is a JSON object that strictly follows the provided schema.
+
+      Content:
+      """
+      {{{content}}}
+      """`,
+    });
+
+    const {output} = await prompt({...promptInput, content: processedContent});
     return output!;
   }
 );

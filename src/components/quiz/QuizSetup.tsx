@@ -22,14 +22,15 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as pdfjsLib from 'pdfjs-dist';
 import Tesseract from 'tesseract.js';
+import { useApiKey } from "@/hooks/use-api-key";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
-async function ocrImage(imageDataUrl: string): Promise<string> {
+async function ocrImage(imageDataUrl: string, apiKey: string | null): Promise<string> {
   const response = await fetch('/api/extract-text-from-image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageDataUrl }),
+    body: JSON.stringify({ imageDataUrl, apiKey }),
   });
 
   const responseText = await response.text();
@@ -46,7 +47,7 @@ async function ocrImage(imageDataUrl: string): Promise<string> {
     } catch (e) {
       errorDetails = responseText.substring(0, 200) + '...';
     }
-    throw new Error(`Failed to extract text from image: ${errorDetails}`);
+    throw new Error(`${errorDetails}`);
   }
 
   try {
@@ -93,6 +94,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
   const [isHellBound, setIsHellBound] = useState<boolean>(false);
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, message: "" });
+  const { apiKey } = useApiKey();
 
   const form = useForm<QuizSetupValues>({
     resolver: zodResolver(quizSetupSchema),
@@ -141,7 +143,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
 
                 // Step 3: If local OCR fails or is poor, fall back to AI OCR.
                 setParseProgress({ current: 1, total: 1, message: "Local OCR insufficient. Falling back to AI OCR..." });
-                const aiText = await ocrImage(imageDataUrl);
+                const aiText = await ocrImage(imageDataUrl, apiKey);
                 resolve({ content: aiText, aiCallMade: true });
 
             } catch (err) {
@@ -188,7 +190,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
 
                 if (!isCanvasBlank(canvas)) {
                    try {
-                    const ocrText = await ocrImage(canvas.toDataURL());
+                    const ocrText = await ocrImage(canvas.toDataURL(), apiKey);
                     pageText = ocrText;
                    } catch (err) {
                      const message = err instanceof Error ? err.message : String(err);
@@ -227,6 +229,11 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    if (!apiKey) {
+      setFileError("Please set your Gemini API key in the header before uploading files.");
+      return;
+    }
+
     setCombinedContent("");
     setFileError("");
     setIsParsingFile(true);
@@ -235,11 +242,15 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     setFileNames(fileList.map(f => f.name));
 
     let allContents: string[] = [];
+    let anyAiCallMadeInBatch = false;
 
     try {
       for (const [index, file] of fileList.entries()) {
         const { content, aiCallMade } = await processFile(file);
         allContents.push(content);
+        if (aiCallMade) {
+          anyAiCallMadeInBatch = true;
+        }
         
         if (aiCallMade && index < fileList.length - 1) {
             setParseProgress(prev => ({ ...prev, message: `Waiting to avoid rate limits...` }));
