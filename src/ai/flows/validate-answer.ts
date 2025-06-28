@@ -11,6 +11,13 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import fs from 'fs';
+import path from 'path';
+
+const promptTemplate = fs.readFileSync(
+  path.join(process.cwd(), 'src', 'ai', 'prompts', 'validateAnswer.prompt'),
+  'utf8'
+);
 
 export const ValidateAnswerInputSchema = z.object({
   question: z.string().describe("The original quiz question."),
@@ -56,32 +63,7 @@ const validateAnswerFlow = ai.defineFlow(
         name: 'validateAnswerPrompt',
         input: {schema: ValidateAnswerPromptInputSchema},
         output: {schema: ValidateAnswerOutputSchema},
-        prompt: `You are an expert quiz validator. Your task is to assess a user's answer to a question against the provided correct answer.
-
-        Question:
-        """
-        {{{question}}}
-        """
-
-        Correct Answer:
-        """
-        {{{correctAnswer}}}
-        """
-
-        User's Answer:
-        """
-        {{{userAnswer}}}
-        """
-
-        Based on the comparison, determine if the user's answer is "Correct", "Partially Correct", or "Incorrect".
-
-        - "Correct": The user's answer fully aligns with the correct answer, demonstrating a complete understanding.
-        - "Partially Correct": The user's answer contains some correct elements but is missing key information, contains inaccuracies, or shows a partial misunderstanding.
-        - "Incorrect": The user's answer is fundamentally wrong or misses the main point entirely.
-
-        Provide a brief, constructive explanation for your assessment to help the user learn. The explanation should be concise and directly address why the answer was graded as it was. For example, if partially correct, explain what was right and what was missing.
-
-        Ensure your output is a JSON object that strictly follows the provided schema.`,
+        prompt: promptTemplate,
     });
 
     const {output} = await prompt(promptInput);

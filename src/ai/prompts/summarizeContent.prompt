@@ -1,0 +1,3 @@
+Summarize the following text concisely, retaining all key facts, names, dates, and concepts. The goal is to reduce length while preserving the core information needed for a quiz. Only provide the summary, with no extra commentary or introduction.
+
+TEXT: {{{content}}}

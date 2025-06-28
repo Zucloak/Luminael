@@ -4,6 +4,13 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import fs from 'fs';
+import path from 'path';
+
+const extractTextPrompt = fs.readFileSync(
+  path.join(process.cwd(), 'src', 'ai', 'prompts', 'extractTextFromImage.prompt'),
+  'utf8'
+);
 
 const ExtractTextFromImageInputSchema = z.object({
   imageDataUrl: z
@@ -35,7 +42,7 @@ const extractTextFromImageFlow = ai.defineFlow(
     
     const { text } = await runner.generate({
       prompt: [
-        { text: 'Extract all text from the image. Provide only the extracted text, formatted as paragraphs. Do not include any commentary or preamble like "Here is the extracted text:".' },
+        { text: extractTextPrompt },
         { media: { url: imageDataUrl } },
       ],
     });

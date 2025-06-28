@@ -11,6 +11,18 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import fs from 'fs';
+import path from 'path';
+
+const quizPromptTemplate = fs.readFileSync(
+  path.join(process.cwd(), 'src', 'ai', 'prompts', 'generateHellBoundQuiz.prompt'),
+  'utf8'
+);
+
+const summarizePromptTemplate = fs.readFileSync(
+  path.join(process.cwd(), 'src', 'ai', 'prompts', 'summarizeContentHellBound.prompt'),
+  'utf8'
+);
 
 const GenerateHellBoundQuizInputSchema = z.object({
   fileContent: z
@@ -72,7 +84,7 @@ const generateHellBoundQuizFlow = ai.defineFlow(
 
     if (processedContent.length > CONTENT_THRESHOLD) {
       const { text } = await runner.generate({
-        prompt: `Summarize the following text concisely, retaining all key facts, names, dates, concepts, and especially any subtle or tricky details. The goal is to reduce length while preserving the core information needed for a very difficult quiz. Only provide the summary, with no extra commentary or introduction. \n\nTEXT: ${processedContent}`,
+        prompt: summarizePromptTemplate.replace('{{{fileContent}}}', processedContent),
       });
       processedContent = text;
     }
@@ -81,38 +93,7 @@ const generateHellBoundQuizFlow = ai.defineFlow(
       name: 'generateHellBoundQuizPrompt',
       input: {schema: GenerateHellBoundQuizPromptInputSchema},
       output: {schema: GenerateHellBoundQuizOutputSchema},
-      prompt: `You are an AI quiz generator that specializes in creating extremely difficult, tricky, and nuanced quizzes based on provided content which may span multiple subjects.
-
-      Your task is to generate a quiz with {{numQuestions}} questions based on the following content. The questions should be a mix of multiple-choice and open-ended problem-solving questions, designed to catch someone who has only skimmed the material and reward those with a deep, precise understanding. The questions should be randomly drawn from all topics found in the content.
-
-      CRITICAL: All mathematical content must be rendered using correct LaTeX syntax, and all backslashes must be properly escaped for JSON output.
-      - Inline math uses single dollar signs: $...$
-      - Block math uses double dollar signs: $$...$$
-      - A backslash must be escaped with another backslash within the JSON string. For example, to generate the fraction \\frac{a}{b}, you must write "\\\\frac{a}{b}" in the JSON string value.
-      - Examples:
-        - For an integral, write: "$$ \\\\int_a^b f(x) dx $$"
-        - For a fraction, write: "$\\\\frac{a}{b}$"
-        - For a square root, write: "$\\\\sqrt{x}$"
-        - For "less than or equal to", write: "$\\\\leq$"
-        - For the greek letter theta, write: "$\\\\theta$"
-
-      {{#if existingQuestions}}
-      IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
-      {{#each existingQuestions}}
-      - {{{this}}}
-      {{/each}}
-      {{/if}}
-
-      - For multiple-choice questions, provide exactly 4 options. One of these options must be the correct answer. Use subtle details, exceptions, and "all of the above" / "none of the above" style questions.
-      - For open-ended questions, pose a complex problem that requires synthesis of information from the text, and provide a detailed, expert-level solution as the answer.
-
-      Ensure the output is a JSON object that strictly follows the provided schema.
-
-      Content:
-      """
-      {{{fileContent}}}
-      """
-      `,
+      prompt: quizPromptTemplate,
     });
 
 

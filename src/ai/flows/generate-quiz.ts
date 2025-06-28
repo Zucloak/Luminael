@@ -12,6 +12,19 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import fs from 'fs';
+import path from 'path';
+
+const quizPromptTemplate = fs.readFileSync(
+  path.join(process.cwd(), 'src', 'ai', 'prompts', 'generateQuiz.prompt'),
+  'utf8'
+);
+
+const summarizePromptTemplate = fs.readFileSync(
+  path.join(process.cwd(), 'src', 'ai', 'prompts', 'summarizeContent.prompt'),
+  'utf8'
+);
+
 
 const GenerateQuizInputSchema = z.object({
   content: z.string().describe('The content to generate the quiz from, potentially covering multiple subjects.'),
@@ -72,7 +85,7 @@ const generateQuizFlow = ai.defineFlow(
 
     if (processedContent.length > CONTENT_THRESHOLD) {
       const { text } = await runner.generate({
-        prompt: `Summarize the following text concisely, retaining all key facts, names, dates, and concepts. The goal is to reduce length while preserving the core information needed for a quiz. Only provide the summary, with no extra commentary or introduction. \n\nTEXT: ${processedContent}`,
+        prompt: summarizePromptTemplate.replace('{{{content}}}', processedContent),
       });
       processedContent = text;
     }
@@ -81,43 +94,7 @@ const generateQuizFlow = ai.defineFlow(
       name: 'generateQuizPrompt',
       input: {schema: GenerateQuizPromptInputSchema},
       output: {schema: GenerateQuizOutputSchema},
-      prompt: `You are a helpful AI assistant that generates quizzes from diverse study materials. The user has uploaded content that may cover multiple different subjects.
-
-      Your task is to create a quiz with {{numQuestions}} questions that are randomly selected and mixed from all the topics found in the provided content. This will help the user review material from across their subjects in a single session.
-      The quiz should be at a '{{difficulty}}' difficulty level.
-
-      CRITICAL: All mathematical content must be rendered using correct LaTeX syntax, and all backslashes must be properly escaped for JSON output.
-      - Inline math uses single dollar signs: $...$
-      - Block math uses double dollar signs: $$...$$
-      - A backslash must be escaped with another backslash within the JSON string. For example, to generate the fraction \\frac{a}{b}, you must write "\\\\frac{a}{b}" in the JSON string value.
-      - Examples:
-        - For an integral, write: "$$ \\\\int_a^b f(x) dx $$"
-        - For a fraction, write: "$\\\\frac{a}{b}$"
-        - For a square root, write: "$\\\\sqrt{x}$"
-        - For "less than or equal to", write: "$\\\\leq$"
-        - For the greek letter theta, write: "$\\\\theta$"
-
-      {{#if existingQuestions}}
-      IMPORTANT: Do not generate questions that are the same as or very similar to the following questions that have already been created:
-      {{#each existingQuestions}}
-      - {{{this}}}
-      {{/each}}
-      {{/if}}
-
-      The questions should be generated in the following format: '{{questionFormat}}'.
-      - If 'multipleChoice', generate only multiple-choice questions.
-      - If 'openEnded', generate only open-ended or problem-solving questions.
-      - If 'mixed', generate a combination of both multiple-choice and open-ended questions.
-
-      For 'multipleChoice' questions, provide exactly 4 options and a correct answer.
-      For 'openEnded' questions, provide a detailed correct solution as the answer.
-
-      Ensure the output is a JSON object that strictly follows the provided schema.
-
-      Content:
-      """
-      {{{content}}}
-      """`,
+      prompt: quizPromptTemplate,
     });
 
     const {output} = await prompt({...promptInput, content: processedContent});
