@@ -5,19 +5,31 @@ import type { Quiz } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, CheckCircle, Timer } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Timer, LogOut } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface QuizInterfaceProps {
   quiz: Quiz;
   timer: number;
   onSubmit: (answers: Record<number, string>) => void;
+  onExit: () => void;
 }
 
-export function QuizInterface({ quiz, timer, onSubmit }: QuizInterfaceProps) {
+export function QuizInterface({ quiz, timer, onSubmit, onExit }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(timer);
@@ -75,12 +87,34 @@ export function QuizInterface({ quiz, timer, onSubmit }: QuizInterfaceProps) {
       <CardHeader>
         <div className="flex justify-between items-center">
             <CardDescription>Question {currentQuestionIndex + 1} of {totalQuestions}</CardDescription>
-            {timer > 0 && (
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground rounded-full bg-muted px-3 py-1">
-                    <Timer className="h-4 w-4" />
-                    <span>{timeLeft}s left</span>
-                </div>
-            )}
+            <div className="flex items-center gap-4">
+              {timer > 0 && (
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground rounded-full bg-muted px-3 py-1">
+                      <Timer className="h-4 w-4" />
+                      <span>{timeLeft}s left</span>
+                  </div>
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Exit
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to exit?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      All your progress in this quiz will be lost. You will be returned to the main setup screen.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onExit}>Exit Quiz</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
         </div>
         <CardTitle className="font-headline text-2xl md:text-3xl leading-tight pt-2">
           <MarkdownRenderer>{currentQuestion.question}</MarkdownRenderer>
