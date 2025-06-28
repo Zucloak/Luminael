@@ -105,6 +105,10 @@ export default {
             '0%, 100%': { 'background-position': '0% 50%' },
             '50%': { 'background-position': '100% 50%' },
         },
+        'hell-bound-bg': {
+          '0%, 100%': { backgroundPosition: '50% 0%' },
+          '50%': { backgroundPosition: '50% 100%' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -113,6 +117,7 @@ export default {
         'pulse-glow': 'pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'progress-fluid': 'progress-fluid 3s linear infinite',
         'supercharged-border': 'supercharged-border 4s ease infinite',
+        'hell-bound-bg': 'hell-bound-bg 20s ease-in-out infinite',
       },
     },
   },
