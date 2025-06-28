@@ -37,7 +37,7 @@ const validateAnswerFlow = ai.defineFlow(
     outputSchema: ValidateAnswerOutputSchema,
   },
   async (input) => {
-    const { apiKey } = input;
+    const { apiKey, ...promptInput } = input;
     const runner = apiKey
       ? genkit({
           plugins: [googleAI({apiKey})],
@@ -77,7 +77,7 @@ const validateAnswerFlow = ai.defineFlow(
         Ensure your output is a JSON object that strictly follows the provided schema.`,
     });
 
-    const {output} = await prompt(input);
+    const {output} = await prompt(promptInput);
     return output!;
   }
 );
