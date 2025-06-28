@@ -20,9 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-      </head>
+      <head />
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
         <AppProviders>
           {children}
