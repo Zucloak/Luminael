@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -17,6 +18,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { PulsingCore } from '@/components/common/PulsingCore';
 import { PulsingCoreRed } from '@/components/common/PulsingCoreRed';
 import { LoadingQuotes } from '@/components/quiz/LoadingQuotes';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
@@ -26,10 +29,12 @@ export default function Home() {
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
   const [timer, setTimer] = useState<number>(0);
-  const { isHellBound, setIsHellBound } = useTheme();
+  const { isHellBound, setIsHellBound, loading: themeLoading } = useTheme();
   const { toast } = useToast();
   const { user } = useUser();
-  const { apiKey } = useApiKey();
+  const { apiKey, loading: apiKeyLoading } = useApiKey();
+
+  const isLoading = themeLoading || apiKeyLoading;
 
   const handleQuizStart = async (fileContent: string, values: any) => {
     if (!apiKey) {
@@ -128,6 +133,43 @@ export default function Home() {
   };
 
   const renderContent = () => {
+    if (isLoading && view === 'setup') {
+      return (
+        <Card className="w-full max-w-3xl mx-auto animate-in fade-in-50 duration-500">
+          <CardHeader className="text-center items-center">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <Skeleton className="h-10 w-48 mt-4" />
+            <Skeleton className="h-4 w-64 mt-2" />
+            <Skeleton className="h-4 w-full mt-2" />
+          </CardHeader>
+          <CardContent className="space-y-8 pt-6">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <div className="p-4 border rounded-md space-y-4 bg-background/50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+                <Skeleton className="h-20 w-full" />
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-12 w-full" />
+          </CardFooter>
+        </Card>
+      );
+    }
     switch (view) {
       case 'generating':
         const progressPercentage = generationProgress.total > 0 ? (generationProgress.current / generationProgress.total) * 100 : 0;
