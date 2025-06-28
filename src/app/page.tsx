@@ -15,6 +15,8 @@ import { Progress } from '@/components/ui/progress';
 import { useApiKey } from '@/hooks/use-api-key';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/use-theme';
+import { PulsingCore } from '@/components/common/PulsingCore';
+import { PulsingCoreRed } from '@/components/common/PulsingCoreRed';
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
@@ -115,8 +117,20 @@ export default function Home() {
     switch (view) {
       case 'generating':
         const progressPercentage = generationProgress.total > 0 ? (generationProgress.current / generationProgress.total) * 100 : 0;
+        if (isHellBound) {
+          return (
+            <div className="text-center space-y-6 w-full max-w-2xl">
+              <PulsingCoreRed className="h-24 w-24 mx-auto" />
+              <h2 className="text-3xl font-headline font-bold text-destructive animate-pulse">Forging Your Trial...</h2>
+              <p className="text-muted-foreground italic">Patience. The inferno requires fuel.</p>
+              <Progress value={progressPercentage} className="w-full" />
+              <p className="text-sm font-medium">Conjured {generationProgress.current} of {generationProgress.total} torments</p>
+            </div>
+          );
+        }
         return (
           <div className="text-center space-y-6 w-full max-w-2xl">
+            <PulsingCore className="h-24 w-24 mx-auto" />
             <h2 className="text-2xl font-headline font-bold">Generating your masterpiece...</h2>
             <p className="text-muted-foreground">The AI is working hard. This might take a moment, especially for large quizzes.</p>
             <Progress value={progressPercentage} className="w-full" />
