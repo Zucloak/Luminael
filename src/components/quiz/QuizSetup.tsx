@@ -408,23 +408,45 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                               disabled={isProcessing || isApiKeyMissing}
                             />
                           </FormControl>
-                          <FormMessage />
+                          {isClient && <FormMessage />}
                         </FormItem>
                       )}
                     />
                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                           <Label htmlFor="timer-input" className="flex items-center gap-1.5 text-sm font-medium">
-                              <Timer className="h-4 w-4" />
-                              Timer per Question (sec)
-                          </Label>
+                        <Label htmlFor="timer-input-container" className="flex items-center gap-1.5 text-sm font-medium">
+                          <Timer className="h-4 w-4" />
+                          Timer per Question (sec)
+                        </Label>
+                         <div id="timer-input-container" className="flex items-start gap-2">
+                           <FormField
+                              control={form.control}
+                              name="timerPerQuestion"
+                              render={({ field }) => (
+                                <FormItem className="flex-1">
+                                  <FormControl>
+                                    <Input
+                                      id="timer-input"
+                                      type="number"
+                                      placeholder="e.g. 30"
+                                      {...field}
+                                      onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                                      value={field.value ?? ""}
+                                      min="0"
+                                      disabled={!timerEnabled || isProcessing || isApiKeyMissing}
+                                      className={cn(!timerEnabled && "bg-muted/50")}/>
+                                  </FormControl>
+                                  {isClient && <FormMessage />}
+                                </FormItem>
+                              )}
+                          />
                            <FormField
                               control={form.control}
                               name="timerEnabled"
                               render={({ field }) => (
-                                <FormItem className="flex items-center">
+                                <FormItem>
                                   <FormControl>
                                     <Switch
+                                      className="mt-2"
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
                                       disabled={isProcessing || isApiKeyMissing}
@@ -435,27 +457,6 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                               )}
                           />
                         </div>
-                        <FormField
-                            control={form.control}
-                            name="timerPerQuestion"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input
-                                    id="timer-input"
-                                    type="number"
-                                    placeholder="e.g. 30"
-                                    {...field}
-                                    onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
-                                    value={field.value ?? ""}
-                                    min="0"
-                                    disabled={!timerEnabled || isProcessing || isApiKeyMissing}
-                                    className={cn(!timerEnabled && "bg-muted/50")}/>
-                                </FormControl>
-                                {isClient && <FormMessage />}
-                              </FormItem>
-                            )}
-                        />
                     </div>
                   </div>
                   <div className="flex items-center space-x-4 p-4 bg-destructive/10 rounded-md border border-destructive/20">
@@ -491,7 +492,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 <SelectItem value="mixed">Mixed</SelectItem>
                               </SelectContent>
                             </Select>
-                            <FormMessage />
+                            {isClient && <FormMessage />}
                           </FormItem>
                         )}
                       />
@@ -513,7 +514,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 <SelectItem value="Hard">Hard</SelectItem>
                               </SelectContent>
                             </Select>
-                            <FormMessage />
+                            {isClient && <FormMessage />}
                           </FormItem>
                         )}
                       />
