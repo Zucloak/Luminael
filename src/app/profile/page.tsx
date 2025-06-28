@@ -65,7 +65,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className={cn("theme-container min-h-screen flex flex-col bg-background transition-colors duration-1000", isHellBound && "hell-bound")}>
+      <div className={cn("theme-container min-h-screen flex flex-col transition-colors duration-1000", isHellBound && "hell-bound")}>
         <Header isHellBound={isHellBound} />
         <main className="container mx-auto p-4 md:p-8 flex items-center justify-center">
           <Card className="max-w-2xl mx-auto w-full">
@@ -96,7 +96,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className={cn("theme-container min-h-screen flex flex-col bg-background transition-colors duration-1000", isHellBound && "hell-bound")}>
+    <div className={cn("theme-container min-h-screen flex flex-col transition-colors duration-1000", isHellBound && "hell-bound")}>
       <Header isHellBound={isHellBound} />
       <main className="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
         <div className="relative w-full max-w-2xl mx-auto">
