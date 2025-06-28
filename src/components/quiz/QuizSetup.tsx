@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
-import { FileText, Sparkles, Loader2 } from "lucide-react";
+import { FileText, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,6 +25,7 @@ import { useApiKey } from "@/hooks/use-api-key";
 import { PulsingCore } from "@/components/common/PulsingCore";
 import { PulsingCoreRed } from "../common/PulsingCoreRed";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -97,7 +98,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const [fileError, setFileError] = useState<string>("");
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, message: "" });
-  const { apiKey } = useApiKey();
+  const { apiKey, loading: apiKeyLoading } = useApiKey();
 
   const form = useForm<QuizSetupValues>({
     resolver: zodResolver(quizSetupSchema),
@@ -278,9 +279,14 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
       setFileError("Please upload one or more files and wait for them to be processed.");
       return;
     }
+    if (!apiKey) {
+      setFileError("Please set your Gemini API key before starting the quiz.");
+      return;
+    }
     onQuizStart(combinedContent, values);
   }
 
+  const isApiKeyMissing = !apiKey;
   const isProcessing = isGenerating || isParsingFile;
 
   return (
@@ -317,7 +323,15 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             <CardContent className="space-y-8 pt-6">
               <div className="space-y-2">
                 <Label className="text-lg font-semibold">1. Upload Content</Label>
-                <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing} />
+                {apiKeyLoading ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : isApiKeyMissing && (
+                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <span className="flex-1">Please set your Gemini API key in the header to enable file uploads. The key icon is glowing to help you find it!</span>
+                  </div>
+                )}
+                <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing || isApiKeyMissing || apiKeyLoading} />
                 {isParsingFile && (
                   <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -367,7 +381,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                   }
                               }}
                               max="100"
-                              disabled={isProcessing}
+                              disabled={isProcessing || isApiKeyMissing}
                             />
                           </FormControl>
                           <Button
@@ -376,7 +390,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                             onClick={() => {
                               form.setValue('numQuestions', 100, { shouldValidate: true });
                             }}
-                            disabled={isProcessing}
+                            disabled={isProcessing || isApiKeyMissing}
                           >
                             Max
                           </Button>
@@ -395,7 +409,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                       id="hell-bound-mode"
                       checked={isHellBound}
                       onCheckedChange={onHellBoundToggle}
-                      disabled={isProcessing}
+                      disabled={isProcessing || isApiKeyMissing}
                     />
                   </div>
                   {!isHellBound && (
@@ -406,7 +420,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Question Format</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing || isApiKeyMissing}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select a format" />
@@ -428,7 +442,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Difficulty</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing || isApiKeyMissing}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select a difficulty" />
@@ -450,8 +464,13 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full text-lg py-6" disabled={isProcessing}>
-                {isGenerating ? (
+              <Button type="submit" className="w-full text-lg py-6" disabled={isProcessing || !combinedContent || isApiKeyMissing || apiKeyLoading}>
+                {isApiKeyMissing && !apiKeyLoading ? (
+                  <>
+                    <AlertTriangle className="mr-2 h-5 w-5" />
+                    API Key Required
+                  </>
+                ) : isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Generating...

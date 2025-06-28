@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,9 +20,15 @@ import { KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean }) {
-  const { apiKey, setApiKey } = useApiKey();
+  const { apiKey, setApiKey, loading } = useApiKey();
   const [keyInput, setKeyInput] = useState(apiKey || "");
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (apiKey) {
+      setKeyInput(apiKey);
+    }
+  }, [apiKey]);
 
   const handleSave = () => {
     setApiKey(keyInput);
@@ -33,9 +39,21 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
   };
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={(open) => {
+      if (!open) {
+        setKeyInput(apiKey || "");
+      }
+    }}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="API Key Settings" className={cn(isHellBound && "text-foreground")}>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="API Key Settings"
+          className={cn(
+            isHellBound && "text-foreground",
+            !apiKey && !loading && "animate-blue-glow"
+          )}
+        >
           <KeyRound className="h-5 w-5" />
         </Button>
       </DialogTrigger>

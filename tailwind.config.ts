@@ -109,6 +109,10 @@ export default {
           '0%': { backgroundPosition: '200% center' },
           '100%': { backgroundPosition: '-200% center' },
         },
+        'blue-glow': {
+          '0%, 100%': { 'box-shadow': '0 0 10px #3b82f6' },
+          '50%': { 'box-shadow': '0 0 25px #3b82f6' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -118,6 +122,7 @@ export default {
         'molten-cracks': 'molten-cracks 15s linear infinite',
         'background-pan': 'background-pan 10s linear infinite',
         'progress-fluid': 'progress-fluid 3s linear infinite',
+        'blue-glow': 'blue-glow 2s ease-in-out infinite',
       },
     },
   },
