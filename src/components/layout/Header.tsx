@@ -23,7 +23,7 @@ export function Header() {
             href="https://synappse.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs font-semibold text-[#6A0DAD]"
           >
             BY SYNAPPSE
           </a>
