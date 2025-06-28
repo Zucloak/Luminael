@@ -301,8 +301,14 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
               <PulsingCoreRed className="h-16 w-16" />
             </div>
           </div>
-          <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
-          <CardDescription>
+          <CardTitle className="font-headline text-4xl">Luminael AI</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground italic px-4">
+              {isHellBound 
+                ? "You seek a true trial. Let's forge your knowledge in fire."
+                : "Ignite your potential. Master any subject."
+              }
+          </CardDescription>
+          <CardDescription className="pt-2">
             Upload your materials (.txt, .pdf, .md, .png, .jpg) and the AI will create a custom quiz.
           </CardDescription>
         </CardHeader>
