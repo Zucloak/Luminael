@@ -287,7 +287,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   return (
     <Card className={cn(
       "w-full max-w-3xl mx-auto animate-in fade-in-50 duration-500",
-      isHellBound ? "animate-hell-shadow-pulse" : "shadow-2xl"
+      isHellBound ? "shadow-none animate-hell-shadow-pulse" : "shadow-2xl"
     )}>
       <CardHeader className="text-center">
         <div className="mx-auto mb-4 relative h-16 w-16 flex items-center justify-center">
