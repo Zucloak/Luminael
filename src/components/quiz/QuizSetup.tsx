@@ -1,9 +1,10 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, Sparkles, Loader2, AlertTriangle, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,7 +113,12 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const [fileError, setFileError] = useState<string>("");
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, message: "" });
+  const [isClient, setIsClient] = useState(false);
   const { apiKey, loading: apiKeyLoading } = useApiKey();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<QuizSetupValues>({
     resolver: zodResolver(quizSetupSchema),
@@ -406,24 +412,26 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                         </FormItem>
                       )}
                     />
-                     <FormItem>
-                        <div className="flex items-center justify-between mb-2">
-                          <FormLabel htmlFor="timer-input" className="flex items-center gap-1.5">
+                     <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                           <Label htmlFor="timer-input" className="flex items-center gap-1.5 text-sm font-medium">
                               <Timer className="h-4 w-4" />
                               Timer per Question (sec)
-                          </FormLabel>
-                          <FormField
+                          </Label>
+                           <FormField
                               control={form.control}
                               name="timerEnabled"
                               render={({ field }) => (
-                                <FormControl>
-                                  <Switch
+                                <FormItem className="flex items-center">
+                                  <FormControl>
+                                    <Switch
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
                                       disabled={isProcessing || isApiKeyMissing}
                                       aria-controls="timer-input"
-                                  />
-                                </FormControl>
+                                    />
+                                  </FormControl>
+                                </FormItem>
                               )}
                           />
                         </div>
@@ -431,22 +439,24 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                             control={form.control}
                             name="timerPerQuestion"
                             render={({ field }) => (
-                              <FormControl>
-                                <Input
-                                  id="timer-input"
-                                  type="number"
-                                  placeholder="e.g. 30"
-                                  {...field}
-                                  onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
-                                  value={field.value ?? ""}
-                                  min="0"
-                                  disabled={!timerEnabled || isProcessing || isApiKeyMissing}
-                                  className={cn(!timerEnabled && "bg-muted/50")}/>
-                              </FormControl>
+                              <FormItem>
+                                <FormControl>
+                                  <Input
+                                    id="timer-input"
+                                    type="number"
+                                    placeholder="e.g. 30"
+                                    {...field}
+                                    onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                                    value={field.value ?? ""}
+                                    min="0"
+                                    disabled={!timerEnabled || isProcessing || isApiKeyMissing}
+                                    className={cn(!timerEnabled && "bg-muted/50")}/>
+                                </FormControl>
+                                {isClient && <FormMessage />}
+                              </FormItem>
                             )}
                         />
-                        <FormMessage className="mt-2">{form.formState.errors.timerPerQuestion?.message}</FormMessage>
-                    </FormItem>
+                    </div>
                   </div>
                   <div className="flex items-center space-x-4 p-4 bg-destructive/10 rounded-md border border-destructive/20">
                     <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
