@@ -191,10 +191,10 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             
             let allPagesText: string[] = [];
             let anyAiCallMade = false;
-            setParseProgress({ current: 0, total: pdf.numPages, message: "Reading PDF..." })
+            setParseProgress({ current: 0, total: pdf.numPages, message: "Reading PDF..." });
 
             for (let i = 1; i <= pdf.numPages; i++) {
-              setParseProgress(prev => ({ ...prev, current: i, message: `Processing page ${i} of ${pdf.numPages}` }))
+              setParseProgress(prev => ({ ...prev, current: i, message: `Processing page ${i} of ${pdf.numPages}` }));
               const page = await pdf.getPage(i);
               const textContent = await page.getTextContent();
               let pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
@@ -313,7 +313,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const isApiKeyMissing = !apiKey;
   const isProcessing = isGenerating || isParsingFile;
 
-  if (apiKeyLoading) {
+  if (!isClient) {
     return (
        <Card className="w-full max-w-3xl mx-auto animate-in fade-in-50 duration-500">
           <CardHeader className="text-center items-center">
@@ -348,7 +348,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             <Skeleton className="h-12 w-full" />
           </CardFooter>
         </Card>
-    )
+    );
   }
 
   return (
@@ -456,7 +456,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 Max
                             </Button>
                           </div>
-                          {isClient && <FormMessage />}
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -501,24 +501,22 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                               control={form.control}
                               name="timerEnabled"
                               render={({ field: switchField }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Switch
-                                      checked={switchField.value}
-                                      onCheckedChange={switchField.onChange}
-                                      disabled={
-                                        isProcessing ||
-                                        isApiKeyMissing ||
-                                        apiKeyLoading
-                                      }
-                                      aria-controls="timer-input"
-                                    />
-                                  </FormControl>
-                                </FormItem>
+                                <FormControl>
+                                  <Switch
+                                    checked={switchField.value}
+                                    onCheckedChange={switchField.onChange}
+                                    disabled={
+                                      isProcessing ||
+                                      isApiKeyMissing ||
+                                      apiKeyLoading
+                                    }
+                                    aria-controls="timer-input"
+                                  />
+                                </FormControl>
                               )}
                             />
                           </div>
-                          {isClient && <FormMessage />}
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -556,7 +554,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 <SelectItem value="mixed">Mixed</SelectItem>
                               </SelectContent>
                             </Select>
-                            {isClient && <FormMessage />}
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
@@ -578,7 +576,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                                 <SelectItem value="Hard">Hard</SelectItem>
                               </SelectContent>
                             </Select>
-                            {isClient && <FormMessage />}
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
@@ -618,3 +616,5 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     </div>
   );
 }
+
+    
