@@ -12,6 +12,7 @@ import { QuizResults } from '@/components/quiz/QuizResults';
 import { useUser } from '@/hooks/use-user';
 import { Progress } from '@/components/ui/progress';
 import { useApiKey } from '@/hooks/use-api-key';
+import { cn } from '@/lib/utils';
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
@@ -20,11 +21,12 @@ export default function Home() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+  const [isHellBound, setIsHellBound] = useState(false);
   const { toast } = useToast();
   const { user } = useUser();
   const { apiKey } = useApiKey();
 
-  const handleQuizStart = async (fileContent: string, values: any, isHellBound: boolean) => {
+  const handleQuizStart = async (fileContent: string, values: any) => {
     if (!apiKey) {
       toast({
         variant: "destructive",
@@ -125,12 +127,12 @@ export default function Home() {
         return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={handleRestart} user={user} />;
       case 'setup':
       default:
-        return <QuizSetup onQuizStart={handleQuizStart} isGenerating={view === 'generating'} />;
+        return <QuizSetup onQuizStart={(fileContent, values) => handleQuizStart(fileContent, values)} isGenerating={view === 'generating'} isHellBound={isHellBound} onHellBoundToggle={setIsHellBound} />;
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={cn("min-h-screen flex flex-col bg-background transition-colors duration-1000", isHellBound && "hell-bound")}>
       <Header />
       <main className="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
         {renderContent()}

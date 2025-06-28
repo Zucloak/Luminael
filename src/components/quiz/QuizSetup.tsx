@@ -25,6 +25,7 @@ import Tesseract from 'tesseract.js';
 import { useApiKey } from "@/hooks/use-api-key";
 import { PulsingCore } from "@/components/common/PulsingCore";
 import { PulsingCoreRed } from "../common/PulsingCoreRed";
+import { cn } from "@/lib/utils";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -85,15 +86,16 @@ const quizSetupSchema = z.object({
 type QuizSetupValues = z.infer<typeof quizSetupSchema>;
 
 interface QuizSetupProps {
-  onQuizStart: (fileContent: string, values: QuizSetupValues, isHellBound: boolean) => Promise<void>;
+  onQuizStart: (fileContent: string, values: QuizSetupValues) => Promise<void>;
   isGenerating: boolean;
+  isHellBound: boolean;
+  onHellBoundToggle: (checked: boolean) => void;
 }
 
-export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
+export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundToggle }: QuizSetupProps) {
   const [combinedContent, setCombinedContent] = useState<string>("");
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string>("");
-  const [isHellBound, setIsHellBound] = useState<boolean>(false);
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, message: "" });
   const { apiKey } = useApiKey();
@@ -277,7 +279,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
       setFileError("Please upload one or more files and wait for them to be processed.");
       return;
     }
-    onQuizStart(combinedContent, values, isHellBound);
+    onQuizStart(combinedContent, values);
   }
 
   const isProcessing = isGenerating || isParsingFile;
@@ -286,7 +288,12 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
     <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
       <CardHeader className="text-center">
         <div className="mx-auto w-fit mb-4 flex items-center justify-center">
-          <PulsingCore className="h-16 w-16" />
+          <div className={cn("transition-opacity duration-500", !isHellBound ? "opacity-100" : "opacity-0 absolute")}>
+            <PulsingCore className="h-16 w-16" />
+          </div>
+          <div className={cn("transition-opacity duration-500", isHellBound ? "opacity-100" : "opacity-0")}>
+            <PulsingCoreRed className="h-16 w-16" />
+          </div>
         </div>
         <CardTitle className="font-headline text-4xl">Generate Your Quiz</CardTitle>
         <CardDescription className="text-lg">
@@ -347,7 +354,7 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                   <Switch
                     id="hell-bound-mode"
                     checked={isHellBound}
-                    onCheckedChange={setIsHellBound}
+                    onCheckedChange={onHellBoundToggle}
                     disabled={isProcessing}
                   />
                 </div>

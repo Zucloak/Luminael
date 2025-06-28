@@ -47,6 +47,28 @@
     --input: 240 3.7% 15.9%;
     --ring: 0 0% 98%;
   }
+
+  .hell-bound {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 84.2% 60.2%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 50% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 50% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 84.2% 60.2%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 90% 65%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 70% 25%;
+    --input: 0 70% 20%;
+    --ring: 0 84.2% 60.2%;
+  }
 }
 
 @layer base {
@@ -55,5 +77,10 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .hell-bound {
+    background-color: hsl(var(--background));
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='hsl(var(--destructive)/0.15)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+    animation: molten-cracks 15s linear infinite;
   }
 }
