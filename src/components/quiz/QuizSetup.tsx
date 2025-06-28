@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
-import { FileText, Sparkles, Wand2, Loader2 } from "lucide-react";
+import { FileText, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,6 +24,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import Tesseract from 'tesseract.js';
 import { useApiKey } from "@/hooks/use-api-key";
 import { PulsingCore } from "@/components/common/PulsingCore";
+import { PulsingCoreRed } from "../common/PulsingCoreRed";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -337,8 +338,8 @@ export function QuizSetup({ onQuizStart, isGenerating }: QuizSetupProps) {
                     </FormItem>
                   )}
                 />
-                <div className="flex items-center space-x-2 p-4 bg-destructive/10 rounded-md border border-destructive/20">
-                  <Wand2 className="h-8 w-8 text-destructive" />
+                <div className="flex items-center space-x-4 p-4 bg-destructive/10 rounded-md border border-destructive/20">
+                  <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
                   <div className="flex-1 space-y-1">
                     <Label htmlFor="hell-bound-mode" className="text-destructive font-bold">HELL BOUND MODE</Label>
                     <p className="text-xs text-destructive/80">Generate an extremely difficult quiz to truly test your knowledge.</p>
