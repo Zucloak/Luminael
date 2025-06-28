@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Header } from "@/components/layout/Header";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters.").max(50, "Name is too long."),
