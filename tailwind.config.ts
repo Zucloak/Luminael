@@ -101,6 +101,10 @@ export default {
           '0%': { backgroundPosition: '0 0' },
           '100%': { backgroundPosition: '64px 32px' },
         },
+        'hell-shadow-pulse': {
+          '0%, 100%': { 'box-shadow': '0 0 15px 0px hsl(var(--accent-foreground) / 0.4)' },
+          '50%': { 'box-shadow': '0 0 25px 5px hsl(var(--accent-foreground) / 0.6)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -108,6 +112,7 @@ export default {
         'pulse-core': 'pulse-core 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'pulse-glow': 'pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'molten-cracks': 'molten-cracks 15s linear infinite',
+        'hell-shadow-pulse': 'hell-shadow-pulse 4s ease-in-out infinite',
       },
     },
   },

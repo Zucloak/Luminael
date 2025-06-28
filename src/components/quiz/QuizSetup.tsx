@@ -285,7 +285,10 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const isProcessing = isGenerating || isParsingFile;
 
   return (
-    <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
+    <Card className={cn(
+      "w-full max-w-3xl mx-auto animate-in fade-in-50 duration-500",
+      isHellBound ? "animate-hell-shadow-pulse" : "shadow-2xl"
+    )}>
       <CardHeader className="text-center">
         <div className="mx-auto mb-4 relative h-16 w-16 flex items-center justify-center">
           <div className={cn("absolute inset-0 transition-opacity duration-500", isHellBound ? "opacity-0" : "opacity-100")}>
