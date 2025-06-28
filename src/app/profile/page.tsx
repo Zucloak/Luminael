@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -87,7 +88,7 @@ export default function ProfilePage() {
         </main>
         <footer className="text-center p-4 text-sm text-muted-foreground">
             <p>
-            Made by <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer: Mr. K. M.
+            A Prototype from <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer/CEO: Mr. K. M.
             </p>
         </footer>
       </div>
@@ -159,7 +160,7 @@ export default function ProfilePage() {
       </main>
       <footer className="text-center p-4 text-sm text-muted-foreground">
         <p>
-          Made by <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer: Mr. K. M.
+          A Prototype from <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer/CEO: Mr. K. M.
         </p>
       </footer>
     </div>
