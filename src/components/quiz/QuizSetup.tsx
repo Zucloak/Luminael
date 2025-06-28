@@ -81,11 +81,21 @@ const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must be at least 1 question.").max(100, "Maximum 100 questions."),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
   questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
+  timerEnabled: z.boolean().default(false),
   timerPerQuestion: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.coerce.number().int().nonnegative("Timer must be a positive number.").optional()
   )
+}).refine(data => {
+  if (data.timerEnabled) {
+    return data.timerPerQuestion !== undefined && data.timerPerQuestion > 0;
+  }
+  return true;
+}, {
+  message: "Please set a time greater than 0.",
+  path: ["timerPerQuestion"],
 });
+
 
 type QuizSetupValues = z.infer<typeof quizSetupSchema>;
 
@@ -110,9 +120,12 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
       numQuestions: 10,
       difficulty: "Medium",
       questionFormat: "multipleChoice",
+      timerEnabled: false,
       timerPerQuestion: undefined
     },
   });
+
+  const timerEnabled = form.watch("timerEnabled");
 
   const processFile = (file: File): Promise<{ content: string; aiCallMade: boolean; }> => {
     return new Promise(async (resolve, reject) => {
@@ -370,58 +383,22 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Number of Questions</FormLabel>
-                          <div className="flex items-center gap-2">
-                            <FormControl>
-                              <Input
-                                type="number"
-                                {...field}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    if (Number(value) > 100) {
-                                        field.onChange(100);
-                                    } else if (Number(value) < 1 && value !== '') {
-                                        field.onChange(1);
-                                    }
-                                    else {
-                                        field.onChange(value);
-                                    }
-                                }}
-                                max="100"
-                                disabled={isProcessing || isApiKeyMissing}
-                              />
-                            </FormControl>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                form.setValue('numQuestions', 100, { shouldValidate: true });
-                              }}
-                              disabled={isProcessing || isApiKeyMissing}
-                            >
-                              Max
-                            </Button>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="timerPerQuestion"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-1.5">
-                            <Timer className="h-4 w-4" />
-                            Timer per Question (sec)
-                          </FormLabel>
                           <FormControl>
                             <Input
                               type="number"
-                              placeholder="Optional: e.g. 30"
                               {...field}
-                              onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
-                              value={field.value ?? ""}
-                              min="0"
+                              onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (Number(value) > 100) {
+                                      field.onChange(100);
+                                  } else if (Number(value) < 1 && value !== '') {
+                                      field.onChange(1);
+                                  }
+                                  else {
+                                      field.onChange(value);
+                                  }
+                              }}
+                              max="100"
                               disabled={isProcessing || isApiKeyMissing}
                             />
                           </FormControl>
@@ -429,6 +406,47 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                         </FormItem>
                       )}
                     />
+                     <FormItem>
+                        <div className="flex items-center justify-between mb-2">
+                          <FormLabel htmlFor="timer-input" className="flex items-center gap-1.5">
+                              <Timer className="h-4 w-4" />
+                              Timer per Question (sec)
+                          </FormLabel>
+                          <FormField
+                              control={form.control}
+                              name="timerEnabled"
+                              render={({ field }) => (
+                                <FormControl>
+                                  <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      disabled={isProcessing || isApiKeyMissing}
+                                      aria-controls="timer-input"
+                                  />
+                                </FormControl>
+                              )}
+                          />
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="timerPerQuestion"
+                            render={({ field }) => (
+                              <FormControl>
+                                <Input
+                                  id="timer-input"
+                                  type="number"
+                                  placeholder="e.g. 30"
+                                  {...field}
+                                  onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                                  value={field.value ?? ""}
+                                  min="0"
+                                  disabled={!timerEnabled || isProcessing || isApiKeyMissing}
+                                  className={cn(!timerEnabled && "bg-muted/50")}/>
+                              </FormControl>
+                            )}
+                        />
+                        <FormMessage className="mt-2">{form.formState.errors.timerPerQuestion?.message}</FormMessage>
+                    </FormItem>
                   </div>
                   <div className="flex items-center space-x-4 p-4 bg-destructive/10 rounded-md border border-destructive/20">
                     <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />

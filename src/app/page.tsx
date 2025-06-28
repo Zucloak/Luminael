@@ -44,7 +44,8 @@ export default function Home() {
     const BATCH_SIZE = 5;
     const totalQuestions = values.numQuestions;
     
-    setTimer(values.timerPerQuestion || 0);
+    const timerToSet = values.timerEnabled ? values.timerPerQuestion : 0;
+    setTimer(timerToSet || 0);
     setView('generating');
     setGenerationProgress({ current: 0, total: totalQuestions });
 
