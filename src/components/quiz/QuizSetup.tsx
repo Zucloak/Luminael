@@ -425,36 +425,37 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Number of Questions</FormLabel>
-                            <div className="flex items-center gap-2">
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  {...field}
-                                  onChange={(e) => {
-                                      const value = e.target.value;
-                                      if (Number(value) > 100) {
-                                          field.onChange(100);
-                                      } else if (Number(value) < 1 && value !== '') {
-                                          field.onChange(1);
-                                      }
-                                      else {
-                                          field.onChange(value);
-                                      }
-                                  }}
-                                  max="100"
-                                  disabled={isProcessing || isApiKeyMissing || apiKeyLoading}
-                                />
-                              </FormControl>
-                              <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="shrink-0 px-3"
-                                  onClick={() => form.setValue('numQuestions', 100, { shouldValidate: true })}
-                                  disabled={isProcessing || isApiKeyMissing || apiKeyLoading}
-                              >
-                                  Max
-                              </Button>
-                            </div>
+                          <div className="relative">
+                            <FormControl>
+                              <Input
+                                type="number"
+                                {...field}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (Number(value) > 100) {
+                                        field.onChange(100);
+                                    } else if (Number(value) < 1 && value !== '') {
+                                        field.onChange(1);
+                                    }
+                                    else {
+                                        field.onChange(value);
+                                    }
+                                }}
+                                max="100"
+                                className="pr-16"
+                                disabled={isProcessing || isApiKeyMissing || apiKeyLoading}
+                              />
+                            </FormControl>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="absolute right-1 top-1/2 h-8 -translate-y-1/2 px-3 hover:bg-muted/50"
+                                onClick={() => form.setValue('numQuestions', 100, { shouldValidate: true })}
+                                disabled={isProcessing || isApiKeyMissing || apiKeyLoading}
+                            >
+                                Max
+                            </Button>
+                          </div>
                           {isClient && <FormMessage />}
                         </FormItem>
                       )}
