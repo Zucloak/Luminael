@@ -26,7 +26,6 @@ import { cn } from '@/lib/utils';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import Tesseract from 'tesseract.js';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -68,6 +67,9 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const totalQuestions = quiz.questions.length;
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+  
+  // A simple heuristic to check if a question is likely mathematical
+  const isMathQuestion = currentQuestion.questionType === 'openEnded' && currentQuestion.question.includes('$');
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -123,16 +125,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
       let localOcrAttempt = '';
 
       try {
-        // Tier 1: Local OCR with Tesseract.js as a "hint" for the AI
-        try {
-          const { data: { text } } = await Tesseract.recognize(imageDataUrl, 'eng');
-          localOcrAttempt = text;
-        } catch (tesseractError) {
-          console.warn("Local Tesseract OCR failed, proceeding with AI only.", tesseractError);
-          localOcrAttempt = ''; // Ensure it's empty on failure
-        }
-        
-        // Tier 2: AI-powered LaTeX extraction
+        // AI-powered LaTeX extraction
         const response = await fetch('/api/extract-latex-from-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -255,32 +248,36 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="open-ended-answer">Your Answer</Label>
-              <Input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  ref={fileInputRef}
-                  onChange={handleImageAnswerUpload}
-                  disabled={isOcrRunning}
-              />
-              <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isOcrRunning}
-              >
-                  {isOcrRunning ? (
+              {isMathQuestion && (
+                <>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleImageAnswerUpload}
+                    disabled={isOcrRunning}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isOcrRunning}
+                  >
+                    {isOcrRunning ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
+                    ) : (
                       <ImageUp className="mr-2 h-4 w-4" />
-                  )}
-                  Upload Image
-              </Button>
+                    )}
+                    Upload Image
+                  </Button>
+                </>
+              )}
             </div>
             <Textarea
               id="open-ended-answer"
-              placeholder="Type your solution here, or upload an image of your work."
+              placeholder={isMathQuestion ? "Type your solution here, or upload an image of your work." : "Type your answer here."}
               value={answers[currentQuestionIndex] || ''}
               onChange={(e) => handleAnswerChange(e.target.value)}
               rows={8}
