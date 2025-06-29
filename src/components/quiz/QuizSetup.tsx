@@ -84,11 +84,6 @@ function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
   return !pixelBuffer.some(color => color !== 0xFFFFFFFF && color !== 0);
 }
 
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-const RATE_LIMIT_DELAY = 5000; // ~12 requests/minute, safely under the 15 req/min free tier limit
-
 const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must be at least 1 question.").max(100, "Maximum 100 questions."),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
@@ -175,50 +170,95 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
             const pdf = await pdfjsLib.getDocument(typedarray).promise;
             
-            let allPagesText: string[] = [];
-            setParseProgress({ current: 0, total: pdf.numPages, message: "Reading PDF..." });
+            setParseProgress({ current: 0, total: pdf.numPages, message: "Analyzing PDF structure..." });
+            
+            // Step 1: Initial pass to get text content and identify image-based pages in parallel
+            const pagePromises = Array.from({ length: pdf.numPages }, (_, i) => pdf.getPage(i + 1));
+            const pages = await Promise.all(pagePromises);
 
-            for (let i = 1; i <= pdf.numPages; i++) {
-              setParseProgress(prev => ({ ...prev, current: i, message: `Processing page ${i} of ${pdf.numPages}` }));
-              const page = await pdf.getPage(i);
+            const analysisPromises = pages.map(async (page, i) => {
               const textContent = await page.getTextContent();
-              let pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
+              const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
               
-              let ocrAttemptedOnPage = false;
-              if (pageText.length < 50) { // If text content is sparse, assume it's an image
-                ocrAttemptedOnPage = true;
-                setParseProgress(prev => ({ ...prev, current: i, message: `Page ${i} is image-based, using OCR...` }))
-                const viewport = page.getViewport({ scale: 2.0 });
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d')!;
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                const renderContext = {
-                  canvasContext: context,
-                  viewport: viewport
+              const isLikelyImage = pageText.length < 100 || pageText.replace(/\s/g, '').length < 50;
+              
+              setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `Analyzing page ${i + 1}...` }));
+
+              return {
+                pageNum: i + 1,
+                text: isLikelyImage ? null : pageText,
+                needsOcr: isLikelyImage,
+                page: page,
+              };
+            });
+            
+            const initialPageData = await Promise.all(analysisPromises);
+            setParseProgress({ current: pdf.numPages, total: pdf.numPages, message: "Analysis complete." });
+
+            const pagesToOcr = initialPageData.filter(p => p.needsOcr);
+            const allPagesText = initialPageData.filter(p => !p.needsOcr).map(p => p.text as string);
+            
+            // Step 2: If any pages need OCR, process them in throttled batches
+            if (pagesToOcr.length > 0) {
+                const ocrProcessor = async (pageData: (typeof pagesToOcr)[0]): Promise<string> => {
+                    const page = pageData.page;
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    if (!context) return `[Canvas Error on page ${pageData.pageNum}]`;
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    const renderContext = { canvasContext: context, viewport: viewport };
+                    await page.render(renderContext).promise;
+
+                    if (isCanvasBlank(canvas)) return '';
+                    
+                    try {
+                       return await ocrImageWithFallback(canvas.toDataURL(), apiKey, toast);
+                    } catch (err) {
+                       const message = err instanceof Error ? err.message : String(err);
+                       console.error(`OCR failed for page ${pageData.pageNum} of ${file.name}:`, message);
+                       return `[OCR Error on page ${pageData.pageNum}: ${message.substring(0, 100)}...]`;
+                    }
                 };
-                await page.render(renderContext).promise;
+                
+                // Gemini Vision API has a rate limit of ~15 requests/minute.
+                // We batch 2 at a time with a 4-second delay to stay safely under this.
+                const BATCH_SIZE = 2;
+                const BATCH_DELAY = 4000;
 
-                if (!isCanvasBlank(canvas)) {
-                   try {
-                    pageText = await ocrImageWithFallback(canvas.toDataURL(), apiKey, toast);
-                   } catch (err) {
-                     const message = err instanceof Error ? err.message : String(err);
-                     console.error(`OCR failed for page ${i} of ${file.name}:`, message);
-                     setFileError(`OCR on page ${i} failed: ${message.substring(0,100)}...`);
-                   }
+                let processedCount = 0;
+                for (let i = 0; i < pagesToOcr.length; i += BATCH_SIZE) {
+                    const batch = pagesToOcr.slice(i, i + BATCH_SIZE);
+                    const batchNum = i / BATCH_SIZE + 1;
+                    const totalBatches = Math.ceil(pagesToOcr.length / BATCH_SIZE);
+
+                    setParseProgress({
+                        current: processedCount,
+                        total: pagesToOcr.length,
+                        message: `Processing OCR batch ${batchNum} of ${totalBatches}...`
+                    });
+
+                    const batchPromises = batch.map(ocrProcessor);
+                    const batchResults = await Promise.all(batchPromises);
+                    allPagesText.push(...batchResults);
+                    
+                    processedCount += batch.length;
+
+                    if (i + BATCH_SIZE < pagesToOcr.length) {
+                         setParseProgress({
+                            current: processedCount,
+                            total: pagesToOcr.length,
+                            message: `Waiting to avoid rate limits...`
+                        });
+                        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+                    }
                 }
-              }
-              
-              allPagesText.push(pageText);
-
-              if (ocrAttemptedOnPage && i < pdf.numPages) {
-                setParseProgress(prev => ({ ...prev, message: `Waiting to avoid rate limits...` }))
-                await delay(RATE_LIMIT_DELAY);
-              }
             }
+            
             resolve({ content: allPagesText.join('\n\n---\n\n') });
+
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             console.error("Error processing PDF:", error);
@@ -597,5 +637,3 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     </div>
   );
 }
-
-    
