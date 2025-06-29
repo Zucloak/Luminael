@@ -25,27 +25,27 @@ export function PatchNotesDialog({ isOpen, onClose, patch }: PatchNotesDialogPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg flex flex-col p-0 max-h-[90vh]">
-        <DialogHeader className="text-center items-center p-4 sm:p-6 pb-4 border-b">
-            <div className="bg-primary/10 p-3 rounded-full w-fit mb-3 border-4 border-background outline outline-1 outline-border">
-                <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+      <DialogContent className="w-[95vw] max-w-md flex flex-col p-0 max-h-[85vh] sm:max-h-[90vh] rounded-lg">
+        <DialogHeader className="text-center items-center p-4 sm:p-6 pb-2 sm:pb-4 border-b">
+            <div className="bg-primary/10 p-2 sm:p-3 rounded-full w-fit mb-2 sm:mb-3 border-2 sm:border-4 border-background outline outline-1 outline-border">
+                <Zap className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
             </div>
-          <DialogTitle className="font-headline text-2xl sm:text-3xl">{patch.title}</DialogTitle>
-          <DialogDescription className="text-sm sm:text-base">
+          <DialogTitle className="font-headline text-xl sm:text-2xl">{patch.title}</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Version {patch.version} is now live! Here’s what’s new:
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">
-            <div className="p-4 sm:p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 text-sm">
               {patch.notes.map((note, index) => (
-                  <div key={index} className="flex items-start gap-4">
-                  <div className="bg-muted p-2 rounded-full">
-                      <note.icon className="h-5 w-5 text-muted-foreground" />
+                  <div key={index} className="flex items-start gap-3">
+                  <div className="bg-muted p-1.5 rounded-full mt-1">
+                      <note.icon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div>
-                      <p className="font-bold">{note.category}</p>
-                      <p className="text-muted-foreground">{note.text}</p>
+                  <div className="flex-1">
+                      <p className="font-bold text-sm">{note.category}</p>
+                      <p className="text-muted-foreground text-xs sm:text-sm">{note.text}</p>
                   </div>
                   </div>
               ))}
