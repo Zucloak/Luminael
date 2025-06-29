@@ -11,7 +11,7 @@ import { useFullscreen } from '@/hooks/use-fullscreen';
 
 export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
   const { user, loading } = useUser();
-  const { isFullscreen, toggleFullscreen } = useFullscreen();
+  const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen();
 
   return (
     <header className="py-4 px-4 md:px-8 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -45,9 +45,11 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
               <Home className="h-5 w-5" />
             </Button>
           </Link>
-          <Button variant="outline" size="icon" aria-label="Toggle Fullscreen" onClick={toggleFullscreen} className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
-            {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-          </Button>
+          {isSupported && (
+            <Button variant="outline" size="icon" aria-label="Toggle Fullscreen" onClick={toggleFullscreen} className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
+              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+            </Button>
+          )}
           <ApiKeyDialog isHellBound={isHellBound} />
           <Link href="/profile" passHref>
             <Button variant="outline" size="icon" aria-label="User Profile" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>

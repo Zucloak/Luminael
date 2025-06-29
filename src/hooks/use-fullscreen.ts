@@ -27,6 +27,7 @@ function isDocumentInFullscreen(doc: DocumentWithFullscreen): boolean {
 
 export function useFullscreen() {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSupported, setIsSupported] = useState(true); // Assume supported on server, check on client
 
   const handleFullscreenChange = useCallback(() => {
     const doc = document as DocumentWithFullscreen;
@@ -34,6 +35,19 @@ export function useFullscreen() {
   }, []);
 
   useEffect(() => {
+    // Check for support on mount, which also handles server-side rendering gracefully.
+    const element = document.documentElement as HTMLElementWithFullscreen;
+    const supported = !!(
+      element.requestFullscreen ||
+      element.webkitRequestFullscreen ||
+      element.mozRequestFullScreen ||
+      element.msRequestFullscreen
+    );
+    setIsSupported(supported);
+    
+    // Set initial state
+    handleFullscreenChange();
+
     const doc = document as DocumentWithFullscreen;
     doc.addEventListener('fullscreenchange', handleFullscreenChange);
     doc.addEventListener('webkitfullscreenchange', handleFullscreenChange);
@@ -56,10 +70,10 @@ export function useFullscreen() {
       // Try to enter fullscreen
       if (element.requestFullscreen) {
         element.requestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
-      } else if (element.mozRequestFullScreen) { // Firefox
-        element.mozRequestFullScreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
       } else if (element.webkitRequestFullscreen) { // Chrome, Safari and Opera
         element.webkitRequestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
+      } else if (element.mozRequestFullScreen) { // Firefox
+        element.mozRequestFullScreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
       } else if (element.msRequestFullscreen) { // IE/Edge
         element.msRequestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
       }
@@ -67,20 +81,15 @@ export function useFullscreen() {
       // Try to exit fullscreen
       if (doc.exitFullscreen) {
         doc.exitFullscreen();
-      } else if (doc.mozCancelFullScreen) { // Firefox
-        doc.mozCancelFullScreen();
       } else if (doc.webkitExitFullscreen) { // Chrome, Safari and Opera
         doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) { // Firefox
+        doc.mozCancelFullScreen();
       } else if (doc.msExitFullscreen) { // IE/Edge
         doc.msExitFullscreen();
       }
     }
   }, []);
 
-  // On initial mount, check the fullscreen state
-  useEffect(() => {
-    handleFullscreenChange();
-  }, [handleFullscreenChange]);
-
-  return { isFullscreen, toggleFullscreen };
+  return { isFullscreen, toggleFullscreen, isSupported };
 }
