@@ -22,9 +22,6 @@ const GenerateHellBoundQuizInputSchema = z.object({
 });
 export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInputSchema>;
 
-// This schema is for the prompt itself, excluding the API key.
-const GenerateHellBoundQuizPromptInputSchema = GenerateHellBoundQuizInputSchema.omit({ apiKey: true });
-
 const MultipleChoiceQuestionSchema = z.object({
   questionType: z.enum(['multipleChoice']).describe("The type of the question."),
   question: z.string().describe('The question text. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
@@ -60,11 +57,32 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     inputSchema: GenerateHellBoundQuizInputSchema,
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
-  async (input) => {
-    const quizPromptTemplate = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to generate a quiz from the provided content that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
+  async ({ fileContent, numQuestions, existingQuestions, apiKey }) => {
+    const summarizePromptTemplate = `You are a text summarization AI with a "HELL BOUND" persona. The following raw text is too vast to be processed and will cause a token overflow. Your task is to distill this chaos into a concentrated elixir of pure, high-level concepts, making it brutally token-efficient. Do not summarize the simple facts; extract the most complex, abstract, and interconnectable ideas a lesser mind would overlook. This summary will be used to forge the most difficult questions imaginable.
+
+**Raw Material:**
+${fileContent}
+
+**Distilled Essence:`;
+
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    const model = 'googleai/gemini-2.0-flash';
+
+    const CONTENT_THRESHOLD = 20000;
+    let processedContent = fileContent;
+
+    if (processedContent.length > CONTENT_THRESHOLD) {
+      const { text } = await runner.generate({
+        model,
+        prompt: summarizePromptTemplate,
+      });
+      processedContent = text;
+    }
+
+    const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to generate a quiz from the provided content that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
 
 **Core Material:**
-{{{fileContent}}}
+${processedContent}
 
 **Instructions for Generating High-Difficulty Questions:**
 1.  **Prioritize Synthesis over Recall:** Do NOT ask simple "what is" questions. Your questions must force the user to synthesize information from multiple, potentially disparate sections of the provided text.
@@ -73,48 +91,21 @@ const generateHellBoundQuizFlow = ai.defineFlow(
 4.  **Target Edge Cases and Boundaries:** For technical material (like science, math, programming), questions should focus on edge cases, boundary conditions, and scenarios where rules might break or interact in non-obvious ways.
 5.  **Create Devious Distractors (for Multiple Choice):** The incorrect options should be highly plausible and designed to trap common misconceptions. They should be "almost correct" answers, distinguishable from the right answer only by a critical detail found within the source material.
 6.  **Demand Rigorous Solutions (for Open-Ended):** Problems should require a detailed, step-by-step argument, derivation, or explanation. The user should need to build a logical case, not just state a single fact.
-7.  **Generate {{numQuestions}} Unique Questions:** Do not repeat concepts or questions. Avoid asking about questions from this list: {{#if existingQuestions}}{{{json existingQuestions}}}{{else}}None{{/if}}.
+7.  **Generate ${numQuestions} Unique Questions:** Do not repeat concepts or questions. Avoid asking about questions from this list: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
 8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting, enclosing inline math with single dollar signs ($...$) and block math with double dollar signs ($$...$$). This is critical for rendering.
 
 **Output Mandate:**
-You MUST provide your response in the specified JSON format. Failure is not an option.
-{{jsonSchema}}`;
-    
-    const summarizePromptTemplate = `You are a text summarization AI with a "HELL BOUND" persona. The following raw text is too vast to be processed and will cause a token overflow. Your task is to distill this chaos into a concentrated elixir of pure, high-level concepts, making it brutally token-efficient. Do not summarize the simple facts; extract the most complex, abstract, and interconnectable ideas a lesser mind would overlook. This summary will be used to forge the most difficult questions imaginable.
-
-**Raw Material:**
-{{{fileContent}}}
-
-**Distilled Essence:**`;
-
-    const {apiKey, ...promptInput} = input;
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
-    const model = 'googleai/gemini-2.0-flash';
-
-    const CONTENT_THRESHOLD = 20000;
-    let processedContent = input.fileContent;
-
-    if (processedContent.length > CONTENT_THRESHOLD) {
-      const { text } = await runner.generate({
-        model,
-        prompt: summarizePromptTemplate.replace('{{{fileContent}}}', processedContent),
-      });
-      processedContent = text;
-    }
-
-    const prompt = runner.definePrompt({
-      name: 'generateHellBoundQuizPrompt',
-      input: {schema: GenerateHellBoundQuizPromptInputSchema},
-      output: {schema: GenerateHellBoundQuizOutputSchema},
-      prompt: quizPromptTemplate,
-    });
-
+You MUST provide your response in the specified JSON format. Failure is not an option.`;
 
     const {output} = await runner.generate({
-      model,
-      prompt,
-      input: {...promptInput, fileContent: processedContent}
+        model,
+        prompt: quizPrompt,
+        output: {
+            format: 'json',
+            schema: GenerateHellBoundQuizOutputSchema,
+        }
     });
+
     return output!;
   }
 );

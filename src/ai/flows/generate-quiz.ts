@@ -23,9 +23,6 @@ const GenerateQuizInputSchema = z.object({
 });
 export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 
-// This schema is for the prompt itself, excluding the API key.
-const GenerateQuizPromptInputSchema = GenerateQuizInputSchema.omit({ apiKey: true });
-
 const MultipleChoiceQuestionSchema = z.object({
   questionType: z.enum(['multipleChoice']).describe("The type of the question."),
   question: z.string().describe('The question text. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
@@ -60,61 +57,56 @@ const generateQuizFlow = ai.defineFlow(
     inputSchema: GenerateQuizInputSchema,
     outputSchema: GenerateQuizOutputSchema,
   },
-  async (input) => {
-    const quizPromptTemplate = `You are an AI assistant tasked with creating a quiz based on the provided content.
-
-**Content:**
-{{{content}}}
-
-**Instructions:**
-1.  **Analyze the Content:** Thoroughly read and understand the provided text.
-2.  **Generate Questions:** Create exactly {{numQuestions}} unique questions based on the content.
-3.  **Question Format:** Adhere to the requested format: '{{questionFormat}}'.
-    -   For 'multipleChoice', provide the question, 4 options, and the correct answer.
-    -   For 'openEnded', provide a detailed problem or question and a comprehensive correct answer/solution.
-    -   For 'mixed', create a variety of both types.
-4.  **Difficulty:** Calibrate the questions to a '{{difficulty}}' level.
-5.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: {{#if existingQuestions}}{{{json existingQuestions}}}{{else}}None{{/if}}.
-6.  **LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting, enclosing inline math with single dollar signs ($...$) and block math with double dollar signs ($$...$$). This is critical for rendering.
-
-**Output Format:**
-You MUST provide your response in the specified JSON format.
-{{jsonSchema}}`;
-    
+  async ({ content, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
     const summarizePromptTemplate = `You are a text summarization AI. The following content is too long for direct processing and will exceed the token limit. Your task is to summarize it concisely. Focus on the key concepts, definitions, and important facts that are most suitable for creating quiz questions. Retain all essential information but drastically reduce the word count to ensure it's token-efficient.
 
 **Original Content:**
-{{{content}}}
+${content}
 
-**Summary:**`;
+**Summary:`;
 
-    const {apiKey, ...promptInput} = input;
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     const model = 'googleai/gemini-2.0-flash';
 
     const CONTENT_THRESHOLD = 20000;
-    let processedContent = input.content;
+    let processedContent = content;
 
     if (processedContent.length > CONTENT_THRESHOLD) {
       const { text } = await runner.generate({
         model,
-        prompt: summarizePromptTemplate.replace('{{{content}}}', processedContent),
+        prompt: summarizePromptTemplate,
       });
       processedContent = text;
     }
-    
-    const prompt = runner.definePrompt({
-      name: 'generateQuizPrompt',
-      input: {schema: GenerateQuizPromptInputSchema},
-      output: {schema: GenerateQuizOutputSchema},
-      prompt: quizPromptTemplate,
-    });
 
+    const quizPrompt = `You are an AI assistant tasked with creating a quiz based on the provided content.
+
+**Content:**
+${processedContent}
+
+**Instructions:**
+1.  **Analyze the Content:** Thoroughly read and understand the provided text.
+2.  **Generate Questions:** Create exactly ${numQuestions} unique questions based on the content.
+3.  **Question Format:** Adhere to the requested format: '${questionFormat}'.
+    -   For 'multipleChoice', provide the question, 4 options, and the correct answer.
+    -   For 'openEnded', provide a detailed problem or question and a comprehensive correct answer/solution.
+    -   For 'mixed', create a variety of both types.
+4.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
+5.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
+6.  **LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting, enclosing inline math with single dollar signs ($...$) and block math with double dollar signs ($$...$$). This is critical for rendering.
+
+**Output Format:**
+You MUST provide your response in the specified JSON format.`;
+    
     const {output} = await runner.generate({
       model,
-      prompt,
-      input: {...promptInput, content: processedContent},
+      prompt: quizPrompt,
+      output: {
+          format: 'json',
+          schema: GenerateQuizOutputSchema
+      }
     });
+    
     return output!;
   }
 );

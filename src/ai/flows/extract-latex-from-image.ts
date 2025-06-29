@@ -30,10 +30,6 @@ export const ExtractLatexFromImageOutputSchema = z.object({
 });
 export type ExtractLatexFromImageOutput = z.infer<typeof ExtractLatexFromImageOutputSchema>;
 
-// This schema is for the prompt itself.
-const ExtractLatexFromImagePromptInputSchema = ExtractLatexFromImageInputSchema.omit({apiKey: true});
-
-
 export async function extractLatexFromImage(input: ExtractLatexFromImageInput): Promise<ExtractLatexFromImageOutput> {
   return extractLatexFromImageFlow(input);
 }
@@ -45,22 +41,23 @@ const extractLatexFromImageFlow = ai.defineFlow(
     outputSchema: ExtractLatexFromImageOutputSchema,
   },
   async ({ imageDataUrl, localOcrAttempt, apiKey }) => {
-    // Add a check to prevent processing empty or invalid image data.
-    if (!imageDataUrl || !imageDataUrl.startsWith('data:image')) {
-      throw new Error("Cannot process an empty or invalid image.");
-    }
+    try {
+        if (!imageDataUrl || !imageDataUrl.startsWith('data:image')) {
+            throw new Error("Cannot process an empty or invalid image.");
+        }
 
-    const promptTemplate = `You are an expert AI specializing in converting handwritten and typed mathematical work from images into structured LaTeX. Your primary goal is to achieve a perfect, renderable LaTeX representation.
+        const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+        
+        const { output } = await runner.generate({
+            model: 'googleai/gemini-2.0-flash',
+            prompt: [
+                {text: `You are an expert AI specializing in converting handwritten and typed mathematical work from images into structured LaTeX. Your primary goal is to achieve a perfect, renderable LaTeX representation.
 
-**Image of Mathematical Work:**
-{{media url=imageDataUrl}}
-
+**Image of Mathematical Work:**`},
+                { media: { url: imageDataUrl } },
+                { text: `
 **Local OCR's Initial (and likely flawed) Text Extraction:**
-{{#if localOcrAttempt}}
-{{localOcrAttempt}}
-{{else}}
-No local OCR attempt was made.
-{{/if}}
+${localOcrAttempt || 'No local OCR attempt was made.'}
 
 **Your Task:**
 1.  **Analyze the Image:** The image is the ground truth. Use your vision capabilities to meticulously interpret every symbol, number, and operator.
@@ -70,29 +67,31 @@ No local OCR attempt was made.
 5.  **Assess Confidence:** Provide a confidence score (0-100) based on how certain you are of the transcription's accuracy.
 
 **Output Format:**
-You MUST respond in the following JSON format. Do not add any text before or after the JSON object.
+You MUST respond in the following JSON format. Do not add any text before or after the JSON object.`
+                },
+            ],
+            output: {
+                format: 'json',
+                schema: ExtractLatexFromImageOutputSchema,
+            },
+        });
 
-{{jsonSchema}}`;
-    
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
-    
-    const prompt = runner.definePrompt({
-        name: 'extractLatexFromImagePrompt',
-        input: {schema: ExtractLatexFromImagePromptInputSchema},
-        output: {schema: ExtractLatexFromImageOutputSchema},
-        prompt: promptTemplate,
-    });
-
-    const {output} = await runner.generate({
-      model: 'googleai/gemini-2.0-flash',
-      prompt,
-      input: {imageDataUrl, localOcrAttempt}
-    });
-
-    if (!output) {
-      throw new Error("AI processing failed. The model did not return a response, possibly due to content safety filters or an internal error.");
+        if (!output) {
+            throw new Error("AI processing failed. The model did not return a response, possibly due to content safety filters or an internal error.");
+        }
+        
+        return output;
+    } catch (error) {
+        console.error("Critical error in extractLatexFromImageFlow:", error);
+        
+        let message = "An unknown error occurred during LaTeX extraction.";
+        if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        
+        throw new Error(message);
     }
-    
-    return output;
   }
 );
