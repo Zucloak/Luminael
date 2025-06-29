@@ -29,6 +29,11 @@ const extractTextFromImageFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ imageDataUrl, localOcrAttempt, apiKey }) => {
+    // Add a check to handle empty or invalid image data gracefully.
+    if (!imageDataUrl || !imageDataUrl.startsWith('data:image')) {
+      return localOcrAttempt || '';
+    }
+
     const extractTextPrompt = `You are an advanced OCR AI. Your task is to extract all text from the provided image with the highest possible accuracy.
 A local OCR tool has already made an attempt, but it may be flawed. Use the local attempt as a hint, but trust the image as the primary source of truth.
 Correct any errors you find in the local attempt. Output only the final, corrected text.
@@ -43,7 +48,7 @@ Correct any errors you find in the local attempt. Output only the final, correct
 No local OCR attempt was made.
 {{/if}}
 
-**Final, Corrected Text:**`;
+**Final, Corrected Text:`;
     
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     

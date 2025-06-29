@@ -45,6 +45,11 @@ const extractLatexFromImageFlow = ai.defineFlow(
     outputSchema: ExtractLatexFromImageOutputSchema,
   },
   async ({ imageDataUrl, localOcrAttempt, apiKey }) => {
+    // Add a check to prevent processing empty or invalid image data.
+    if (!imageDataUrl || !imageDataUrl.startsWith('data:image')) {
+      throw new Error("Cannot process an empty or invalid image.");
+    }
+
     const promptTemplate = `You are an expert AI specializing in converting handwritten and typed mathematical work from images into structured LaTeX. Your primary goal is to achieve a perfect, renderable LaTeX representation.
 
 **Image of Mathematical Work:**
