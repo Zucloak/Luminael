@@ -95,6 +95,7 @@ ${processedContent}
     -   Enclose inline math with single dollar signs (\`$...$\`).
     -   Enclose block math with double dollar signs (\`$$...$$\`).
     -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`. This is essential for correct rendering.
+    -   **DO NOT** use parentheses for math, such as \`\\(\` or \`\\)\`. Only use dollar signs.
 
 **Output Mandate:**
 You MUST provide your response in the specified JSON format. Failure is not an option.`;
