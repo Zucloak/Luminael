@@ -109,25 +109,27 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
               type="password"
             />
           </div>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1" className="border-b-0">
-              <AccordionTrigger className="text-sm hover:no-underline py-2">Where can I find my Gemini API key?</AccordionTrigger>
-              <AccordionContent className="space-y-3 pt-2 text-sm text-muted-foreground">
-                <p>
-                  You can create a free API key from Google AI Studio. The free tier is generous and perfect for getting started.
-                </p>
-                <a
-                  href="https://aistudio.google.com/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(buttonVariants({ variant: 'outline' }), "w-full")}
-                >
-                  <LinkIcon className="mr-2 h-4 w-4" />
-                  Get your API Key from Google AI Studio
-                </a>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          {!apiKey && !loading && (
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="item-1" className="border-b-0">
+                <AccordionTrigger className="text-sm hover:no-underline py-2">Where can I find my Gemini API key?</AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2 text-sm text-muted-foreground">
+                  <p>
+                    You can create a free API key from Google AI Studio. The free tier is generous and perfect for getting started.
+                  </p>
+                  <a
+                    href="https://aistudio.google.com/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(buttonVariants({ variant: 'outline' }), "w-full")}
+                  >
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Get your API Key from Google AI Studio
+                  </a>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
         </div>
         <DialogFooter className="pt-0">
           <DialogClose asChild>
