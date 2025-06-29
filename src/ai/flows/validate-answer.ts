@@ -44,7 +44,8 @@ const validateAnswerFlow = ai.defineFlow(
     outputSchema: ValidateAnswerOutputSchema,
   },
   async (input) => {
-    const promptTemplate = `You are an expert validator for a quiz application. Your role is to assess a user's answer for an open-ended question based on a provided correct answer. You must provide nuanced feedback and determine if the user's response is Correct, Partially Correct, or Incorrect.
+    try {
+      const promptTemplate = `You are an expert validator for a quiz application. Your role is to assess a user's answer for an open-ended question based on a provided correct answer. You must provide nuanced feedback and determine if the user's response is Correct, Partially Correct, or Incorrect.
 
 **Context:**
 - **Question:** {{{question}}}
@@ -67,27 +68,39 @@ You MUST respond in the following JSON format. Do not add any text before or aft
 
 {{jsonSchema}}`;
 
-    const { apiKey, ...promptInput } = input;
-    const runner = apiKey
-      ? genkit({
-          plugins: [googleAI({apiKey})],
-          model: 'googleai/gemini-2.0-flash',
-        })
-      : ai;
+      const { apiKey, ...promptInput } = input;
+      const runner = apiKey
+        ? genkit({
+            plugins: [googleAI({apiKey})],
+            model: 'googleai/gemini-2.0-flash',
+          })
+        : ai;
 
-    const prompt = runner.definePrompt({
-        name: 'validateAnswerPrompt',
-        input: {schema: ValidateAnswerPromptInputSchema},
-        output: {schema: ValidateAnswerOutputSchema},
-        prompt: promptTemplate,
-    });
+      const prompt = runner.definePrompt({
+          name: 'validateAnswerPrompt',
+          input: {schema: ValidateAnswerPromptInputSchema},
+          output: {schema: ValidateAnswerOutputSchema},
+          prompt: promptTemplate,
+      });
 
-    const {output} = await prompt(promptInput);
-    
-    if (!output) {
-      throw new Error("AI validation failed. The model did not return a response, possibly due to content safety filters or an internal error.");
+      const {output} = await prompt(promptInput);
+      
+      if (!output) {
+        return {
+            status: 'Incorrect',
+            explanation: "AI validation failed. The model's response was not in the expected format, possibly due to content safety filters. Please try again."
+        };
+      }
+      
+      return output;
+    } catch (error) {
+        console.error("Critical error in validateAnswerFlow:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        // Return a valid error object that matches the flow's output schema to prevent crashes.
+        return {
+            status: 'Incorrect',
+            explanation: `AI validation system error: ${message}`
+        };
     }
-    
-    return output;
   }
 );
