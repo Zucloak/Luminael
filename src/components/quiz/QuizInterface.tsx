@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -26,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import Tesseract from 'tesseract.js';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -122,42 +122,83 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
     reader.readAsDataURL(file);
     reader.onload = async () => {
       const imageDataUrl = reader.result as string;
-      let localOcrAttempt = '';
+      const isMath = isMathQuestion;
 
       try {
-        // AI-powered LaTeX extraction
-        const response = await fetch('/api/extract-latex-from-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageDataUrl, localOcrAttempt, apiKey }),
-        });
-        incrementUsage();
+        if (isMath) {
+            // For math, we directly use the specialized AI model without local OCR attempt.
+            const response = await fetch('/api/extract-latex-from-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageDataUrl, localOcrAttempt: '', apiKey }),
+            });
+            incrementUsage();
 
-        const responseText = await response.text();
-        if (!response.ok) {
-           let errorDetails = "Failed to extract text.";
-          try {
-            const errorJson = JSON.parse(responseText);
-            errorDetails = errorJson.details || errorJson.error || errorDetails;
-          } catch (e) {
-            // responseText is not JSON, use it as is
-            errorDetails = responseText;
-          }
-          throw new Error(errorDetails);
+            const responseText = await response.text();
+            if (!response.ok) {
+                let errorDetails = "Failed to extract LaTeX from image.";
+                try {
+                    const errorJson = JSON.parse(responseText);
+                    errorDetails = errorJson.details || errorJson.error || errorDetails;
+                } catch (e) {
+                    errorDetails = responseText.substring(0, 200);
+                }
+                throw new Error(errorDetails);
+            }
+
+            const { latex_representation, confidence_score } = JSON.parse(responseText);
+            handleAnswerChange(latex_representation);
+            toast({
+                title: "Math Extracted!",
+                description: `Content converted to LaTeX with ${confidence_score}% confidence. You can now edit it if needed.`
+            });
+        } else {
+            // For regular text, use the same fallback mechanism as file uploads.
+            // Tier 1: Local OCR with Tesseract
+            const { data: { text: localText, confidence } } = await Tesseract.recognize(imageDataUrl, 'eng');
+            
+            if (localText && localText.trim().length > 20 && confidence > 70) {
+                // Local OCR is good enough
+                handleAnswerChange(localText);
+                toast({
+                    title: "Text Extracted!",
+                    description: "Text extracted locally with Tesseract."
+                });
+            } else {
+                // Tier 2: AI OCR Fallback
+                incrementUsage();
+                const response = await fetch('/api/extract-text-from-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageDataUrl, localOcrAttempt: localText, apiKey }),
+                });
+
+                const responseText = await response.text();
+                if (!response.ok) {
+                    let errorDetails = "Failed to extract text from image.";
+                    try {
+                        const errorJson = JSON.parse(responseText);
+                        errorDetails = errorJson.details || errorJson.error || errorDetails;
+                    } catch (e) {
+                        errorDetails = responseText.substring(0, 200);
+                    }
+                    throw new Error(errorDetails);
+                }
+
+                const { extractedText } = JSON.parse(responseText);
+                handleAnswerChange(extractedText);
+                toast({
+                    title: "Text Extracted with AI!",
+                    description: "The text from the image has been added to your answer."
+                });
+            }
         }
-
-        const { latex_representation, confidence_score } = JSON.parse(responseText);
-        handleAnswerChange(latex_representation);
-        toast({
-            title: "Math Extracted!",
-            description: `Content converted to LaTeX with ${confidence_score}% confidence. You can now edit the LaTeX if needed.`
-        });
       } catch (error) {
-        console.error("Image-to-LaTeX Error:", error);
+        console.error("Image Extraction Error:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred during image processing.";
         toast({
           variant: "destructive",
-          title: "Extraction Failed",
+          title: isMath ? "LaTeX Extraction Failed" : "Text Extraction Failed",
           description: message,
         });
       } finally {
@@ -251,7 +292,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="open-ended-answer">Your Answer</Label>
-              {isMathQuestion && (
+              {currentQuestion.questionType === 'openEnded' && (
                 <>
                   <Input
                     type="file"
@@ -280,7 +321,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
             </div>
             <Textarea
               id="open-ended-answer"
-              placeholder={isMathQuestion ? "Type your solution here, or upload an image of your work." : "Type your answer here."}
+              placeholder="Type your answer here, or upload an image of your work."
               value={answers[currentQuestionIndex] || ''}
               onChange={(e) => handleAnswerChange(e.target.value)}
               rows={8}
