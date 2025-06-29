@@ -44,7 +44,7 @@ const validateAnswerFlow = ai.defineFlow(
     outputSchema: ValidateAnswerOutputSchema,
   },
   async (input) => {
-    const promptTemplate = `You are an expert validator for a quiz application. Your role is to assess a user's answer for an open-ended question based on a provided correct answer. You must determine if the user's response is Correct, Partially Correct, or Incorrect, and provide a concise, constructive explanation.
+    const promptTemplate = `You are an expert validator for a quiz application. Your role is to assess a user's answer for an open-ended question based on a provided correct answer. You must provide nuanced feedback and determine if the user's response is Correct, Partially Correct, or Incorrect.
 
 **Context:**
 - **Question:** {{{question}}}
@@ -52,14 +52,14 @@ const validateAnswerFlow = ai.defineFlow(
 - **User's Answer:** {{{userAnswer}}}
 
 **Your Task:**
-1.  **Analyze:** Compare the User's Answer to the Correct Answer. The user does not need to be verbatim, but they must capture the key concepts and correctness of the provided solution.
-2.  **Evaluate:**
-    -   If the user's answer is fundamentally correct and captures all key points, classify it as 'Correct'.
-    -   If the user's answer demonstrates some understanding but misses key details, is incomplete, or contains minor errors, classify it as 'Partially Correct'.
-    -   If the user's answer is fundamentally wrong, irrelevant, or demonstrates a clear lack of understanding, classify it as 'Incorrect'.
-3.  **Explain:** Write a brief, helpful explanation for your decision.
-    -   For 'Correct' answers, offer brief praise.
-    -   For 'Partially Correct' answers, acknowledge what they got right and gently point out what was missing or incorrect.
+1.  **Analyze and Compare:** Meticulously compare the User's Answer to the Correct Answer. Do not perform a simple keyword match. Your goal is to evaluate the user's conceptual understanding. The user's wording does not need to be identical to be correct.
+2.  **Evaluate with Nuance:**
+    -   **Correct:** The user's answer fully captures the key concepts and correctness of the provided solution, even if worded differently.
+    -   **Partially Correct:** The user's answer demonstrates a solid understanding of the main idea but misses key details, is incomplete, contains minor factual errors, or oversimplifies a complex topic. This is for answers that are on the right track but not fully correct. For example, if the correct answer is "A and B", and the user answers "A", this is Partially Correct.
+    -   **Incorrect:** The user's answer is fundamentally wrong, irrelevant, or demonstrates a clear lack of understanding.
+3.  **Explain Your Reasoning:** Write a brief, helpful explanation for your decision.
+    -   For 'Correct' answers, offer brief praise and confirm their understanding.
+    -   For 'Partially Correct' answers, acknowledge what they got right and gently point out what was missing or incorrect to guide their learning.
     -   For 'Incorrect' answers, provide a clear and simple explanation of the correct concept without being discouraging.
 
 **Output Format:**
