@@ -521,11 +521,15 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                       )}
                     />
                   </div>
-                  <div className="flex items-center space-x-4 p-4 bg-destructive/10 rounded-md border border-destructive/20">
+                  <div className={cn(
+                    "flex items-center space-x-4 p-4 rounded-md",
+                    "bg-gradient-to-r from-amber-400 via-red-500 to-yellow-500",
+                    "animate-supercharged-border bg-[length:400%_400%]"
+                  )}>
                     <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
                     <div className="flex-1 space-y-1">
-                      <Label htmlFor="hell-bound-mode" className="text-destructive font-bold">HELL BOUND MODE</Label>
-                      <p className="text-xs text-destructive/80">Generate an extremely difficult quiz to truly test your knowledge.</p>
+                      <Label htmlFor="hell-bound-mode" className="font-bold text-destructive-foreground">HELL BOUND MODE</Label>
+                      <p className="text-xs text-destructive-foreground/80">Generate an extremely difficult quiz to truly test your knowledge.</p>
                     </div>
                     <Switch
                       id="hell-bound-mode"
