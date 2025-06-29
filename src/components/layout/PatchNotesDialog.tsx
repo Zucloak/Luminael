@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import type { PatchVersion } from "@/lib/patch-notes";
 import { Zap } from "lucide-react";
-import { ScrollArea } from "../ui/scroll-area";
 
 interface PatchNotesDialogProps {
   isOpen: boolean;
@@ -36,7 +35,7 @@ export function PatchNotesDialog({ isOpen, onClose, patch }: PatchNotesDialogPro
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 text-sm">
               {patch.notes.map((note, index) => (
                   <div key={index} className="flex items-start gap-3">
@@ -50,7 +49,7 @@ export function PatchNotesDialog({ isOpen, onClose, patch }: PatchNotesDialogPro
                   </div>
               ))}
             </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="p-4 sm:p-6 pt-4 border-t">
           <Button onClick={onClose} className="w-full">
