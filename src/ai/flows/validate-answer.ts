@@ -46,6 +46,13 @@ const validateAnswerFlow = ai.defineFlow(
   },
   async (input) => {
     try {
+      if (!input.apiKey) {
+        return {
+          status: 'Incorrect',
+          explanation: 'AI validation could not be performed because the API Key was missing.',
+        };
+      }
+
       const promptTemplate = `You are a university-level teaching assistant AI, an expert in evaluating student answers with nuance and precision. Your task is to analyze a user's answer against a correct solution and provide a fair evaluation. Your judgment must be based on conceptual understanding, not just keyword matching.
 
 **Evaluation Context:**
@@ -81,12 +88,10 @@ You MUST respond ONLY with the specified JSON object. Do not include your intern
 {{jsonSchema}}`;
 
       const { apiKey, ...promptInput } = input;
-      const runner = apiKey
-        ? genkit({
-            plugins: [googleAI({apiKey})],
-            model: 'googleai/gemini-2.0-flash',
-          })
-        : ai;
+      const runner = genkit({
+        plugins: [googleAI({apiKey})],
+        model: 'googleai/gemini-2.0-flash',
+      });
 
       const prompt = runner.definePrompt({
           name: 'validateAnswerPrompt',
@@ -95,7 +100,8 @@ You MUST respond ONLY with the specified JSON object. Do not include your intern
           prompt: promptTemplate,
       });
 
-      const {output} = await prompt(promptInput);
+      const response = await prompt(promptInput);
+      const output = response.output;
       
       if (!output) {
         return {
@@ -107,8 +113,21 @@ You MUST respond ONLY with the specified JSON object. Do not include your intern
       return output;
     } catch (error) {
         console.error("Critical error in validateAnswerFlow:", error);
-        const message = error instanceof Error ? error.message : "An unknown error occurred.";
-        // Return a valid error object that matches the flow's output schema to prevent crashes.
+        
+        let message = "An unknown error occurred.";
+        if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        } else {
+            try {
+                // Attempt to stringify for more complex, non-Error objects
+                message = JSON.stringify(error);
+            } catch (e) {
+                message = "An un-serializable error object was thrown."
+            }
+        }
+        
         return {
             status: 'Incorrect',
             explanation: `AI validation system error: ${message}`
