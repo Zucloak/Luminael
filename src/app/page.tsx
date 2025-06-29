@@ -19,6 +19,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PatchNotesDialog } from '@/components/layout/PatchNotesDialog';
 import { patchNotes, LATEST_VERSION } from '@/lib/patch-notes';
 import { useQuizSetup } from '@/hooks/use-quiz-setup';
+import { Button } from '@/components/ui/button';
+import { XCircle } from 'lucide-react';
 
 const LAST_SEEN_VERSION_KEY = 'luminael_last_seen_version';
 
@@ -34,6 +36,7 @@ export default function Home() {
     restartQuiz, 
     retakeQuiz,
     isGenerating,
+    cancelGeneration,
   } = useQuizSetup();
   
   const { isHellBound, setIsHellBound, loading: themeLoading } = useTheme();
@@ -118,6 +121,12 @@ export default function Home() {
                 indicatorClassName="bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 bg-[length:200%_200%] animate-progress-fluid"
               />
               <p className="text-sm font-medium">Conjured {generationProgress.current} of {generationProgress.total} torments</p>
+              <div className="pt-4">
+                <Button variant="outline" onClick={cancelGeneration}>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancel Generation
+                </Button>
+              </div>
             </div>
           );
         }
@@ -132,6 +141,12 @@ export default function Home() {
               indicatorClassName="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-[length:200%_200%] animate-progress-fluid"
             />
             <p className="text-sm font-medium">Generated {generationProgress.current} of {generationProgress.total} questions</p>
+            <div className="pt-4">
+                <Button variant="outline" onClick={cancelGeneration}>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancel Generation
+                </Button>
+            </div>
           </div>
         );
       case 'quiz':

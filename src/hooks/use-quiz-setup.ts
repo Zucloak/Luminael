@@ -21,14 +21,20 @@ interface ParseProgress {
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
+interface ProcessedFile {
+    name: string;
+    content: string;
+}
+
 interface QuizSetupContextType {
   // File processing state
-  combinedContent: string;
-  fileNames: string[];
+  processedFiles: ProcessedFile[];
   fileError: string;
   isParsing: boolean;
   parseProgress: ParseProgress;
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  removeFile: (fileName: string) => void;
+  stopParsing: () => void;
   
   // Quiz lifecycle state
   view: View;
@@ -44,17 +50,18 @@ interface QuizSetupContextType {
   restartQuiz: () => void;
   retakeQuiz: () => void;
   clearQuizSetup: () => void;
+  cancelGeneration: () => void;
 }
 
 const QuizSetupContext = createContext<QuizSetupContextType | undefined>(undefined);
 
 export function QuizSetupProvider({ children }: { children: ReactNode }) {
   // File processing state
-  const [combinedContent, setCombinedContent] = useState<string>('');
-  const [fileNames, setFileNames] = useState<string[]>([]);
+  const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
   const [fileError, setFileError] = useState<string>('');
   const [isParsing, setIsParsing] = useState<boolean>(false);
   const [parseProgress, setParseProgress] = useState<ParseProgress>({ current: 0, total: 0, message: '' });
+  const [parsingController, setParsingController] = useState<AbortController | null>(null);
 
   // Quiz lifecycle state
   const [view, setView] = useState<View>('setup');
@@ -63,6 +70,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
   const [generationProgress, setGenerationProgress] = useState<ParseProgress>({ current: 0, total: 0, message: '' });
   const [timer, setTimer] = useState<number>(0);
   const [isGeneratingState, setIsGeneratingState] = useState<boolean>(false);
+  const [generationController, setGenerationController] = useState<AbortController | null>(null);
 
   const { apiKey, incrementUsage } = useApiKey();
   const { toast } = useToast();
@@ -210,32 +218,42 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setCombinedContent("");
+    const controller = new AbortController();
+    setParsingController(controller);
+
+    setProcessedFiles([]);
     setFileError("");
     setIsParsing(true);
-    setParseProgress({ current: 0, total: 0, message: "Preparing to process files..." });
+    setParseProgress({ current: 0, total: files.length, message: "Preparing to process files..." });
     const fileList = Array.from(files);
-    setFileNames(fileList.map(f => f.name));
-
-    let allContents: string[] = [];
+    let allProcessedFiles: ProcessedFile[] = [];
 
     try {
-      for (const file of fileList) {
+      for (let i = 0; i < fileList.length; i++) {
+        if (controller.signal.aborted) {
+          throw new Error("Cancelled");
+        }
+        const file = fileList[i];
+        setParseProgress({ current: i + 1, total: fileList.length, message: `Processing ${file.name}...` });
         const { content } = await processFile(file);
-        allContents.push(content);
+        allProcessedFiles.push({ name: file.name, content });
       }
-      setCombinedContent(allContents.join("\n\n---\n\n"));
-      if (allContents.length > 0) {
+      setProcessedFiles(allProcessedFiles);
+      if (allProcessedFiles.length > 0) {
         toast({ title: "File processing complete!", description: "Your content is ready." });
       }
     } catch (error) {
-      const message = String(error);
-      setFileError(message);
-      setFileNames([]);
-      setCombinedContent("");
-      toast({ variant: "destructive", title: "File Processing Error", description: message });
+        if ((error as Error).message === "Cancelled") {
+            // This is handled by the stopParsing function, no need to show another toast.
+        } else {
+            const message = String(error);
+            setFileError(message);
+            setProcessedFiles([]);
+            toast({ variant: "destructive", title: "File Processing Error", description: message });
+        }
     } finally {
       setIsParsing(false);
+      setParsingController(null);
       setParseProgress({ current: 0, total: 0, message: "" });
     }
   }, [processFile, apiKey, toast]);
@@ -249,6 +267,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
+    const combinedContent = processedFiles.map(f => f.content).join('\n\n---\n\n');
     if (!combinedContent) {
         toast({
             variant: "destructive",
@@ -262,6 +281,9 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
       incrementUsage();
     }
 
+    const controller = new AbortController();
+    setGenerationController(controller);
+    
     const BATCH_SIZE = 5;
     const totalQuestions = values.numQuestions;
     
@@ -275,6 +297,10 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
 
     try {
       for (let i = 0; i < totalQuestions; i += BATCH_SIZE) {
+        if (controller.signal.aborted) {
+            throw new Error("Cancelled");
+        }
+
         const questionsInBatch = Math.min(BATCH_SIZE, totalQuestions - i);
         setGenerationProgress(prev => ({ ...prev, current: i, message: `Generating question batch ${Math.floor(i/BATCH_SIZE) + 1}...` }));
 
@@ -304,6 +330,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
           const newQuestions = result.quiz.questions.filter(q => q && q.question && q.question.trim() !== '');
           allQuestions = [...allQuestions, ...newQuestions];
           existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map(q => q.question)];
+          setGenerationProgress(prev => ({ ...prev, current: allQuestions.length }));
         } else {
             console.warn(`AI returned an invalid response or no questions in batch starting at ${i}.`);
         }
@@ -320,12 +347,14 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      setGenerationProgress(prev => ({ ...prev, current: totalQuestions, message: 'Done!' }));
       setQuiz({ questions: allQuestions });
       setUserAnswers({});
       setView('quiz');
 
     } catch (error) {
+      if ((error as Error).message === 'Cancelled') {
+        return; // Handled by cancelGeneration
+      }
       console.error(error);
       const message = error instanceof Error ? error.message : "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again.";
       toast({
@@ -336,6 +365,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
       setView('setup');
     } finally {
       setIsGeneratingState(false);
+      setGenerationController(null);
       setGenerationProgress({ current: 0, total: 0, message: '' });
     }
   };
@@ -346,8 +376,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
   };
 
   const clearQuizSetup = useCallback(() => {
-    setCombinedContent('');
-    setFileNames([]);
+    setProcessedFiles([]);
     setFileError('');
     setIsParsing(false);
     setParseProgress({ current: 0, total: 0, message: '' });
@@ -366,13 +395,33 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     setView('quiz');
   };
 
+  const removeFile = useCallback((fileNameToRemove: string) => {
+    setProcessedFiles(prev => prev.filter(file => file.name !== fileNameToRemove));
+  }, []);
+
+  const stopParsing = useCallback(() => {
+    parsingController?.abort();
+    setIsParsing(false);
+    setParseProgress({ current: 0, total: 0, message: '' });
+    toast({ title: "File processing cancelled." });
+  }, [parsingController, toast]);
+
+  const cancelGeneration = useCallback(() => {
+    generationController?.abort();
+    setIsGeneratingState(false);
+    setView('setup');
+    toast({ title: "Quiz generation cancelled." });
+  }, [generationController, toast]);
+
+
   const value = {
-    combinedContent,
-    fileNames,
+    processedFiles,
     fileError,
     isParsing,
     parseProgress,
     handleFileChange,
+    removeFile,
+    stopParsing,
     
     view,
     quiz,
@@ -386,6 +435,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     restartQuiz,
     retakeQuiz,
     clearQuizSetup,
+    cancelGeneration,
   };
 
   return React.createElement(QuizSetupContext.Provider, { value }, children);

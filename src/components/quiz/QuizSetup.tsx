@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState, useEffect } from "react";
-import { FileText, Sparkles, Loader2, AlertTriangle, Timer } from "lucide-react";
+import { FileText, Sparkles, Loader2, AlertTriangle, Timer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -61,12 +61,13 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const [isClient, setIsClient] = useState(false);
   const { apiKey, loading: apiKeyLoading } = useApiKey();
   const { 
-    combinedContent,
-    fileNames,
+    processedFiles,
     fileError,
     isParsing,
     parseProgress,
-    handleFileChange 
+    handleFileChange,
+    removeFile,
+    stopParsing,
   } = useQuizSetup();
   
   useEffect(() => {
@@ -87,7 +88,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const timerEnabled = form.watch("timerEnabled");
 
   function onSubmit(values: QuizSetupValues) {
-    if (!combinedContent) {
+    if (processedFiles.length === 0) {
       form.setError("root", { type: "manual", message: "Please upload one or more files and wait for them to be processed." });
       return;
     }
@@ -181,20 +182,28 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                 )}
                 <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing || isApiKeyMissing || apiKeyLoading} />
                 {isParsing && (
-                  <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {parseProgress.message}
-                    {parseProgress.total > 1 && ` (${parseProgress.current} of ${parseProgress.total})`}
-                  </p>
+                  <div className="flex items-center justify-between pt-2">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {parseProgress.message}
+                        {parseProgress.total > 1 && ` (${parseProgress.current} of ${parseProgress.total})`}
+                    </p>
+                    <Button variant="destructive" size="sm" onClick={stopParsing}>Stop</Button>
+                  </div>
                 )}
-                {fileNames.length > 0 && !isParsing && (
+                {processedFiles.length > 0 && !isParsing && (
                   <div className="text-sm text-muted-foreground pt-2 space-y-2">
                     <strong>Uploaded files:</strong>
                     <ul className="list-disc pl-5 space-y-1 max-h-24 overflow-y-auto">
-                      {fileNames.map((name) => (
-                        <li key={name} className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-primary shrink-0" />
-                          <span className="truncate" title={name}>{name}</span>
+                      {processedFiles.map((file) => (
+                        <li key={file.name} className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <FileText className="h-4 w-4 text-primary shrink-0" />
+                                <span className="truncate" title={file.name}>{file.name}</span>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeFile(file.name)}>
+                                <X className="h-4 w-4" />
+                            </Button>
                         </li>
                       ))}
                     </ul>
@@ -384,7 +393,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full text-lg py-6" disabled={isProcessing || !combinedContent || isApiKeyMissing || apiKeyLoading}>
+              <Button type="submit" className="w-full text-lg py-6" disabled={isProcessing || processedFiles.length === 0 || isApiKeyMissing || apiKeyLoading}>
                 {isApiKeyMissing && !apiKeyLoading ? (
                   <>
                     <AlertTriangle className="mr-2 h-5 w-5" />
