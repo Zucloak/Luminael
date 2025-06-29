@@ -35,7 +35,7 @@ const extractTextFromImageFlow = ai.defineFlow(
       const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
       
       const { text } = await runner.generate({
-        model: 'googleai/gemini-2.0-flash',
+        model: 'googleai/gemini-1.5-flash-latest',
         prompt: [
             { text: `You are an advanced OCR AI. Your task is to extract all text from the provided image with the highest possible accuracy.
 A local OCR tool has already made an attempt, but it may be flawed. Use the local attempt as a hint, but trust the image as the primary source of truth.

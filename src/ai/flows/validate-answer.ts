@@ -49,7 +49,6 @@ const validateAnswerFlow = ai.defineFlow(
       const { apiKey } = input;
       const runner = genkit({
         plugins: [googleAI({apiKey})],
-        model: 'googleai/gemini-2.0-flash',
       });
 
       // Manually construct the prompt to avoid using the higher-level definePrompt abstraction,
@@ -93,6 +92,7 @@ You MUST respond ONLY with a valid JSON object matching this exact schema. Do no
 
       // Use the lower-level 'generate' call for maximum stability.
       const { text } = await runner.generate({
+        model: 'googleai/gemini-1.5-flash-latest',
         prompt: promptText,
         config: {
           // Force JSON output from the model

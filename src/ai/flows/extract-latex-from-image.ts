@@ -49,7 +49,7 @@ const extractLatexFromImageFlow = ai.defineFlow(
         const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
         
         const { output } = await runner.generate({
-            model: 'googleai/gemini-2.0-flash',
+            model: 'googleai/gemini-1.5-flash-latest',
             prompt: [
                 {text: `You are an expert AI specializing in converting handwritten and typed mathematical work from images into structured LaTeX. Your primary goal is to achieve a perfect, renderable LaTeX representation.
 

@@ -66,14 +66,13 @@ ${content}
 **Summary:`;
 
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
-    const model = 'googleai/gemini-2.0-flash';
-
+    
     const CONTENT_THRESHOLD = 20000;
     let processedContent = content;
 
     if (processedContent.length > CONTENT_THRESHOLD) {
       const { text } = await runner.generate({
-        model,
+        model: 'googleai/gemini-1.5-flash-latest',
         prompt: summarizePromptTemplate,
       });
       processedContent = text;
@@ -99,7 +98,7 @@ ${processedContent}
 You MUST provide your response in the specified JSON format.`;
     
     const {output} = await runner.generate({
-      model,
+      model: 'googleai/gemini-1.5-flash-latest',
       prompt: quizPrompt,
       output: {
           format: 'json',
