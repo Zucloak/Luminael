@@ -7,11 +7,6 @@ import {googleAI} from '@genkit-ai/googleai';
 import fs from 'fs';
 import path from 'path';
 
-const extractTextPrompt = fs.readFileSync(
-  path.join(process.cwd(), 'src', 'ai', 'prompts', 'extractTextFromImage.prompt'),
-  'utf8'
-);
-
 const ExtractTextFromImageInputSchema = z.object({
   imageDataUrl: z
     .string()
@@ -33,6 +28,11 @@ const extractTextFromImageFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ imageDataUrl, apiKey }) => {
+    const extractTextPrompt = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'ai', 'prompts', 'extractTextFromImage.prompt'),
+      'utf8'
+    );
+    
     const runner = apiKey
       ? genkit({
           plugins: [googleAI({apiKey})],

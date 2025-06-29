@@ -14,11 +14,6 @@ import {googleAI} from '@genkit-ai/googleai';
 import fs from 'fs';
 import path from 'path';
 
-const promptTemplate = fs.readFileSync(
-  path.join(process.cwd(), 'src', 'ai', 'prompts', 'validateAnswer.prompt'),
-  'utf8'
-);
-
 export const ValidateAnswerInputSchema = z.object({
   question: z.string().describe("The original quiz question."),
   userAnswer: z.string().describe("The answer provided by the user."),
@@ -51,6 +46,11 @@ const validateAnswerFlow = ai.defineFlow(
     outputSchema: ValidateAnswerOutputSchema,
   },
   async (input) => {
+    const promptTemplate = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'ai', 'prompts', 'validateAnswer.prompt'),
+      'utf8'
+    );
+
     const { apiKey, ...promptInput } = input;
     const runner = apiKey
       ? genkit({

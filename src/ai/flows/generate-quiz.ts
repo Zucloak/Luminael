@@ -15,17 +15,6 @@ import {googleAI} from '@genkit-ai/googleai';
 import fs from 'fs';
 import path from 'path';
 
-const quizPromptTemplate = fs.readFileSync(
-  path.join(process.cwd(), 'src', 'ai', 'prompts', 'generateQuiz.prompt'),
-  'utf8'
-);
-
-const summarizePromptTemplate = fs.readFileSync(
-  path.join(process.cwd(), 'src', 'ai', 'prompts', 'summarizeContent.prompt'),
-  'utf8'
-);
-
-
 const GenerateQuizInputSchema = z.object({
   content: z.string().describe('The content to generate the quiz from, potentially covering multiple subjects.'),
   numQuestions: z.number().describe('The number of questions to generate for this batch.'),
@@ -72,6 +61,16 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async (input) => {
+    const quizPromptTemplate = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'ai', 'prompts', 'generateQuiz.prompt'),
+      'utf8'
+    );
+    
+    const summarizePromptTemplate = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'ai', 'prompts', 'summarizeContent.prompt'),
+      'utf8'
+    );
+
     const {apiKey, ...promptInput} = input;
     const runner = apiKey
       ? genkit({

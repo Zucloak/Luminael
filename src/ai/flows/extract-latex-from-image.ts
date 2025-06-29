@@ -14,11 +14,6 @@ import {googleAI} from '@genkit-ai/googleai';
 import fs from 'fs';
 import path from 'path';
 
-const promptTemplate = fs.readFileSync(
-  path.join(process.cwd(), 'src', 'ai', 'prompts', 'extractLatexFromImage.prompt'),
-  'utf8'
-);
-
 const ExtractLatexFromImageInputSchema = z.object({
   imageDataUrl: z
     .string()
@@ -51,6 +46,11 @@ const extractLatexFromImageFlow = ai.defineFlow(
     outputSchema: ExtractLatexFromImageOutputSchema,
   },
   async ({ imageDataUrl, apiKey }) => {
+    const promptTemplate = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'ai', 'prompts', 'extractLatexFromImage.prompt'),
+      'utf8'
+    );
+    
     const runner = apiKey
       ? genkit({
           plugins: [googleAI({apiKey})],

@@ -14,16 +14,6 @@ import {googleAI} from '@genkit-ai/googleai';
 import fs from 'fs';
 import path from 'path';
 
-const quizPromptTemplate = fs.readFileSync(
-  path.join(process.cwd(), 'src', 'ai', 'prompts', 'generateHellBoundQuiz.prompt'),
-  'utf8'
-);
-
-const summarizePromptTemplate = fs.readFileSync(
-  path.join(process.cwd(), 'src', 'ai', 'prompts', 'summarizeContentHellBound.prompt'),
-  'utf8'
-);
-
 const GenerateHellBoundQuizInputSchema = z.object({
   fileContent: z
     .string()
@@ -71,6 +61,16 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
   async (input) => {
+    const quizPromptTemplate = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'ai', 'prompts', 'generateHellBoundQuiz.prompt'),
+      'utf8'
+    );
+    
+    const summarizePromptTemplate = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'ai', 'prompts', 'summarizeContentHellBound.prompt'),
+      'utf8'
+    );
+
     const {apiKey, ...promptInput} = input;
     const runner = apiKey
       ? genkit({
