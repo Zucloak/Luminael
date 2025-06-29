@@ -20,6 +20,7 @@ const ExtractLatexFromImageInputSchema = z.object({
     .describe(
       "An image file of mathematical work, encoded as a data URI. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  localOcrAttempt: z.string().optional().describe("The (potentially flawed) text extracted by a local OCR tool."),
   apiKey: z.string().optional().describe('Optional Gemini API key.'),
 });
 export type ExtractLatexFromImageInput = z.infer<typeof ExtractLatexFromImageInputSchema>;
@@ -45,7 +46,7 @@ const extractLatexFromImageFlow = ai.defineFlow(
     inputSchema: ExtractLatexFromImageInputSchema,
     outputSchema: ExtractLatexFromImageOutputSchema,
   },
-  async ({ imageDataUrl, apiKey }) => {
+  async ({ imageDataUrl, localOcrAttempt, apiKey }) => {
     const promptTemplate = fs.readFileSync(
       path.join(process.cwd(), 'src', 'ai', 'prompts', 'extractLatexFromImage.prompt'),
       'utf8'
@@ -65,7 +66,7 @@ const extractLatexFromImageFlow = ai.defineFlow(
         prompt: promptTemplate,
     });
 
-    const {output} = await prompt({imageDataUrl});
+    const {output} = await prompt({imageDataUrl, localOcrAttempt});
 
     if (!output) {
       throw new Error("AI processing failed. The model did not return a response, possibly due to content safety filters or an internal error.");

@@ -13,9 +13,12 @@ const ExtractTextFromImageInputSchema = z.object({
     .describe(
       "An image file encoded as a data URI. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  localOcrAttempt: z.string().optional().describe("The (potentially flawed) text extracted by a local OCR tool."),
   apiKey: z.string().optional().describe('Optional Gemini API key.'),
 });
 type ExtractTextFromImageInput = z.infer<typeof ExtractTextFromImageInputSchema>;
+
+const ExtractTextFromImagePromptInputSchema = ExtractTextFromImageInputSchema.omit({apiKey: true});
 
 export async function extractTextFromImage(input: ExtractTextFromImageInput): Promise<string> {
   return extractTextFromImageFlow(input);
@@ -27,7 +30,7 @@ const extractTextFromImageFlow = ai.defineFlow(
     inputSchema: ExtractTextFromImageInputSchema,
     outputSchema: z.string(),
   },
-  async ({ imageDataUrl, apiKey }) => {
+  async ({ imageDataUrl, localOcrAttempt, apiKey }) => {
     const extractTextPrompt = fs.readFileSync(
       path.join(process.cwd(), 'src', 'ai', 'prompts', 'extractTextFromImage.prompt'),
       'utf8'
@@ -40,12 +43,13 @@ const extractTextFromImageFlow = ai.defineFlow(
         })
       : ai;
     
-    const { text } = await runner.generate({
-      prompt: [
-        { text: extractTextPrompt },
-        { media: { url: imageDataUrl } },
-      ],
+    const prompt = runner.definePrompt({
+      name: 'extractTextFromImagePrompt',
+      input: {schema: ExtractTextFromImagePromptInputSchema},
+      prompt: extractTextPrompt,
     });
+    
+    const { text } = await prompt({imageDataUrl, localOcrAttempt});
 
     return text;
   }

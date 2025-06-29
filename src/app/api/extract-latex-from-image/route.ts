@@ -3,13 +3,13 @@ import { extractLatexFromImage, ExtractLatexFromImageInput } from '@/ai/flows/ex
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageDataUrl, apiKey } = await req.json();
+    const { imageDataUrl, localOcrAttempt, apiKey } = await req.json();
 
     if (!imageDataUrl) {
       return NextResponse.json({ error: 'imageDataUrl is required' }, { status: 400 });
     }
 
-    const input: ExtractLatexFromImageInput = { imageDataUrl, apiKey };
+    const input: ExtractLatexFromImageInput = { imageDataUrl, localOcrAttempt, apiKey };
     const result = await extractLatexFromImage(input);
 
     return NextResponse.json(result);

@@ -27,39 +27,47 @@ import { PulsingCore } from "@/components/common/PulsingCore";
 import { PulsingCoreRed } from "../common/PulsingCoreRed";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
-async function ocrImage(imageDataUrl: string, apiKey: string | null): Promise<string> {
-  const response = await fetch('/api/extract-text-from-image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageDataUrl, apiKey }),
-  });
+async function ocrImageWithFallback(imageDataUrl: string, apiKey: string | null): Promise<string> {
+    const { toast } = useToast();
+    // Tier 1: Local OCR
+    toast({ title: "Attempting local OCR..."});
+    const { data: { text: localText, confidence } } = await Tesseract.recognize(imageDataUrl, 'eng');
+    
+    // If local OCR is good enough, use it.
+    if (localText && localText.trim().length > 20 && confidence > 70) {
+        toast({ title: "Local OCR successful!", description: "Extracted text on your device." });
+        return localText;
+    }
 
-  const responseText = await response.text();
+    // Tier 2: AI OCR Fallback
+    toast({ title: "Local OCR insufficient.", description: "Falling back to AI for better accuracy." });
+    const response = await fetch('/api/extract-text-from-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageDataUrl, localOcrAttempt: localText, apiKey }),
+    });
 
-  if (!response.ok) {
-    if (response.status === 429 || responseText.includes('quota')) {
-      throw new Error("You've exceeded the AI processing quota for the free tier, which has a daily limit. Please try again with a smaller document or try again tomorrow.");
+    const responseText = await response.text();
+
+    if (!response.ok) {
+        let errorDetails = responseText;
+        try {
+            const errorData = JSON.parse(responseText);
+            errorDetails = errorData.details || errorData.error || "An unknown server error occurred.";
+        } catch (e) {
+            // Not JSON
+        }
+        throw new Error(`AI OCR Failed: ${errorDetails}`);
     }
     
-    let errorDetails = responseText;
-    try {
-      const errorData = JSON.parse(responseText);
-      errorDetails = errorData.details || errorData.error || "An unknown server error occurred.";
-    } catch (e) {
-      errorDetails = responseText.substring(0, 200) + '...';
-    }
-    throw new Error(`${errorDetails}`);
-  }
-
-  try {
     const data = JSON.parse(responseText);
+    toast({ title: "AI OCR successful!", description: "Extracted text using cloud AI." });
     return data.extractedText;
-  } catch (e) {
-    throw new Error("Failed to parse successful server response.");
-  }
 }
 
 function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
@@ -115,6 +123,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, message: "" });
   const [isClient, setIsClient] = useState(false);
   const { apiKey, loading: apiKeyLoading } = useApiKey();
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
@@ -133,11 +142,11 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
 
   const timerEnabled = form.watch("timerEnabled");
 
-  const processFile = (file: File): Promise<{ content: string; aiCallMade: boolean; }> => {
+  const processFile = (file: File): Promise<{ content: string; }> => {
     return new Promise(async (resolve, reject) => {
       if (file.type === "text/plain" || file.type === "text/markdown") {
         const reader = new FileReader();
-        reader.onload = (e) => resolve({ content: e.target?.result as string, aiCallMade: false });
+        reader.onload = (e) => resolve({ content: e.target?.result as string });
         reader.onerror = () => reject(`Error reading ${file.name}.`);
         reader.readAsText(file);
       } else if (file.type.startsWith("image/")) {
@@ -145,35 +154,9 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
         reader.onload = async (e) => {
             if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
             const imageDataUrl = e.target.result as string;
-
             try {
-                // Step 1: Try local OCR with Tesseract.js first
-                setParseProgress({ current: 0, total: 100, message: "Attempting local OCR..." });
-                const { data: { text: localText, confidence } } = await Tesseract.recognize(
-                    imageDataUrl,
-                    'eng', // language
-                    {
-                        logger: m => {
-                            if (m.status === 'recognizing text') {
-                                const progress = Math.floor(m.progress * 100);
-                                setParseProgress({ current: progress, total: 100, message: `Local OCR: ${m.status} (${progress}%)` });
-                            }
-                        }
-                    }
-                );
-
-                // Step 2: If local OCR is good enough, use it.
-                if (localText && localText.trim().length > 20 && confidence > 60) {
-                    setParseProgress({ current: 100, total: 100, message: "Local OCR successful!" });
-                    resolve({ content: localText, aiCallMade: false });
-                    return;
-                }
-
-                // Step 3: If local OCR fails or is poor, fall back to AI OCR.
-                setParseProgress({ current: 1, total: 1, message: "Local OCR insufficient. Falling back to AI OCR..." });
-                const aiText = await ocrImage(imageDataUrl, apiKey);
-                resolve({ content: aiText, aiCallMade: true });
-
+                const text = await ocrImageWithFallback(imageDataUrl, apiKey);
+                resolve({ content: text });
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
                 reject(`OCR failed for ${file.name}: ${message}`);
@@ -190,7 +173,6 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             const pdf = await pdfjsLib.getDocument(typedarray).promise;
             
             let allPagesText: string[] = [];
-            let anyAiCallMade = false;
             setParseProgress({ current: 0, total: pdf.numPages, message: "Reading PDF..." });
 
             for (let i = 1; i <= pdf.numPages; i++) {
@@ -200,10 +182,9 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
               let pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
               
               let ocrAttemptedOnPage = false;
-              if (pageText.length < 20) {
+              if (pageText.length < 50) { // If text content is sparse, assume it's an image
                 ocrAttemptedOnPage = true;
-                anyAiCallMade = true;
-                setParseProgress(prev => ({ ...prev, current: i, message: `Page ${i} is image-based, using AI OCR...` }))
+                setParseProgress(prev => ({ ...prev, current: i, message: `Page ${i} is image-based, using OCR...` }))
                 const viewport = page.getViewport({ scale: 2.0 });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d')!;
@@ -218,16 +199,12 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
 
                 if (!isCanvasBlank(canvas)) {
                    try {
-                    const ocrText = await ocrImage(canvas.toDataURL(), apiKey);
-                    pageText = ocrText;
+                    pageText = await ocrImageWithFallback(canvas.toDataURL(), apiKey);
                    } catch (err) {
                      const message = err instanceof Error ? err.message : String(err);
                      console.error(`OCR failed for page ${i} of ${file.name}:`, message);
-                     pageText = ""; // Default to empty string on OCR failure
                      setFileError(`OCR on page ${i} failed: ${message.substring(0,100)}...`);
                    }
-                } else {
-                  pageText = ""; // Page was blank
                 }
               }
               
@@ -238,7 +215,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                 await delay(RATE_LIMIT_DELAY);
               }
             }
-            resolve({ content: allPagesText.join('\n\n---\n\n'), aiCallMade: anyAiCallMade });
+            resolve({ content: allPagesText.join('\n\n---\n\n') });
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             console.error("Error processing PDF:", error);
@@ -265,32 +242,25 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     setCombinedContent("");
     setFileError("");
     setIsParsingFile(true);
-    setParseProgress({ current: 0, total: 0, message: "Processing files..." });
+    setParseProgress({ current: 0, total: 0, message: "Preparing to process files..." });
     const fileList = Array.from(files);
     setFileNames(fileList.map(f => f.name));
 
     let allContents: string[] = [];
-    let anyAiCallMadeInBatch = false;
 
     try {
-      for (const [index, file] of fileList.entries()) {
-        const { content, aiCallMade } = await processFile(file);
+      for (const file of fileList) {
+        const { content } = await processFile(file);
         allContents.push(content);
-        if (aiCallMade) {
-          anyAiCallMadeInBatch = true;
-        }
-        
-        if (aiCallMade && index < fileList.length - 1) {
-            setParseProgress(prev => ({ ...prev, message: `Waiting to avoid rate limits...` }));
-            await delay(RATE_LIMIT_DELAY);
-        }
       }
       setCombinedContent(allContents.join("\n\n---\n\n"));
+      toast({ title: "File processing complete!", description: "Your content is ready." });
     } catch (error) {
       const message = String(error);
       setFileError(message);
       setFileNames([]);
       setCombinedContent("");
+      toast({ variant: "destructive", title: "File Processing Error", description: message });
     } finally {
       setIsParsingFile(false);
       setParseProgress({ current: 0, total: 0, message: "" });

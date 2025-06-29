@@ -1,3 +1,3 @@
-Summarize the following text concisely, retaining all key facts, names, dates, concepts, and especially any subtle or tricky details. The goal is to reduce length while preserving the core information needed for a very difficult quiz. Only provide the summary, with no extra commentary or introduction.
+Analyze the following extensive text. Your goal is not just to summarize, but to extract the most complex, nuanced, and interconnected concepts that can be used to create exceptionally difficult quiz questions. Focus on subtle details, potential trick questions, and topics that require deep synthesis of information. The summary should be a dense foundation for a brutally hard quiz.
 
-TEXT: {{{fileContent}}}
+{{{fileContent}}}

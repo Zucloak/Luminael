@@ -3,15 +3,16 @@ import { extractTextFromImage } from '@/ai/flows/extractTextFromImage';
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageDataUrl, apiKey } = await req.json();
+    const { imageDataUrl, localOcrAttempt, apiKey } = await req.json();
 
     if (!imageDataUrl) {
       return NextResponse.json({ error: 'imageDataUrl is required' }, { status: 400 });
     }
 
-    const extractedText = await extractTextFromImage({ imageDataUrl, apiKey });
+    const result = await extractTextFromImage({ imageDataUrl, localOcrAttempt, apiKey });
 
-    return NextResponse.json({ extractedText });
+    // The flow now returns a string directly
+    return NextResponse.json({ extractedText: result });
   } catch (error) {
     console.error('Error in extract-text-from-image API route:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
