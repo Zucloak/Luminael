@@ -158,6 +158,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
               placeholder="AIzaSy..."
               type="password"
               disabled={isVerifying}
+              maxLength={39}
             />
           </div>
           {isSupercharged && (
