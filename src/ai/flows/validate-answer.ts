@@ -24,7 +24,7 @@ export type ValidateAnswerInput = z.infer<typeof ValidateAnswerInputSchema>;
 
 export const ValidateAnswerOutputSchema = z.object({
   status: z.enum(['Correct', 'Partially Correct', 'Incorrect']).describe("The validation status of the user's answer."),
-  explanation: z.string().describe("A brief explanation for the validation status, providing constructive feedback to the user."),
+  explanation: z.string().describe("A brief explanation for the validation status, providing constructive feedback to the user. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs."),
 });
 export type ValidateAnswerOutput = z.infer<typeof ValidateAnswerOutputSchema>;
 

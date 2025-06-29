@@ -30,15 +30,15 @@ const GenerateQuizPromptInputSchema = GenerateQuizInputSchema.omit({ apiKey: tru
 
 const MultipleChoiceQuestionSchema = z.object({
   questionType: z.enum(['multipleChoice']).describe("The type of the question."),
-  question: z.string().describe('The question text.'),
-  options: z.array(z.string()).length(4).describe('An array of 4 multiple-choice options.'),
-  answer: z.string().describe('The correct answer, which must be one of the provided options.'),
+  question: z.string().describe('The question text. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  options: z.array(z.string().describe('A multiple-choice option. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.')).length(4).describe('An array of 4 multiple-choice options.'),
+  answer: z.string().describe('The correct answer, which must be one of the provided options. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
 const OpenEndedQuestionSchema = z.object({
   questionType: z.enum(['openEnded']).describe("The type of the question."),
-  question: z.string().describe('The problem-solving or open-ended question.'),
-  answer: z.string().describe('The detailed, correct solution to the problem.'),
+  question: z.string().describe('The problem-solving or open-ended question. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The detailed, correct solution to the problem. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
 const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionSchema]);

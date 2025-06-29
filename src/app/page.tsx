@@ -111,17 +111,24 @@ export default function Home() {
         
         const result = await (generatorFn as any)({...params, apiKey});
 
-        if (!result || !result.quiz || result.quiz.questions.length === 0) {
-          throw new Error(`AI failed to generate questions in batch starting at ${i}.`);
+        if (result && result.quiz && Array.isArray(result.quiz.questions)) {
+          const newQuestions = result.quiz.questions.filter(q => q && q.question && q.question.trim() !== '');
+          allQuestions = [...allQuestions, ...newQuestions];
+          existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map(q => q.question)];
+        } else {
+            console.warn(`AI returned an invalid response or no questions in batch starting at ${i}.`);
         }
-        
-        const newQuestions = result.quiz.questions;
-        allQuestions = [...allQuestions, ...newQuestions];
-        existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map(q => q.question)];
       }
 
       if (allQuestions.length === 0) {
-        throw new Error("The AI failed to generate any questions. Please check your content or settings and try again.");
+        throw new Error("The AI failed to generate any valid questions. Please check your content or settings and try again.");
+      }
+      
+      if (allQuestions.length < totalQuestions) {
+        toast({
+            title: "Quiz Adjusted",
+            description: `The AI generated ${allQuestions.length} valid questions instead of the requested ${totalQuestions}.`,
+        });
       }
 
       setGenerationProgress(prev => ({ ...prev, current: totalQuestions }));
