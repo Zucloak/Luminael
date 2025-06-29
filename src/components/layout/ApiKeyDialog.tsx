@@ -132,7 +132,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
                     </Tooltip>
                 </TooltipProvider>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <p>This is a visual guide. See Google for official limits.</p>
+                    <a href="https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas?" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">See official Google quotas</a>
                     <Button variant="link" className="text-xs h-auto p-0" onClick={resetUsage}>Reset Count</Button>
                 </div>
             </div>
