@@ -26,49 +26,7 @@ import { cn } from '@/lib/utils';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import Tesseract from 'tesseract.js';
-
-async function ocrImageWithFallback(
-  imageDataUrl: string,
-  apiKey: string,
-  incrementUsage: (amount?: number) => void
-): Promise<{ text: string; source: 'local' | 'ai' }> {
-  // Tier 1: Local OCR
-  const {
-    data: { text: localText, confidence },
-  } = await Tesseract.recognize(imageDataUrl, 'eng');
-
-  // If local OCR is good enough, use it.
-  if (localText && localText.trim().length > 20 && confidence > 70) {
-    return { text: localText, source: 'local' };
-  }
-
-  incrementUsage();
-
-  // Tier 2: AI OCR Fallback
-  const response = await fetch('/api/extract-text-from-image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageDataUrl, localOcrAttempt: localText, apiKey }),
-  });
-
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    let errorDetails = responseText;
-    try {
-      const errorData = JSON.parse(responseText);
-      errorDetails =
-        errorData.details || errorData.error || 'An unknown server error occurred.';
-    } catch (e) {
-      /* Not JSON */
-    }
-    throw new Error(`AI OCR Failed: ${errorDetails}`);
-  }
-
-  const data = JSON.parse(responseText);
-  return { text: data.extractedText, source: 'ai' };
-}
+import { ocrImageWithFallback } from '@/lib/ocr';
 
 interface QuizInterfaceProps {
   quiz: Quiz;

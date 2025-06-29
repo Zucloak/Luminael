@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Header } from "@/components/layout/Header";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
-import { BrainCircuit, Sparkles, ShieldCheck, Mail, History } from 'lucide-react';
+import { BrainCircuit, Sparkles, ShieldCheck, Mail, History, KeyRound } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { patchNotes } from '@/lib/patch-notes';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -79,6 +79,16 @@ export default function ProfilePage() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2"><KeyRound className="h-5 w-5 text-primary" /> The Key to Your Engine</h3>
+                     <div className="p-4 rounded-md border bg-muted/30">
+                        <p className="text-sm text-muted-foreground">Think of Luminael as a high-performance vehicle, engineered to perfection. Your free Google Gemini API key is the only thing needed to get in the driver's seat and unlock its full potential. The generous free tier is more than enough to get you started on the road to mastery.</p>
+                        <p className="text-sm mt-2">
+                           <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-primary">Get your free API Key and start your engine.</a>
+                        </p>
+                     </div>
                 </div>
 
                 <div className="space-y-4">

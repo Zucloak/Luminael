@@ -22,6 +22,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton';
 import { PatchNotesDialog } from '@/components/layout/PatchNotesDialog';
 import { patchNotes, LATEST_VERSION } from '@/lib/patch-notes';
+import { useQuizSetup } from '@/hooks/use-quiz-setup';
 
 const LAST_SEEN_VERSION_KEY = 'luminael_last_seen_version';
 
@@ -38,6 +39,7 @@ export default function Home() {
   const { user } = useUser();
   const { apiKey, loading: apiKeyLoading, incrementUsage } = useApiKey();
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
+  const { clearQuizSetup } = useQuizSetup();
 
   const isLoading = themeLoading || apiKeyLoading;
 
@@ -160,6 +162,7 @@ export default function Home() {
     setQuiz(null);
     setUserAnswers({});
     setTimer(0);
+    clearQuizSetup();
     setView('setup');
   };
 

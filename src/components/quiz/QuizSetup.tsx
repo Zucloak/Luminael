@@ -20,72 +20,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import * as pdfjsLib from 'pdfjs-dist';
-import Tesseract from 'tesseract.js';
 import { useApiKey } from "@/hooks/use-api-key";
 import { PulsingCore } from "@/components/common/PulsingCore";
 import { PulsingCoreRed } from "../common/PulsingCoreRed";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { useQuizSetup } from "@/hooks/use-quiz-setup";
 
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
-
-async function ocrImageWithFallback(
-  imageDataUrl: string,
-  apiKey: string | null,
-  incrementUsage: (amount?: number) => void,
-  toast: (options: { title: string, description?: string, variant?: 'default' | 'destructive' }) => void,
-): Promise<string> {
-  // Tier 1: Local OCR
-  const {
-    data: { text: localText, confidence },
-  } = await Tesseract.recognize(imageDataUrl, 'eng');
-
-  // If local OCR is good enough, use it.
-  if (localText && localText.trim().length > 20 && confidence > 70) {
-    return localText;
-  }
-  
-  incrementUsage();
-
-  // Tier 2: AI OCR Fallback
-  const response = await fetch('/api/extract-text-from-image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageDataUrl, localOcrAttempt: localText, apiKey }),
-  });
-
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    let errorDetails = responseText;
-    try {
-      const errorData = JSON.parse(responseText);
-      errorDetails =
-        errorData.details || errorData.error || 'An unknown server error occurred.';
-    } catch (e) {
-      // Not JSON
-    }
-    throw new Error(`AI OCR Failed: ${errorDetails}`);
-  }
-
-  const data = JSON.parse(responseText);
-  return data.extractedText;
-}
-
-
-function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
-  const context = canvas.getContext('2d');
-  if (!context) return true;
-
-  const pixelBuffer = new Uint32Array(
-    context.getImageData(0, 0, canvas.width, canvas.height).data.buffer
-  );
-
-  return !pixelBuffer.some(color => color !== 0xFFFFFFFF && color !== 0);
-}
 
 const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must be at least 1 question.").max(100, "Maximum 100 questions."),
@@ -117,15 +58,17 @@ interface QuizSetupProps {
 }
 
 export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundToggle }: QuizSetupProps) {
-  const [combinedContent, setCombinedContent] = useState<string>("");
-  const [fileNames, setFileNames] = useState<string[]>([]);
-  const [fileError, setFileError] = useState<string>("");
-  const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
-  const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, message: "" });
   const [isClient, setIsClient] = useState(false);
   const { apiKey, loading: apiKeyLoading, incrementUsage } = useApiKey();
-  const { toast } = useToast();
-
+  const { 
+    combinedContent,
+    fileNames,
+    fileError,
+    isParsing,
+    parseProgress,
+    handleFileChange 
+  } = useQuizSetup();
+  
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -143,186 +86,14 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
 
   const timerEnabled = form.watch("timerEnabled");
 
-  const processFile = (file: File, incUsage: (amount?: number) => void): Promise<{ content: string; }> => {
-    return new Promise(async (resolve, reject) => {
-      if (file.type === "text/plain" || file.type === "text/markdown") {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve({ content: e.target?.result as string });
-        reader.onerror = () => reject(`Error reading ${file.name}.`);
-        reader.readAsText(file);
-      } else if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
-            const imageDataUrl = e.target.result as string;
-            try {
-                const text = await ocrImageWithFallback(imageDataUrl, apiKey, incUsage, toast);
-                resolve({ content: text });
-            } catch (err) {
-                const message = err instanceof Error ? err.message : String(err);
-                reject(`OCR failed for ${file.name}: ${message}`);
-            }
-        };
-        reader.onerror = () => reject(`Error reading ${file.name}.`);
-        reader.readAsDataURL(file);
-      } else if (file.type === "application/pdf") {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
-          try {
-            const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
-            const pdf = await pdfjsLib.getDocument(typedarray).promise;
-            
-            setParseProgress({ current: 0, total: pdf.numPages, message: "Analyzing PDF structure..." });
-            
-            // Step 1: Initial pass to get text content and identify image-based pages in parallel
-            const pagePromises = Array.from({ length: pdf.numPages }, (_, i) => pdf.getPage(i + 1));
-            const pages = await Promise.all(pagePromises);
-
-            const analysisPromises = pages.map(async (page, i) => {
-              const textContent = await page.getTextContent();
-              const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
-              
-              const isLikelyImage = pageText.length < 100 || pageText.replace(/\s/g, '').length < 50;
-              
-              setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `Analyzing page ${i + 1}...` }));
-
-              return {
-                pageNum: i + 1,
-                text: isLikelyImage ? null : pageText,
-                needsOcr: isLikelyImage,
-                page: page,
-              };
-            });
-            
-            const initialPageData = await Promise.all(analysisPromises);
-            setParseProgress({ current: pdf.numPages, total: pdf.numPages, message: "Analysis complete." });
-
-            const pagesToOcr = initialPageData.filter(p => p.needsOcr);
-            const allPagesText = initialPageData.filter(p => !p.needsOcr).map(p => p.text as string);
-            
-            // Step 2: If any pages need OCR, process them in throttled batches
-            if (pagesToOcr.length > 0) {
-                const ocrProcessor = async (pageData: (typeof pagesToOcr)[0]): Promise<string> => {
-                    const page = pageData.page;
-                    const viewport = page.getViewport({ scale: 2.0 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    if (!context) return `[Canvas Error on page ${pageData.pageNum}]`;
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    
-                    const renderContext = { canvasContext: context, viewport: viewport };
-                    await page.render(renderContext).promise;
-
-                    if (isCanvasBlank(canvas)) return '';
-                    
-                    try {
-                       return await ocrImageWithFallback(canvas.toDataURL(), apiKey, incUsage, toast);
-                    } catch (err) {
-                       const message = err instanceof Error ? err.message : String(err);
-                       console.error(`OCR failed for page ${pageData.pageNum} of ${file.name}:`, message);
-                       return `[OCR Error on page ${pageData.pageNum}: ${message.substring(0, 100)}...]`;
-                    }
-                };
-                
-                // Gemini Vision API has a rate limit of ~15 requests/minute.
-                // We batch 2 at a time with a 4-second delay to stay safely under this.
-                const BATCH_SIZE = 2;
-                const BATCH_DELAY = 4000;
-
-                let processedCount = 0;
-                for (let i = 0; i < pagesToOcr.length; i += BATCH_SIZE) {
-                    const batch = pagesToOcr.slice(i, i + BATCH_SIZE);
-                    const batchNum = i / BATCH_SIZE + 1;
-                    const totalBatches = Math.ceil(pagesToOcr.length / BATCH_SIZE);
-
-                    setParseProgress({
-                        current: processedCount,
-                        total: pagesToOcr.length,
-                        message: `Processing OCR batch ${batchNum} of ${totalBatches}...`
-                    });
-
-                    const batchPromises = batch.map(ocrProcessor);
-                    const batchResults = await Promise.all(batchPromises);
-                    allPagesText.push(...batchResults);
-                    
-                    processedCount += batch.length;
-
-                    if (i + BATCH_SIZE < pagesToOcr.length) {
-                         setParseProgress({
-                            current: processedCount,
-                            total: pagesToOcr.length,
-                            message: `Waiting to avoid rate limits...`
-                        });
-                        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
-                    }
-                }
-            }
-            
-            resolve({ content: allPagesText.join('\n\n---\n\n') });
-
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.error("Error processing PDF:", error);
-            reject(`Could not process PDF: ${file.name}. ${message}`);
-          }
-        };
-        reader.onerror = () => reject(`Error reading ${file.name}.`);
-        reader.readAsArrayBuffer(file);
-      } else {
-        reject(`Unsupported file type: ${file.name}. Please use .txt, .md, .pdf, or image files.`);
-      }
-    });
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    if (!apiKey) {
-      setFileError("Please set your Gemini API key in the header before uploading files.");
-      return;
-    }
-
-    setCombinedContent("");
-    setFileError("");
-    setIsParsingFile(true);
-    setParseProgress({ current: 0, total: 0, message: "Preparing to process files..." });
-    const fileList = Array.from(files);
-    setFileNames(fileList.map(f => f.name));
-
-    let allContents: string[] = [];
-
-    try {
-      for (const file of fileList) {
-        const { content } = await processFile(file, incrementUsage);
-        allContents.push(content);
-      }
-      setCombinedContent(allContents.join("\n\n---\n\n"));
-      if (allContents.length > 0) {
-        toast({ title: "File processing complete!", description: "Your content is ready." });
-      }
-    } catch (error) {
-      const message = String(error);
-      setFileError(message);
-      setFileNames([]);
-      setCombinedContent("");
-      toast({ variant: "destructive", title: "File Processing Error", description: message });
-    } finally {
-      setIsParsingFile(false);
-      setParseProgress({ current: 0, total: 0, message: "" });
-    }
-  };
-
-
   function onSubmit(values: QuizSetupValues) {
     if (!combinedContent) {
-      setFileError("Please upload one or more files and wait for them to be processed.");
+      // This is a fallback, the button should be disabled anyway.
+      form.setError("root", { type: "manual", message: "Please upload one or more files and wait for them to be processed." });
       return;
     }
     if (!apiKey) {
-      setFileError("Please set your Gemini API key before starting the quiz.");
+      form.setError("root", { type: "manual", message: "Please set your Gemini API key before starting the quiz." });
       return;
     }
     // Increment for the summarization call which happens inside the flow
@@ -333,7 +104,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   }
 
   const isApiKeyMissing = !apiKey;
-  const isProcessing = isGenerating || isParsingFile;
+  const isProcessing = isGenerating || isParsing;
 
   if (!isClient) {
     return (
@@ -414,14 +185,14 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                   </div>
                 )}
                 <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing || isApiKeyMissing || apiKeyLoading} />
-                {isParsingFile && (
+                {isParsing && (
                   <p className="text-sm text-muted-foreground pt-2 flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {parseProgress.message}
                     {parseProgress.total > 1 && ` (${parseProgress.current} of ${parseProgress.total})`}
                   </p>
                 )}
-                {fileNames.length > 0 && !isParsingFile && (
+                {fileNames.length > 0 && !isParsing && (
                   <div className="text-sm text-muted-foreground pt-2 space-y-2">
                     <strong>Uploaded files:</strong>
                     <ul className="list-disc pl-5 space-y-1 max-h-24 overflow-y-auto">
@@ -435,6 +206,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                   </div>
                 )}
                 {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
+                 {form.formState.errors.root && <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -628,7 +400,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Generating...
                   </>
-                ) : isParsingFile ? (
+                ) : isParsing ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Processing files...
