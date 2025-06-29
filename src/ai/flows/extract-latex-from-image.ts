@@ -69,12 +69,7 @@ You MUST respond in the following JSON format. Do not add any text before or aft
 
 {{jsonSchema}}`;
     
-    const runner = apiKey
-      ? genkit({
-          plugins: [googleAI({apiKey})],
-          model: 'googleai/gemini-2.0-flash',
-        })
-      : ai;
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
     const prompt = runner.definePrompt({
         name: 'extractLatexFromImagePrompt',
@@ -83,7 +78,11 @@ You MUST respond in the following JSON format. Do not add any text before or aft
         prompt: promptTemplate,
     });
 
-    const {output} = await prompt({imageDataUrl, localOcrAttempt});
+    const {output} = await runner.generate({
+      model: 'googleai/gemini-2.0-flash',
+      prompt,
+      input: {imageDataUrl, localOcrAttempt}
+    });
 
     if (!output) {
       throw new Error("AI processing failed. The model did not return a response, possibly due to content safety filters or an internal error.");

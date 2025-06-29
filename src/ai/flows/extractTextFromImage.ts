@@ -45,12 +45,7 @@ No local OCR attempt was made.
 
 **Final, Corrected Text:**`;
     
-    const runner = apiKey
-      ? genkit({
-          plugins: [googleAI({apiKey})],
-          model: 'googleai/gemini-2.0-flash',
-        })
-      : ai;
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
     const prompt = runner.definePrompt({
       name: 'extractTextFromImagePrompt',
@@ -58,7 +53,11 @@ No local OCR attempt was made.
       prompt: extractTextPrompt,
     });
     
-    const { text } = await prompt({imageDataUrl, localOcrAttempt});
+    const { text } = await runner.generate({
+      model: 'googleai/gemini-2.0-flash',
+      prompt,
+      input: {imageDataUrl, localOcrAttempt},
+    });
 
     return text;
   }

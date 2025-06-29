@@ -88,18 +88,15 @@ You MUST provide your response in the specified JSON format. Failure is not an o
 **Distilled Essence:**`;
 
     const {apiKey, ...promptInput} = input;
-    const runner = apiKey
-      ? genkit({
-          plugins: [googleAI({apiKey})],
-          model: 'googleai/gemini-2.0-flash',
-        })
-      : ai;
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    const model = 'googleai/gemini-2.0-flash';
 
     const CONTENT_THRESHOLD = 20000;
     let processedContent = input.fileContent;
 
     if (processedContent.length > CONTENT_THRESHOLD) {
       const { text } = await runner.generate({
+        model,
         prompt: summarizePromptTemplate.replace('{{{fileContent}}}', processedContent),
       });
       processedContent = text;
@@ -113,7 +110,11 @@ You MUST provide your response in the specified JSON format. Failure is not an o
     });
 
 
-    const {output} = await prompt({...promptInput, fileContent: processedContent});
+    const {output} = await runner.generate({
+      model,
+      prompt,
+      input: {...promptInput, fileContent: processedContent}
+    });
     return output!;
   }
 );
