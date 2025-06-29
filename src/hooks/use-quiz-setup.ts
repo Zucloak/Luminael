@@ -238,13 +238,18 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
         const { content } = await processFile(file);
         allProcessedFiles.push({ name: file.name, content });
       }
+
+      if (controller.signal.aborted) {
+        throw new Error("Cancelled");
+      }
+      
       setProcessedFiles(allProcessedFiles);
       if (allProcessedFiles.length > 0) {
         toast({ title: "File processing complete!", description: "Your content is ready." });
       }
     } catch (error) {
         if ((error as Error).message === "Cancelled") {
-            // This is handled by the stopParsing function, no need to show another toast.
+            setProcessedFiles([]);
         } else {
             const message = String(error);
             setFileError(message);
