@@ -18,7 +18,7 @@ export const patchNotes: PatchVersion[] = [
     {
         version: '1.1.0',
         title: 'The Phoenix Update',
-        date: 'July 2024',
+        date: 'June 2024',
         notes: [
             {
                 icon: Zap,
