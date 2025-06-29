@@ -27,7 +27,10 @@ function isDocumentInFullscreen(doc: DocumentWithFullscreen): boolean {
 
 export function useFullscreen() {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isSupported, setIsSupported] = useState(true); // Assume supported on server, check on client
+  // Start with `false` to prevent hydration mismatches.
+  // The server will render nothing, and the client will initially match.
+  // The button will appear on the client after `useEffect` runs if supported.
+  const [isSupported, setIsSupported] = useState(false);
 
   const handleFullscreenChange = useCallback(() => {
     const doc = document as DocumentWithFullscreen;
@@ -35,7 +38,7 @@ export function useFullscreen() {
   }, []);
 
   useEffect(() => {
-    // Check for support on mount, which also handles server-side rendering gracefully.
+    // Check for support on mount (client-side only).
     const element = document.documentElement as HTMLElementWithFullscreen;
     const supported = !!(
       element.requestFullscreen ||
