@@ -16,6 +16,48 @@ export interface PatchVersion {
 
 export const patchNotes: PatchVersion[] = [
     {
+        version: '1.2.0',
+        title: 'The Bedrock Update',
+        date: 'June 2024',
+        notes: [
+            {
+                icon: Zap,
+                category: 'Improvement',
+                text: 'A massive architectural overhaul has eliminated an entire class of server-crashing bugs. The application is now fundamentally more stable and resilient.'
+            },
+            {
+                icon: ShieldCheck,
+                category: 'Feature',
+                text: 'You now have full control. Added the ability to remove individual files, stop file processing, and cancel quiz generation at any time.'
+            },
+            {
+                icon: Rocket,
+                category: 'Feature',
+                text: 'Quiz generation now runs seamlessly in the background. Feel free to browse the Profile page while your quiz is being created.'
+            },
+            {
+                icon: Bug,
+                category: 'Fix',
+                text: 'Permanently fixed all LaTeX math rendering issues by enforcing a strict, non-negotiable format for the AI. Mathematical notation will now render correctly, every time.'
+            },
+            {
+                icon: Gem,
+                category: 'Polish',
+                text: 'Improved UI visibility in Hell Bound mode, fixed text overflowing its container, and optimized header navigation for a snappier feel.'
+            },
+            {
+                icon: Gem,
+                category: 'Polish',
+                text: 'The API Key input field now correctly enforces the standard 39-character limit to prevent errors.'
+            },
+            {
+                icon: Rocket,
+                category: 'Improvement',
+                text: 'The Profile page has been updated with a new "Key to Your Engine" section, explaining the role of the Gemini API key.'
+            }
+        ]
+    },
+    {
         version: '1.1.0',
         title: 'The Phoenix Update',
         date: 'June 2024',
