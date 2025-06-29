@@ -247,7 +247,7 @@ export default function Home() {
         onClose={handleClosePatchNotes}
         patch={patchNotes[0]}
       />
-      <main className="flex-grow container mx-auto p-4 md:p-8 flex items-start md:items-center justify-center">
+      <main className="flex-grow container mx-auto p-4 md:p-8 flex items-start lg:items-center justify-center">
         {renderContent()}
       </main>
       <footer className="text-center p-4 text-sm text-muted-foreground">
