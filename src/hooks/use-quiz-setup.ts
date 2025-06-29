@@ -237,10 +237,10 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
         setParseProgress({ current: i + 1, total: fileList.length, message: `Processing ${file.name}...` });
         const { content } = await processFile(file);
         allProcessedFiles.push({ name: file.name, content });
-      }
 
-      if (controller.signal.aborted) {
-        throw new Error("Cancelled");
+        if (controller.signal.aborted) {
+          throw new Error("Cancelled");
+        }
       }
       
       setProcessedFiles(allProcessedFiles);
@@ -339,6 +339,10 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
         } else {
             console.warn(`AI returned an invalid response or no questions in batch starting at ${i}.`);
         }
+      }
+
+      if (controller.signal.aborted) {
+        throw new Error("Cancelled");
       }
 
       if (allQuestions.length === 0) {

@@ -120,9 +120,9 @@ export default function Home() {
                 className="w-full bg-destructive/30"
                 indicatorClassName="bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 bg-[length:200%_200%] animate-progress-fluid"
               />
-              <p className="text-sm font-medium">Conjured {generationProgress.current} of {generationProgress.total} torments</p>
+              <p className="text-sm font-medium text-muted-foreground">Conjured {generationProgress.current} of {generationProgress.total} torments</p>
               <div className="pt-4">
-                <Button variant="outline" onClick={cancelGeneration}>
+                <Button variant="destructive" onClick={cancelGeneration}>
                     <XCircle className="mr-2 h-4 w-4" />
                     Cancel Generation
                 </Button>
