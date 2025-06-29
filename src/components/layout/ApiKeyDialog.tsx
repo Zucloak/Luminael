@@ -11,13 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Link as LinkIcon } from 'lucide-react';
+import { KeyRound, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Accordion,
@@ -29,8 +28,10 @@ import { Progress } from '../ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean }) {
-  const { apiKey, setApiKey, clearApiKey, loading, usage, resetUsage } = useApiKey();
+  const { apiKey, setApiKey, clearApiKey, loading, usage, resetUsage, incrementUsage } = useApiKey();
   const [keyInput, setKeyInput] = useState(apiKey || "");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -41,21 +42,60 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
     }
   }, [apiKey]);
 
-  const handleSave = () => {
+  useEffect(() => {
+    if (!isOpen) {
+        setKeyInput(apiKey || "");
+    }
+  }, [isOpen, apiKey]);
+
+  const handleSave = async () => {
     const trimmedKey = keyInput.trim();
-    if (trimmedKey) {
-        setApiKey(trimmedKey);
-        toast({
-            title: 'Key Assimilated',
-            description: 'The new API Key is now active.',
-        });
-    } else {
+    
+    if (!trimmedKey) {
         clearApiKey();
         toast({
             title: 'API Key Removed',
             description: 'Your API key has been cleared.',
             variant: 'destructive'
         });
+        setIsOpen(false);
+        return;
+    }
+
+    setIsVerifying(true);
+    try {
+        const response = await fetch('/api/validate-api-key', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey: trimmedKey }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            incrementUsage(); // Account for the validation call
+            setApiKey(trimmedKey);
+            toast({
+                title: 'Key Verified & Assimilated',
+                description: 'The new API Key is valid and now active.',
+            });
+            setIsOpen(false);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Verification Failed',
+                description: result.error || 'The provided API key is invalid. Please check it and try again.',
+            });
+        }
+    } catch (error) {
+        console.error("API Key validation request failed", error);
+        toast({
+            variant: 'destructive',
+            title: 'Verification Error',
+            description: 'Could not connect to the server to verify the key. Please check your connection.',
+        });
+    } finally {
+        setIsVerifying(false);
     }
   };
 
@@ -63,11 +103,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
   const usagePercentage = Math.round((usage.used / usage.total) * 100);
 
   return (
-    <Dialog onOpenChange={(open) => {
-      if (!open) {
-        setKeyInput(apiKey || "");
-      }
-    }}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {isSupercharged ? (
            <Button
@@ -107,7 +143,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
         <DialogHeader>
           <DialogTitle>Gemini API Key</DialogTitle>
           <DialogDescription>
-            Enter your Google AI Gemini API key here. It will be stored securely in your browser's local storage and never sent anywhere else.
+            Enter your Google AI Gemini API key here. We will verify it before saving.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
@@ -121,6 +157,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
               onChange={(e) => setKeyInput(e.target.value)}
               placeholder="AIzaSy..."
               type="password"
+              disabled={isVerifying}
             />
           </div>
           {isSupercharged && (
@@ -172,9 +209,15 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
           )}
         </div>
         <DialogFooter className="pt-2">
-          <DialogClose asChild>
-            <Button type="button" onClick={handleSave}>Save changes</Button>
-          </DialogClose>
+           <Button type="button" onClick={handleSave} disabled={isVerifying}>
+              {isVerifying ? (
+                  <>
+                      <Loader2 className="animate-spin" /> Verifying...
+                  </>
+              ) : (
+                  "Save and Verify"
+              )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
