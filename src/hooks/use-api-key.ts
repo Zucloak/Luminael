@@ -61,19 +61,31 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const saveApiKey = useCallback((key: string) => {
+  const saveApiKey = useCallback((newKey: string) => {
     try {
-      window.localStorage.setItem(API_KEY, key);
-      setApiKey(key);
+      // If the key is different from the one in state, reset the usage counter.
+      if (newKey !== apiKey) {
+        const today = new Date().toISOString().split('T')[0];
+        const usageData = { used: 0, date: today };
+        window.localStorage.setItem(API_USAGE_KEY, JSON.stringify(usageData));
+        setUsage(prev => ({ ...prev, used: 0 }));
+      }
+      window.localStorage.setItem(API_KEY, newKey);
+      setApiKey(newKey);
     } catch (error) {
       console.error("Failed to save API key to localStorage", error);
     }
-  }, []);
+  }, [apiKey]);
   
   const clearApiKey = useCallback(() => {
     try {
       window.localStorage.removeItem(API_KEY);
       setApiKey(null);
+      // Also reset usage when key is cleared
+      const today = new Date().toISOString().split('T')[0];
+      const usageData = { used: 0, date: today };
+      window.localStorage.setItem(API_USAGE_KEY, JSON.stringify(usageData));
+      setUsage(prev => ({ ...prev, used: 0 }));
     } catch (error) {
       console.error("Failed to remove API key from localStorage", error);
     }
