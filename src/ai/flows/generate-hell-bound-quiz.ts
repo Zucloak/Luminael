@@ -11,8 +11,6 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import fs from 'fs';
-import path from 'path';
 
 const GenerateHellBoundQuizInputSchema = z.object({
   fileContent: z
@@ -45,7 +43,9 @@ const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionS
 
 const GenerateHellBoundQuizOutputSchema = z.object({
   quiz: z.object({
-      questions: z.array(QuestionSchema),
+      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== ''), {
+        message: 'Question text cannot be empty.',
+      }),
   }).describe('The generated quiz.'),
 });
 export type GenerateHellBoundQuizOutput = z.infer<typeof GenerateHellBoundQuizOutputSchema>;
@@ -61,15 +61,28 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
   async (input) => {
-    const quizPromptTemplate = fs.readFileSync(
-      path.join(process.cwd(), 'src', 'ai', 'prompts', 'generateHellBoundQuiz.prompt'),
-      'utf8'
-    );
+    const quizPromptTemplate = `You are an AI assistant with a "HELL BOUND" persona. Your task is to create an exceptionally difficult, soul-crushing quiz from the provided content. This is not a test of basic knowledge; it is a trial by fire designed to challenge the user's deepest understanding and push their cognitive limits.
+
+**Core Material:**
+{{{fileContent}}}
+
+**Diabolical Instructions:**
+1.  **Embrace Complexity:** Generate exactly {{numQuestions}} questions that are intricate, multi-layered, and require profound, non-obvious connections to be made from the source material. Ask "why" and "how," not just "what."
+2.  **Forge Deceptive Options (for Multiple Choice):** Create plausible but subtly incorrect distractors that prey on common misconceptions. The correct answer should be a needle in a haystack of intellectual traps.
+3.  **Demand Rigorous Solutions (for Open-Ended):** Problems should require detailed, step-by-step reasoning. The expected answer is not just a fact, but a full-fledged, logically sound argument or derivation.
+4.  **Avoid Redundancy:** The torments you inflict must be unique. Do not repeat questions from this list of prior sins: {{#if existingQuestions}}{{{json existingQuestions}}}{{else}}None{{/if}}.
+5.  **Impeccable LaTeX:** All mathematical notation must be flawlessly formatted in LaTeX. Single dollar signs ($...$) for inline, double ($$...$$) for display. No exceptions. This is the sacred script of this hell.
+
+**Output Mandate:**
+You WILL provide your response in the specified JSON format. Failure is not an option.
+{{jsonSchema}}`;
     
-    const summarizePromptTemplate = fs.readFileSync(
-      path.join(process.cwd(), 'src', 'ai', 'prompts', 'summarizeContentHellBound.prompt'),
-      'utf8'
-    );
+    const summarizePromptTemplate = `You are a text summarization AI with a "HELL BOUND" persona. The following content is too vast to be processed in its raw form. Your task is to distill this chaos into a concentrated elixir of pure, high-level concepts. Do not summarize the simple facts; extract the most complex, abstract, and interconnectable ideas. Find the hidden relationships and the most challenging principles that a lesser mind would overlook. This summary will be used to forge the most difficult questions imaginable.
+
+**Raw Material:**
+{{{fileContent}}}
+
+**Distilled Essence:**`;
 
     const {apiKey, ...promptInput} = input;
     const runner = apiKey

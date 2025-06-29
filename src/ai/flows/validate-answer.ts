@@ -11,8 +11,6 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import fs from 'fs';
-import path from 'path';
 
 export const ValidateAnswerInputSchema = z.object({
   question: z.string().describe("The original quiz question."),
@@ -46,10 +44,28 @@ const validateAnswerFlow = ai.defineFlow(
     outputSchema: ValidateAnswerOutputSchema,
   },
   async (input) => {
-    const promptTemplate = fs.readFileSync(
-      path.join(process.cwd(), 'src', 'ai', 'prompts', 'validateAnswer.prompt'),
-      'utf8'
-    );
+    const promptTemplate = `You are an expert validator for a quiz application. Your role is to assess a user's answer for an open-ended question based on a provided correct answer. You must determine if the user's response is Correct, Partially Correct, or Incorrect, and provide a concise, constructive explanation.
+
+**Context:**
+- **Question:** {{{question}}}
+- **Correct Answer:** {{{correctAnswer}}}
+- **User's Answer:** {{{userAnswer}}}
+
+**Your Task:**
+1.  **Analyze:** Compare the User's Answer to the Correct Answer. The user does not need to be verbatim, but they must capture the key concepts and correctness of the provided solution.
+2.  **Evaluate:**
+    -   If the user's answer is fundamentally correct and captures all key points, classify it as 'Correct'.
+    -   If the user's answer demonstrates some understanding but misses key details, is incomplete, or contains minor errors, classify it as 'Partially Correct'.
+    -   If the user's answer is fundamentally wrong, irrelevant, or demonstrates a clear lack of understanding, classify it as 'Incorrect'.
+3.  **Explain:** Write a brief, helpful explanation for your decision.
+    -   For 'Correct' answers, offer brief praise.
+    -   For 'Partially Correct' answers, acknowledge what they got right and gently point out what was missing or incorrect.
+    -   For 'Incorrect' answers, provide a clear and simple explanation of the correct concept without being discouraging.
+
+**Output Format:**
+You MUST respond in the following JSON format. Do not add any text before or after the JSON object.
+
+{{jsonSchema}}`;
 
     const { apiKey, ...promptInput } = input;
     const runner = apiKey

@@ -12,8 +12,6 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import fs from 'fs';
-import path from 'path';
 
 const GenerateQuizInputSchema = z.object({
   content: z.string().describe('The content to generate the quiz from, potentially covering multiple subjects.'),
@@ -45,7 +43,9 @@ const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionS
 
 const GenerateQuizOutputSchema = z.object({
   quiz: z.object({
-      questions: z.array(QuestionSchema),
+      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== ''), {
+        message: 'Question text cannot be empty.',
+      }),
   }).describe('The generated quiz.'),
 });
 export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
@@ -61,15 +61,32 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async (input) => {
-    const quizPromptTemplate = fs.readFileSync(
-      path.join(process.cwd(), 'src', 'ai', 'prompts', 'generateQuiz.prompt'),
-      'utf8'
-    );
+    const quizPromptTemplate = `You are an AI assistant tasked with creating a quiz based on the provided content.
+
+**Content:**
+{{{content}}}
+
+**Instructions:**
+1.  **Analyze the Content:** Thoroughly read and understand the provided text.
+2.  **Generate Questions:** Create exactly {{numQuestions}} unique questions based on the content.
+3.  **Question Format:** Adhere to the requested format: '{{questionFormat}}'.
+    -   For 'multipleChoice', provide the question, 4 options, and the correct answer.
+    -   For 'openEnded', provide a detailed problem or question and a comprehensive correct answer/solution.
+    -   For 'mixed', create a variety of both types.
+4.  **Difficulty:** Calibrate the questions to a '{{difficulty}}' level.
+5.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: {{#if existingQuestions}}{{{json existingQuestions}}}{{else}}None{{/if}}.
+6.  **LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting, enclosing inline math with single dollar signs ($...$) and block math with double dollar signs ($$...$$). This is critical for rendering.
+
+**Output Format:**
+You MUST provide your response in the specified JSON format.
+{{jsonSchema}}`;
     
-    const summarizePromptTemplate = fs.readFileSync(
-      path.join(process.cwd(), 'src', 'ai', 'prompts', 'summarizeContent.prompt'),
-      'utf8'
-    );
+    const summarizePromptTemplate = `You are a text summarization AI. The following content is too long for direct processing. Please summarize it, focusing on the key concepts, definitions, and important facts that would be most suitable for creating quiz questions. Retain the essential information while significantly reducing the overall length.
+
+**Original Content:**
+{{{content}}}
+
+**Summary:**`;
 
     const {apiKey, ...promptInput} = input;
     const runner = apiKey

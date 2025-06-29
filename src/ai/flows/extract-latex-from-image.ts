@@ -11,8 +11,6 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import fs from 'fs';
-import path from 'path';
 
 const ExtractLatexFromImageInputSchema = z.object({
   imageDataUrl: z
@@ -47,10 +45,29 @@ const extractLatexFromImageFlow = ai.defineFlow(
     outputSchema: ExtractLatexFromImageOutputSchema,
   },
   async ({ imageDataUrl, localOcrAttempt, apiKey }) => {
-    const promptTemplate = fs.readFileSync(
-      path.join(process.cwd(), 'src', 'ai', 'prompts', 'extractLatexFromImage.prompt'),
-      'utf8'
-    );
+    const promptTemplate = `You are an expert AI specializing in converting handwritten and typed mathematical work from images into structured LaTeX. Your primary goal is to achieve a perfect, renderable LaTeX representation.
+
+**Image of Mathematical Work:**
+{{media url=imageDataUrl}}
+
+**Local OCR's Initial (and likely flawed) Text Extraction:**
+{{#if localOcrAttempt}}
+{{localOcrAttempt}}
+{{else}}
+No local OCR attempt was made.
+{{/if}}
+
+**Your Task:**
+1.  **Analyze the Image:** The image is the ground truth. Use your vision capabilities to meticulously interpret every symbol, number, and operator.
+2.  **Understand the Structure:** Recognize the spatial layout of the math—fractions, exponents, subscripts, matrices, etc.
+3.  **Correct and Format:** Convert the visual structure into a single, valid LaTeX string. Ensure all mathematical notation is correctly formatted. For example, \`x^2\` not \`x2\`, \`\\frac{a}{b}\` not \`a/b\`.
+4.  **Extract Steps:** Break down the work into logical steps or lines.
+5.  **Assess Confidence:** Provide a confidence score (0-100) based on how certain you are of the transcription's accuracy.
+
+**Output Format:**
+You MUST respond in the following JSON format. Do not add any text before or after the JSON object.
+
+{{jsonSchema}}`;
     
     const runner = apiKey
       ? genkit({
