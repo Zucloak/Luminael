@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -114,7 +115,6 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
     }
     
     setIsOcrRunning(true);
-    toast({ title: "Processing Image...", description: "This may take a moment." });
     
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -125,7 +125,6 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
       try {
         // Tier 1: Local OCR with Tesseract.js as a "hint" for the AI
         try {
-          toast({ title: "Step 1: Performing Local OCR", description: "Analyzing image on your device..." });
           const { data: { text } } = await Tesseract.recognize(imageDataUrl, 'eng');
           localOcrAttempt = text;
         } catch (tesseractError) {
@@ -134,7 +133,6 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
         }
         
         // Tier 2: AI-powered LaTeX extraction
-        toast({ title: "Step 2: Sending to AI", description: "AI is converting your work to LaTeX..." });
         const response = await fetch('/api/extract-latex-from-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -195,7 +193,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
 
   const goToPrevious = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 

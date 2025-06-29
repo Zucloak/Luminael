@@ -33,45 +33,44 @@ import { useToast } from "@/hooks/use-toast";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
 async function ocrImageWithFallback(
-  imageDataUrl: string, 
-  apiKey: string | null,
-  toast: (options: any) => void
+  imageDataUrl: string,
+  apiKey: string | null
 ): Promise<string> {
-    // Tier 1: Local OCR
-    toast({ title: "Attempting local OCR..."});
-    const { data: { text: localText, confidence } } = await Tesseract.recognize(imageDataUrl, 'eng');
-    
-    // If local OCR is good enough, use it.
-    if (localText && localText.trim().length > 20 && confidence > 70) {
-        toast({ title: "Local OCR successful!", description: "Extracted text on your device." });
-        return localText;
+  // Tier 1: Local OCR
+  const {
+    data: { text: localText, confidence },
+  } = await Tesseract.recognize(imageDataUrl, 'eng');
+
+  // If local OCR is good enough, use it.
+  if (localText && localText.trim().length > 20 && confidence > 70) {
+    return localText;
+  }
+
+  // Tier 2: AI OCR Fallback
+  const response = await fetch('/api/extract-text-from-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageDataUrl, localOcrAttempt: localText, apiKey }),
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    let errorDetails = responseText;
+    try {
+      const errorData = JSON.parse(responseText);
+      errorDetails =
+        errorData.details || errorData.error || 'An unknown server error occurred.';
+    } catch (e) {
+      // Not JSON
     }
+    throw new Error(`AI OCR Failed: ${errorDetails}`);
+  }
 
-    // Tier 2: AI OCR Fallback
-    toast({ title: "Local OCR insufficient.", description: "Falling back to AI for better accuracy." });
-    const response = await fetch('/api/extract-text-from-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageDataUrl, localOcrAttempt: localText, apiKey }),
-    });
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-        let errorDetails = responseText;
-        try {
-            const errorData = JSON.parse(responseText);
-            errorDetails = errorData.details || errorData.error || "An unknown server error occurred.";
-        } catch (e) {
-            // Not JSON
-        }
-        throw new Error(`AI OCR Failed: ${errorDetails}`);
-    }
-    
-    const data = JSON.parse(responseText);
-    toast({ title: "AI OCR successful!", description: "Extracted text using cloud AI." });
-    return data.extractedText;
+  const data = JSON.parse(responseText);
+  return data.extractedText;
 }
+
 
 function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
   const context = canvas.getContext('2d');
@@ -153,7 +152,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
             const imageDataUrl = e.target.result as string;
             try {
-                const text = await ocrImageWithFallback(imageDataUrl, apiKey, toast);
+                const text = await ocrImageWithFallback(imageDataUrl, apiKey);
                 resolve({ content: text });
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
@@ -215,7 +214,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                     if (isCanvasBlank(canvas)) return '';
                     
                     try {
-                       return await ocrImageWithFallback(canvas.toDataURL(), apiKey, toast);
+                       return await ocrImageWithFallback(canvas.toDataURL(), apiKey);
                     } catch (err) {
                        const message = err instanceof Error ? err.message : String(err);
                        console.error(`OCR failed for page ${pageData.pageNum} of ${file.name}:`, message);
@@ -535,12 +534,13 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                     />
                   </div>
                   <div className="relative rounded-md overflow-hidden">
-                    <div className={cn(
-                      "absolute inset-0",
-                      "bg-gradient-to-r from-amber-400 via-red-500 to-yellow-500",
-                      "animate-supercharged-border bg-[length:400%_400%]",
-                      "opacity-70"
-                    )}></div>
+                     <div className={cn(
+                        "absolute inset-0",
+                        "bg-gradient-to-r from-amber-400 via-red-500 to-yellow-500",
+                        "animate-supercharged-border bg-[length:400%_400%]",
+                        "transition-opacity opacity-0",
+                        isHellBound && "opacity-70"
+                      )}></div>
                     <div className="relative flex items-center space-x-4 p-4">
                       <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
                       <div className="flex-1 space-y-1">
