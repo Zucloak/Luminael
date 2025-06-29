@@ -39,7 +39,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(timer);
-  const { apiKey } = useApiKey();
+  const { apiKey, incrementUsage } = useApiKey();
   const { toast } = useToast();
   const [isOcrRunning, setIsOcrRunning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,6 +131,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageDataUrl, localOcrAttempt, apiKey }),
         });
+        incrementUsage();
 
         const responseText = await response.text();
         if (!response.ok) {

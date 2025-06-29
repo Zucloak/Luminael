@@ -36,7 +36,7 @@ export default function Home() {
   const { isHellBound, setIsHellBound, loading: themeLoading } = useTheme();
   const { toast } = useToast();
   const { user } = useUser();
-  const { apiKey, loading: apiKeyLoading } = useApiKey();
+  const { apiKey, loading: apiKeyLoading, incrementUsage } = useApiKey();
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
 
   const isLoading = themeLoading || apiKeyLoading;
@@ -110,6 +110,7 @@ export default function Home() {
         }
         
         const result = await (generatorFn as any)({...params, apiKey});
+        incrementUsage(); // Increment for the generation call
 
         if (result && result.quiz && Array.isArray(result.quiz.questions)) {
           const newQuestions = result.quiz.questions.filter(q => q && q.question && q.question.trim() !== '');

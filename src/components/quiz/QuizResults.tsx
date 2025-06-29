@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Quiz, UserProfile, Question } from '@/lib/types';
@@ -33,7 +34,7 @@ type Result = (Question & {
 });
 
 export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizResultsProps) {
-  const { apiKey } = useApiKey();
+  const { apiKey, incrementUsage } = useApiKey();
   const [detailedResults, setDetailedResults] = useState<Result[]>([]);
   
   useEffect(() => {
@@ -74,6 +75,8 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
                 apiKey,
               }),
             });
+            incrementUsage();
+
             if (!res.ok) {
               const errorText = await res.text();
               try {

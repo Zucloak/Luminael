@@ -34,7 +34,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 
 async function ocrImageWithFallback(
   imageDataUrl: string,
-  apiKey: string | null
+  apiKey: string | null,
+  incrementUsage: (amount?: number) => void,
+  toast: (options: { title: string, description?: string, variant?: 'default' | 'destructive' }) => void,
 ): Promise<string> {
   // Tier 1: Local OCR
   const {
@@ -45,6 +47,8 @@ async function ocrImageWithFallback(
   if (localText && localText.trim().length > 20 && confidence > 70) {
     return localText;
   }
+  
+  incrementUsage();
 
   // Tier 2: AI OCR Fallback
   const response = await fetch('/api/extract-text-from-image', {
@@ -119,7 +123,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, message: "" });
   const [isClient, setIsClient] = useState(false);
-  const { apiKey, loading: apiKeyLoading } = useApiKey();
+  const { apiKey, loading: apiKeyLoading, incrementUsage } = useApiKey();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -139,7 +143,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
 
   const timerEnabled = form.watch("timerEnabled");
 
-  const processFile = (file: File): Promise<{ content: string; }> => {
+  const processFile = (file: File, incUsage: (amount?: number) => void): Promise<{ content: string; }> => {
     return new Promise(async (resolve, reject) => {
       if (file.type === "text/plain" || file.type === "text/markdown") {
         const reader = new FileReader();
@@ -152,7 +156,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
             const imageDataUrl = e.target.result as string;
             try {
-                const text = await ocrImageWithFallback(imageDataUrl, apiKey);
+                const text = await ocrImageWithFallback(imageDataUrl, apiKey, incUsage, toast);
                 resolve({ content: text });
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
@@ -214,7 +218,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                     if (isCanvasBlank(canvas)) return '';
                     
                     try {
-                       return await ocrImageWithFallback(canvas.toDataURL(), apiKey);
+                       return await ocrImageWithFallback(canvas.toDataURL(), apiKey, incUsage, toast);
                     } catch (err) {
                        const message = err instanceof Error ? err.message : String(err);
                        console.error(`OCR failed for page ${pageData.pageNum} of ${file.name}:`, message);
@@ -292,7 +296,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
 
     try {
       for (const file of fileList) {
-        const { content } = await processFile(file);
+        const { content } = await processFile(file, incrementUsage);
         allContents.push(content);
       }
       setCombinedContent(allContents.join("\n\n---\n\n"));
@@ -318,6 +322,10 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     if (!apiKey) {
       setFileError("Please set your Gemini API key before starting the quiz.");
       return;
+    }
+    // Increment for the summarization call which happens inside the flow
+    if (combinedContent.length > 20000) {
+      incrementUsage();
     }
     onQuizStart(combinedContent, values);
   }

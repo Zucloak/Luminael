@@ -25,9 +25,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Progress } from '../ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean }) {
-  const { apiKey, setApiKey, loading } = useApiKey();
+  const { apiKey, setApiKey, loading, usage, resetUsage } = useApiKey();
   const [keyInput, setKeyInput] = useState(apiKey || "");
   const { toast } = useToast();
 
@@ -46,6 +48,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
   };
 
   const isSupercharged = apiKey && !loading;
+  const usagePercentage = Math.round((usage.used / usage.total) * 100);
 
   return (
     <Dialog onOpenChange={(open) => {
@@ -88,7 +91,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className={cn("sm:max-w-[425px]", isHellBound && "hell-bound text-foreground")}>
+      <DialogContent className={cn("sm:max-w-md", isHellBound && "hell-bound text-foreground")}>
         <DialogHeader>
           <DialogTitle>Gemini API Key</DialogTitle>
           <DialogDescription>
@@ -96,20 +99,45 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="api-key" className="text-right">
+          <div className="space-y-2">
+            <Label htmlFor="api-key">
               API Key
             </Label>
             <Input
               id="api-key"
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
-              className="col-span-3"
               placeholder="AIzaSy..."
               type="password"
             />
           </div>
-          {!apiKey && !loading && (
+          {isSupercharged && (
+             <div className="space-y-3 pt-4 border-t">
+                <div className="flex justify-between items-end">
+                    <Label>Daily Usage Budget</Label>
+                    <p className="text-sm font-medium text-muted-foreground">{usage.used} / {usage.total} Calls</p>
+                </div>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Progress value={usagePercentage} className="h-3" indicatorClassName={cn(
+                                "bg-gradient-to-r from-green-400 via-green-500 to-green-600 bg-[length:200%_200%] animate-progress-fluid",
+                                usagePercentage > 50 && "from-yellow-400 via-yellow-500 to-orange-500",
+                                usagePercentage > 80 && "from-orange-500 via-red-500 to-red-600",
+                            )}/>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{usagePercentage}% of your suggested daily budget used.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <p>This is a visual guide. See Google for official limits.</p>
+                    <Button variant="link" className="text-xs h-auto p-0" onClick={resetUsage}>Reset Count</Button>
+                </div>
+            </div>
+          )}
+          {!isSupercharged && (
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="item-1" className="border-b-0">
                 <AccordionTrigger className="text-sm hover:no-underline py-2">Where can I find my Gemini API key?</AccordionTrigger>
@@ -131,7 +159,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             </Accordion>
           )}
         </div>
-        <DialogFooter className="pt-0">
+        <DialogFooter className="pt-2">
           <DialogClose asChild>
             <Button type="button" onClick={handleSave}>Save changes</Button>
           </DialogClose>
