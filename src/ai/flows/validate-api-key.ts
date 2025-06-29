@@ -3,7 +3,9 @@
  * @fileOverview A flow to validate a Gemini API key.
  */
 
-import { genkit, z } from 'genkit';
+import { ai } from '@/ai/genkit';
+import { genkit } from 'genkit';
+import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 
 export const ValidateApiKeyInputSchema = z.object({
@@ -21,7 +23,7 @@ export async function validateApiKey(input: ValidateApiKeyInput): Promise<Valida
   return validateApiKeyFlow(input);
 }
 
-const validateApiKeyFlow = genkit.defineFlow(
+const validateApiKeyFlow = ai.defineFlow(
   {
     name: 'validateApiKeyFlow',
     inputSchema: ValidateApiKeyInputSchema,
