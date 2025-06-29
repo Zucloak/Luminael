@@ -205,7 +205,7 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
                             ? <XCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />
                             : <Pencil className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
                   }
-                  <span className="flex-1">Question {index + 1}: <MarkdownRenderer>{result.question}</MarkdownRenderer></span>
+                  <div className="flex-1">Question {index + 1}: <MarkdownRenderer>{result.question}</MarkdownRenderer></div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
@@ -224,11 +224,11 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
                             !isUserAnswer && !isCorrectAnswer ? "bg-muted/50" : ""
                           )}
                         >
-                          <p className="font-medium flex items-start gap-2">
+                          <div className="font-medium flex items-start gap-2">
                             {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/> : <X className="h-4 w-4 text-destructive flex-shrink-0 mt-1"/>)}
                             {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/>}
-                            <span className="flex-1"><MarkdownRenderer>{option}</MarkdownRenderer></span>
-                          </p>
+                            <div className="flex-1"><MarkdownRenderer>{option}</MarkdownRenderer></div>
+                          </div>
                           {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-destructive pl-6">Your answer</p>}
                           {isCorrectAnswer && <p className="text-xs text-green-600 pl-6">Correct answer</p>}
                         </div>

@@ -69,7 +69,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
   
   // A simple heuristic to check if a question is likely mathematical
-  const isMathQuestion = currentQuestion.questionType === 'openEnded' && currentQuestion.question.includes('$');
+  const isMathQuestion = currentQuestion.questionType === 'openEnded' && /[\$]/.test(currentQuestion.question);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -237,10 +237,12 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
             className="space-y-4"
           >
             {currentQuestion.options.map((option, index) => (
-              <div key={index} className="flex items-center space-x-3 p-4 border rounded-md has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                <RadioGroupItem value={option} id={`q${currentQuestionIndex}-o${index}`} />
-                <Label htmlFor={`q${currentQuestionIndex}-o${index}`} className="font-normal text-base cursor-pointer flex-1">
-                  <MarkdownRenderer>{option}</MarkdownRenderer>
+              <div key={index} className="p-4 border rounded-md has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                <Label htmlFor={`q${currentQuestionIndex}-o${index}`} className="flex items-center space-x-3 font-normal text-base cursor-pointer w-full">
+                  <RadioGroupItem value={option} id={`q${currentQuestionIndex}-o${index}`} />
+                  <div className="flex-1">
+                    <MarkdownRenderer>{option}</MarkdownRenderer>
+                  </div>
                 </Label>
               </div>
             ))}
