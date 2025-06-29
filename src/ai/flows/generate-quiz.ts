@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-quiz.ts
 'use server';
 /**
@@ -25,23 +26,23 @@ export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 
 const MultipleChoiceQuestionSchema = z.object({
   questionType: z.enum(['multipleChoice']).describe("The type of the question."),
-  question: z.string().describe('The question text. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  options: z.array(z.string().describe('A multiple-choice option. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.')).length(4).describe('An array of 4 multiple-choice options.'),
-  answer: z.string().describe('The correct answer, which must be one of the provided options. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+  question: z.string().describe('The question text, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  options: z.array(z.string().describe('A multiple-choice option, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.')).length(4).describe('An array of 4 multiple-choice options.'),
+  answer: z.string().describe('The correct answer, which must be one of the provided options, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
 const OpenEndedQuestionSchema = z.object({
   questionType: z.enum(['openEnded']).describe("The type of the question."),
-  question: z.string().describe('The problem-solving or open-ended question. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  answer: z.string().describe('The detailed, correct solution to the problem. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+  question: z.string().describe('The problem-solving or open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The detailed, correct solution to the problem, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
 const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionSchema]);
 
 const GenerateQuizOutputSchema = z.object({
   quiz: z.object({
-      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== ''), {
-        message: 'Question text cannot be empty.',
+      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== '' && !item.question.toLowerCase().includes("lorem ipsum")), {
+        message: 'Question text cannot be empty or placeholder text.',
       }),
   }).describe('The generated quiz.'),
 });
@@ -58,12 +59,17 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async ({ content, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
-    const summarizePromptTemplate = `You are a text summarization AI. The following content is too long for direct processing and will exceed the token limit. Your task is to summarize it concisely. Focus on the key concepts, definitions, and important facts that are most suitable for creating quiz questions. Retain all essential information but drastically reduce the word count to ensure it's token-efficient.
+    const summarizePromptTemplate = `You are a highly intelligent text processing AI. The following content is too long for direct processing. Your task is to create a token-efficient summary that will be used to generate a quiz.
+
+**CRITICAL INSTRUCTIONS:**
+1.  **Identify Language:** First, determine the primary language of the original content.
+2.  **Summarize in Same Language:** You MUST write your summary in the *exact same language* you identified. Do not translate. If the original content is in Filipino, the summary must be in Filipino.
+3.  **Focus on Quiz-Worthy Material:** Do not create a generic summary. Instead, extract and condense the key concepts, main characters, plot points, definitions, and important facts. The goal is to create a dense, fact-rich summary suitable for generating detailed quiz questions.
 
 **Original Content:**
 ${content}
 
-**Summary:`;
+**Fact-Rich Summary (in the original language):`;
 
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
@@ -83,19 +89,18 @@ ${content}
 **Content:**
 ${processedContent}
 
-**Instructions:**
-1.  **Analyze the Content:** Thoroughly read and understand the provided text.
-2.  **Generate Questions:** Create exactly ${numQuestions} unique questions based on the content.
-3.  **Question Format:** Adhere to the requested format: '${questionFormat}'.
-    -   For 'multipleChoice', provide the question, 4 options, and the correct answer.
-    -   For 'openEnded', provide a detailed problem or question and a comprehensive correct answer/solution.
-    -   For 'mixed', create a variety of both types.
-4.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
-5.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
-6.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
+**NON-NEGOTIABLE RULES:**
+1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. Every question, option, and answer MUST be directly derived from the Content provided. If the content is a story, do not ask about historical dates unless they are in the story.
+2.  **Obey the Language:** The entire quiz MUST be in the same language as the Content. If the content is in Filipino, the quiz must be in Filipino. No exceptions.
+3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested. Re-read the content to find more details if necessary. Do not stop early.
+4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions (e.g., "What is the capital of France?", "What is a quick brown fox?"). This is an instant failure.
+5.  **Question Format:** Adhere to the requested format: '${questionFormat}'.
+6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level based on the content.
+7.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
+8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
     -   Enclose inline math with single dollar signs (\`$...$\`).
     -   Enclose block math with double dollar signs (\`$$...$$\`).
-    -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`. This is essential for correct rendering.
+    -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`.
     -   **DO NOT** use parentheses for math, such as \`\\(\` or \`\\)\`. Only use dollar signs.
 
 **Output Format:**

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI agent that generates a super difficult quiz related to the uploaded files.
@@ -24,15 +25,15 @@ export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInp
 
 const MultipleChoiceQuestionSchema = z.object({
   questionType: z.enum(['multipleChoice']).describe("The type of the question."),
-  question: z.string().describe('The question text. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  options: z.array(z.string().describe('A multiple-choice option. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.')).length(4).describe('An array of 4 multiple-choice options.'),
-  answer: z.string().describe('The correct answer, which must be one of the provided options. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+  question: z.string().describe('The question text, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  options: z.array(z.string().describe('A multiple-choice option, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.')).length(4).describe('An array of 4 multiple-choice options.'),
+  answer: z.string().describe('The correct answer, which must be one of the provided options, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
 const OpenEndedQuestionSchema = z.object({
   questionType: z.enum(['openEnded']).describe("The type of the question."),
-  question: z.string().describe('The problem-solving or open-ended question. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  answer: z.string().describe('The detailed, correct solution to the problem. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+  question: z.string().describe('The problem-solving or open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The detailed, correct solution to the problem, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
 const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionSchema]);
@@ -40,8 +41,8 @@ const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionS
 
 const GenerateHellBoundQuizOutputSchema = z.object({
   quiz: z.object({
-      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== ''), {
-        message: 'Question text cannot be empty.',
+      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== '' && !item.question.toLowerCase().includes("lorem ipsum")), {
+        message: 'Question text cannot be empty or placeholder text.',
       }),
   }).describe('The generated quiz.'),
 });
@@ -58,12 +59,16 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
   async ({ fileContent, numQuestions, existingQuestions, apiKey }) => {
-    const summarizePromptTemplate = `You are a text summarization AI with a "HELL BOUND" persona. The following raw text is too vast to be processed and will cause a token overflow. Your task is to distill this chaos into a concentrated elixir of pure, high-level concepts, making it brutally token-efficient. Do not summarize the simple facts; extract the most complex, abstract, and interconnectable ideas a lesser mind would overlook. This summary will be used to forge the most difficult questions imaginable.
+    const summarizePromptTemplate = `You are a text distillation AI with a "HELL BOUND" persona. The following raw text is a chaotic mess, too vast for a lesser system. Your task is to forge it into a brutally token-efficient elixir of pure, high-level concepts. This summary will be the raw material for the most difficult questions imaginable.
+
+**ABSOLUTE COMMANDS:**
+1.  **Identify and Obey the Language:** First, determine the primary language of the raw material. You will then write your entire summary in *that same language*. Do not translate. Disobedience will not be tolerated.
+2.  **Extract the Core, Not the Fluff:** Do not summarize simple facts. Your purpose is to distill the most complex, abstract, and interconnectable ideas that a lesser mind would overlook. Focus on the essence that can be used to forge hellishly difficult questions.
 
 **Raw Material:**
 ${fileContent}
 
-**Distilled Essence:`;
+**Distilled Essence (in the original language):`;
 
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
@@ -83,18 +88,18 @@ ${fileContent}
 **Core Material:**
 ${processedContent}
 
-**Instructions for Generating High-Difficulty Questions:**
-1.  **Prioritize Synthesis over Recall:** Do NOT ask simple "what is" questions. Your questions must force the user to synthesize information from multiple, potentially disparate sections of the provided text.
-2.  **Test Second-Order Implications:** Generate questions that require the user to understand the consequences and implications of the concepts presented. For example, if the text explains concept A, ask how concept A would affect a novel situation B, which is not explicitly mentioned.
-3.  **Focus on Nuance and Subtlety:** For conceptual or non-technical material (like literature, law, philosophy), your questions should probe for nuance, subtext, author's intent, and the subtle relationships between different arguments or ideas.
-4.  **Target Edge Cases and Boundaries:** For technical material (like science, math, programming), questions should focus on edge cases, boundary conditions, and scenarios where rules might break or interact in non-obvious ways.
-5.  **Create Devious Distractors (for Multiple Choice):** The incorrect options should be highly plausible and designed to trap common misconceptions. They should be "almost correct" answers, distinguishable from the right answer only by a critical detail found within the source material.
-6.  **Demand Rigorous Solutions (for Open-Ended):** Problems should require a detailed, step-by-step argument, derivation, or explanation. The user should need to build a logical case, not just state a single fact.
-7.  **Generate ${numQuestions} Unique Questions:** Do not repeat concepts or questions. Avoid asking about questions from this list: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
+**NON-NEGOTIABLE RULES:**
+1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. Every question, option, and answer MUST be directly derived from the Core Material provided. If the material is a story, do not ask about geography.
+2.  **Obey the Language:** The entire quiz MUST be in the same language as the Core Material. If the material is in Filipino, the quiz must be in Filipino. No exceptions.
+3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested. Re-read the material to find more details if necessary. Do not stop early.
+4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions (e.g., "What is the capital of France?", "What is a quick brown rabbit?"). This is an instant failure.
+5.  **Prioritize Synthesis:** Questions must force the user to synthesize information from multiple sections of the text.
+6.  **Devious Distractors:** For multiple-choice questions, the incorrect options must be highly plausible and designed to trap common misconceptions based on the text.
+7.  **Avoid Duplicates:** Do not repeat concepts or questions. Avoid asking about questions from this list: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
 8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
     -   Enclose inline math with single dollar signs (\`$...$\`).
     -   Enclose block math with double dollar signs (\`$$...$$\`).
-    -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`. This is essential for correct rendering.
+    -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`.
     -   **DO NOT** use parentheses for math, such as \`\\(\` or \`\\)\`. Only use dollar signs.
 
 **Output Mandate:**
