@@ -521,22 +521,26 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                       )}
                     />
                   </div>
-                  <div className={cn(
-                    "flex items-center space-x-4 p-4 rounded-md",
-                    "bg-gradient-to-r from-amber-400 via-red-500 to-yellow-500",
-                    "animate-supercharged-border bg-[length:400%_400%]"
-                  )}>
-                    <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
-                    <div className="flex-1 space-y-1">
-                      <Label htmlFor="hell-bound-mode" className="font-bold text-destructive-foreground">HELL BOUND MODE</Label>
-                      <p className="text-xs text-destructive-foreground/80">Generate an extremely difficult quiz to truly test your knowledge.</p>
+                  <div className="relative rounded-md overflow-hidden">
+                    <div className={cn(
+                      "absolute inset-0",
+                      "bg-gradient-to-r from-amber-400 via-red-500 to-yellow-500",
+                      "animate-supercharged-border bg-[length:400%_400%]",
+                      "opacity-70"
+                    )}></div>
+                    <div className="relative flex items-center space-x-4 p-4">
+                      <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
+                      <div className="flex-1 space-y-1">
+                        <Label htmlFor="hell-bound-mode" className="font-bold text-destructive-foreground">HELL BOUND MODE</Label>
+                        <p className="text-xs text-destructive-foreground/80">Generate an extremely difficult quiz to truly test your knowledge.</p>
+                      </div>
+                      <Switch
+                        id="hell-bound-mode"
+                        checked={isHellBound}
+                        onCheckedChange={onHellBoundToggle}
+                        disabled={isProcessing || isApiKeyMissing || apiKeyLoading}
+                      />
                     </div>
-                    <Switch
-                      id="hell-bound-mode"
-                      checked={isHellBound}
-                      onCheckedChange={onHellBoundToggle}
-                      disabled={isProcessing || isApiKeyMissing || apiKeyLoading}
-                    />
                   </div>
                   {!isHellBound && (
                     <div className="space-y-4 animate-in fade-in-0 duration-300">
