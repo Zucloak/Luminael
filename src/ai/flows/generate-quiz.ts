@@ -92,7 +92,10 @@ ${processedContent}
     -   For 'mixed', create a variety of both types.
 4.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
 5.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
-6.  **LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting, enclosing inline math with single dollar signs ($...$) and block math with double dollar signs ($$...$$). This is critical for rendering.
+6.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
+    -   Enclose inline math with single dollar signs (\`$...$\`).
+    -   Enclose block math with double dollar signs (\`$$...$$\`).
+    -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`. This is essential for correct rendering.
 
 **Output Format:**
 You MUST provide your response in the specified JSON format.`;

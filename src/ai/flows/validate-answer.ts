@@ -23,7 +23,7 @@ export type ValidateAnswerInput = z.infer<typeof ValidateAnswerInputSchema>;
 
 export const ValidateAnswerOutputSchema = z.object({
   status: z.enum(['Correct', 'Partially Correct', 'Incorrect']).describe("The validation status of the user's answer."),
-  explanation: z.string().describe("A brief explanation for the validation status, providing constructive feedback to the user. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs."),
+  explanation: z.string().describe("A brief explanation for the validation status, providing constructive feedback to the user. All mathematical notation MUST be properly formatted in LaTeX. Multi-character superscripts or subscripts must use curly braces (e.g., `$10^{-19}$`)."),
 });
 export type ValidateAnswerOutput = z.infer<typeof ValidateAnswerOutputSchema>;
 
@@ -79,6 +79,7 @@ const validateAnswerFlow = ai.defineFlow(
     *   If **Correct**, briefly affirm their understanding.
     *   If **Partially Correct**, praise what they got right and then gently clarify what was missing or needed correction.
     *   If **Incorrect**, provide a clear and encouraging explanation of the correct concept.
+    *   **CRITICAL LaTeX Formatting:** Any math in your explanation MUST use proper LaTeX. For multi-character exponents/subscripts, use curly braces (e.g., \`$10^{-19}$\`, NOT \`$10^-19$\`).
 
 **Critical Output Format:**
 You MUST respond ONLY with a valid JSON object matching this exact schema. Do not add any text, markdown, or commentary before or after the JSON.

@@ -91,7 +91,10 @@ ${processedContent}
 5.  **Create Devious Distractors (for Multiple Choice):** The incorrect options should be highly plausible and designed to trap common misconceptions. They should be "almost correct" answers, distinguishable from the right answer only by a critical detail found within the source material.
 6.  **Demand Rigorous Solutions (for Open-Ended):** Problems should require a detailed, step-by-step argument, derivation, or explanation. The user should need to build a logical case, not just state a single fact.
 7.  **Generate ${numQuestions} Unique Questions:** Do not repeat concepts or questions. Avoid asking about questions from this list: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
-8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting, enclosing inline math with single dollar signs ($...$) and block math with double dollar signs ($$...$$). This is critical for rendering.
+8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
+    -   Enclose inline math with single dollar signs (\`$...$\`).
+    -   Enclose block math with double dollar signs (\`$$...$$\`).
+    -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`. This is essential for correct rendering.
 
 **Output Mandate:**
 You MUST provide your response in the specified JSON format. Failure is not an option.`;
