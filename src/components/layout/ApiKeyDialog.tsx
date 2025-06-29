@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,8 +17,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Link as LinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean }) {
   const { apiKey, setApiKey, loading } = useApiKey();
@@ -88,7 +95,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             Enter your Google AI Gemini API key here. It will be stored securely in your browser's local storage and never sent anywhere else.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="space-y-4 pt-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="api-key" className="text-right">
               API Key
@@ -102,8 +109,27 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
               type="password"
             />
           </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1" className="border-b-0">
+              <AccordionTrigger className="text-sm hover:no-underline py-2">Where can I find my Gemini API key?</AccordionTrigger>
+              <AccordionContent className="space-y-3 pt-2 text-sm text-muted-foreground">
+                <p>
+                  You can create a free API key from Google AI Studio. The free tier is generous and perfect for getting started.
+                </p>
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(buttonVariants({ variant: 'outline' }), "w-full")}
+                >
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  Get your API Key from Google AI Studio
+                </a>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
-        <DialogFooter>
+        <DialogFooter className="pt-0">
           <DialogClose asChild>
             <Button type="button" onClick={handleSave}>Save changes</Button>
           </DialogClose>
