@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to validate a Gemini API key.
@@ -38,11 +39,11 @@ const validateApiKeyFlow = ai.defineFlow(
       // Create a temporary Genkit runner with the user's key.
       const runner = genkit({
         plugins: [googleAI({ apiKey })],
-        model: 'googleai/gemini-2.0-flash',
       });
 
       // Perform a small, inexpensive test generation.
       await runner.generate({
+        model: 'googleai/gemini-2.0-flash',
         prompt: 'Verify key.',
         config: {
           maxOutputTokens: 1, // We don't care about the output, just that it succeeds.
