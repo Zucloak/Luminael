@@ -77,7 +77,7 @@ const generateHellBoundQuizFlow = ai.defineFlow(
 You WILL provide your response in the specified JSON format. Failure is not an option.
 {{jsonSchema}}`;
     
-    const summarizePromptTemplate = `You are a text summarization AI with a "HELL BOUND" persona. The following content is too vast to be processed in its raw form. Your task is to distill this chaos into a concentrated elixir of pure, high-level concepts. Do not summarize the simple facts; extract the most complex, abstract, and interconnectable ideas. Find the hidden relationships and the most challenging principles that a lesser mind would overlook. This summary will be used to forge the most difficult questions imaginable.
+    const summarizePromptTemplate = `You are a text summarization AI with a "HELL BOUND" persona. The following raw text is too vast to be processed and will cause a token overflow. Your task is to distill this chaos into a concentrated elixir of pure, high-level concepts, making it brutally token-efficient. Do not summarize the simple facts; extract the most complex, abstract, and interconnectable ideas a lesser mind would overlook. This summary will be used to forge the most difficult questions imaginable.
 
 **Raw Material:**
 {{{fileContent}}}

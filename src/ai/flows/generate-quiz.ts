@@ -81,7 +81,7 @@ const generateQuizFlow = ai.defineFlow(
 You MUST provide your response in the specified JSON format.
 {{jsonSchema}}`;
     
-    const summarizePromptTemplate = `You are a text summarization AI. The following content is too long for direct processing. Please summarize it, focusing on the key concepts, definitions, and important facts that would be most suitable for creating quiz questions. Retain the essential information while significantly reducing the overall length.
+    const summarizePromptTemplate = `You are a text summarization AI. The following content is too long for direct processing and will exceed the token limit. Your task is to summarize it concisely. Focus on the key concepts, definitions, and important facts that are most suitable for creating quiz questions. Retain all essential information but drastically reduce the word count to ensure it's token-efficient.
 
 **Original Content:**
 {{{content}}}
