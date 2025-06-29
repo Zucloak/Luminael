@@ -84,4 +84,17 @@
     background-size: 200% 200%;
     @apply animate-hell-bound-bg;
   }
+  .markdown-renderer pre {
+    @apply whitespace-pre-wrap break-words bg-muted p-4 rounded-md my-4;
+  }
+  .markdown-renderer code {
+    @apply font-mono text-sm;
+  }
+  .markdown-renderer p > code,
+  .markdown-renderer li > code {
+    @apply bg-muted/50 px-1 py-0.5 rounded-sm;
+  }
+  .markdown-renderer pre > code {
+    @apply bg-transparent p-0;
+  }
 }
