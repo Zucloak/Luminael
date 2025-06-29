@@ -206,7 +206,7 @@ export default function Home() {
             <div className="text-center space-y-6 w-full max-w-2xl">
               <PulsingCoreRed className="h-24 w-24 mx-auto" />
               <h2 className="text-3xl font-headline font-bold text-destructive animate-pulse">Forging Your Trial...</h2>
-              <LoadingQuotes />
+              <LoadingQuotes mode="hellBound" />
               <Progress 
                 value={progressPercentage} 
                 className="w-full bg-destructive/30"
@@ -220,7 +220,7 @@ export default function Home() {
           <div className="text-center space-y-6 w-full max-w-2xl">
             <PulsingCore className="h-24 w-24 mx-auto" />
             <h2 className="text-2xl font-headline font-bold">Generating your masterpiece...</h2>
-            <p className="text-muted-foreground">The AI is working hard. This might take a moment, especially for large quizzes.</p>
+            <LoadingQuotes mode="normal" />
             <Progress 
               value={progressPercentage} 
               className="w-full"

@@ -3,6 +3,42 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
+const normalQuotes = [
+  "Assembling insights from your materials...",
+  "Connecting the dots within your content...",
+  "Synthesizing key concepts...",
+  "Drafting questions to challenge your understanding...",
+  "The AI is turning information into knowledge...",
+  "Building a bridge between your notes and new questions...",
+  "Distilling the essence of your documents...",
+  "Curating a personalized learning experience...",
+  "Analyzing patterns in the text...",
+  "The AI is formulating thought-provoking questions...",
+  "Structuring your custom quiz...",
+  "Reviewing your content for quiz-worthy material...",
+  "Crafting questions to test your recall and comprehension...",
+  "Just a moment while we build your path to mastery...",
+  "The digital gears of knowledge are turning...",
+  "Organizing concepts for your quiz...",
+  "Identifying the most important information...",
+  "Preparing your intellectual workout...",
+  "Translating your content into a learning opportunity...",
+  "Our AI is reading so you can learn faster...",
+  "Generating pathways to deeper understanding...",
+  "Weaving together questions from your provided text...",
+  "Uncovering the core ideas for your quiz...",
+  "Building your personalized assessment...",
+  "Aligning questions with your study material...",
+  "Constructing a fair and balanced set of questions...",
+  "Almost ready to test your expertise...",
+  "The AI is on the case, creating your quiz...",
+  "From text to test, the process is underway...",
+  "Filtering for the most relevant topics...",
+  "Finalizing the question set...",
+  "Polishing the questions for clarity...",
+  "Every great quiz starts with great content. Analyzing yours now...",
+];
+
 const hellBoundQuotes = [
   "Embrace the inferno. It forges the strongest wills.",
   "Here, we separate the students from the masters.",
@@ -41,25 +77,27 @@ const hellBoundQuotes = [
 
 interface LoadingQuotesProps {
   className?: string;
+  mode?: 'normal' | 'hellBound';
 }
 
-export function LoadingQuotes({ className }: LoadingQuotesProps) {
+export function LoadingQuotes({ className, mode = 'hellBound' }: LoadingQuotesProps) {
   const [quote, setQuote] = useState('');
   const [isClient, setIsClient] = useState(false);
+  const quotes = mode === 'hellBound' ? hellBoundQuotes : normalQuotes;
 
   useEffect(() => {
     setIsClient(true);
     // Set initial quote
-    const randomQuote = hellBoundQuotes[Math.floor(Math.random() * hellBoundQuotes.length)];
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
     setQuote(randomQuote);
 
     const intervalId = setInterval(() => {
-      const newRandomQuote = hellBoundQuotes[Math.floor(Math.random() * hellBoundQuotes.length)];
+      const newRandomQuote = quotes[Math.floor(Math.random() * quotes.length)];
       setQuote(newRandomQuote);
     }, 4000); // Change quote every 4 seconds
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [quotes]);
 
   // To prevent hydration mismatch, we render a placeholder on the server
   // and on the initial client render. The actual content is rendered only
