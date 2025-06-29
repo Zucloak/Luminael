@@ -32,8 +32,11 @@ import { useToast } from "@/hooks/use-toast";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
-async function ocrImageWithFallback(imageDataUrl: string, apiKey: string | null): Promise<string> {
-    const { toast } = useToast();
+async function ocrImageWithFallback(
+  imageDataUrl: string, 
+  apiKey: string | null,
+  toast: (options: any) => void
+): Promise<string> {
     // Tier 1: Local OCR
     toast({ title: "Attempting local OCR..."});
     const { data: { text: localText, confidence } } = await Tesseract.recognize(imageDataUrl, 'eng');
@@ -155,7 +158,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
             const imageDataUrl = e.target.result as string;
             try {
-                const text = await ocrImageWithFallback(imageDataUrl, apiKey);
+                const text = await ocrImageWithFallback(imageDataUrl, apiKey, toast);
                 resolve({ content: text });
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
@@ -199,7 +202,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
 
                 if (!isCanvasBlank(canvas)) {
                    try {
-                    pageText = await ocrImageWithFallback(canvas.toDataURL(), apiKey);
+                    pageText = await ocrImageWithFallback(canvas.toDataURL(), apiKey, toast);
                    } catch (err) {
                      const message = err instanceof Error ? err.message : String(err);
                      console.error(`OCR failed for page ${i} of ${file.name}:`, message);
@@ -594,3 +597,5 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     </div>
   );
 }
+
+    
