@@ -6,6 +6,10 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { ocrImageWithFallback, isCanvasBlank } from '@/lib/ocr';
+import type { Quiz, Question } from '@/lib/types';
+import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
+import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
+import { useTheme } from '@/hooks/use-theme';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -15,27 +19,54 @@ interface ParseProgress {
   message: string;
 }
 
+type View = 'setup' | 'generating' | 'quiz' | 'results';
+
 interface QuizSetupContextType {
+  // File processing state
   combinedContent: string;
   fileNames: string[];
   fileError: string;
   isParsing: boolean;
   parseProgress: ParseProgress;
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  
+  // Quiz lifecycle state
+  view: View;
+  quiz: Quiz | null;
+  userAnswers: Record<number, string>;
+  generationProgress: ParseProgress;
+  timer: number;
+  isGenerating: boolean;
+
+  // Lifecycle functions
+  startQuiz: (values: any) => Promise<void>;
+  submitQuiz: (answers: Record<number, string>) => void;
+  restartQuiz: () => void;
+  retakeQuiz: () => void;
   clearQuizSetup: () => void;
 }
 
 const QuizSetupContext = createContext<QuizSetupContextType | undefined>(undefined);
 
 export function QuizSetupProvider({ children }: { children: ReactNode }) {
+  // File processing state
   const [combinedContent, setCombinedContent] = useState<string>('');
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string>('');
   const [isParsing, setIsParsing] = useState<boolean>(false);
   const [parseProgress, setParseProgress] = useState<ParseProgress>({ current: 0, total: 0, message: '' });
 
+  // Quiz lifecycle state
+  const [view, setView] = useState<View>('setup');
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [generationProgress, setGenerationProgress] = useState<ParseProgress>({ current: 0, total: 0, message: '' });
+  const [timer, setTimer] = useState<number>(0);
+  const [isGeneratingState, setIsGeneratingState] = useState<boolean>(false);
+
   const { apiKey, incrementUsage } = useApiKey();
   const { toast } = useToast();
+  const { isHellBound } = useTheme();
 
   const processFile = useCallback((file: File): Promise<{ content: string }> => {
     return new Promise(async (resolve, reject) => {
@@ -209,6 +240,111 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     }
   }, [processFile, apiKey, toast]);
   
+  const startQuiz = async (values: any) => {
+    if (!apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please set your Gemini API key in the header before generating a quiz.",
+      });
+      return;
+    }
+    if (!combinedContent) {
+        toast({
+            variant: "destructive",
+            title: "Content Missing",
+            description: "Please upload content before starting a quiz.",
+        });
+        return;
+    }
+
+    if (combinedContent.length > 20000) {
+      incrementUsage();
+    }
+
+    const BATCH_SIZE = 5;
+    const totalQuestions = values.numQuestions;
+    
+    setTimer(values.timerEnabled ? values.timerPerQuestion || 0 : 0);
+    setView('generating');
+    setIsGeneratingState(true);
+    setGenerationProgress({ current: 0, total: totalQuestions, message: '' });
+
+    let allQuestions: Question[] = [];
+    let existingQuestionTitles: string[] = [];
+
+    try {
+      for (let i = 0; i < totalQuestions; i += BATCH_SIZE) {
+        const questionsInBatch = Math.min(BATCH_SIZE, totalQuestions - i);
+        setGenerationProgress(prev => ({ ...prev, current: i, message: `Generating question batch ${Math.floor(i/BATCH_SIZE) + 1}...` }));
+
+        const generatorFn = isHellBound ? generateHellBoundQuiz : generateQuiz;
+        
+        let params: Omit<GenerateQuizInput, 'apiKey'> | Omit<GenerateHellBoundQuizInput, 'apiKey'>;
+        if (isHellBound) {
+          params = {
+            fileContent: combinedContent,
+            numQuestions: questionsInBatch,
+            existingQuestions: existingQuestionTitles,
+          };
+        } else {
+          params = {
+            content: combinedContent,
+            numQuestions: questionsInBatch,
+            difficulty: values.difficulty || 'Medium',
+            questionFormat: values.questionFormat || 'multipleChoice',
+            existingQuestions: existingQuestionTitles,
+          };
+        }
+        
+        const result = await (generatorFn as any)({...params, apiKey});
+        incrementUsage();
+
+        if (result && result.quiz && Array.isArray(result.quiz.questions)) {
+          const newQuestions = result.quiz.questions.filter(q => q && q.question && q.question.trim() !== '');
+          allQuestions = [...allQuestions, ...newQuestions];
+          existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map(q => q.question)];
+        } else {
+            console.warn(`AI returned an invalid response or no questions in batch starting at ${i}.`);
+        }
+      }
+
+      if (allQuestions.length === 0) {
+        throw new Error("The AI failed to generate any valid questions. Please check your content or settings and try again.");
+      }
+      
+      if (allQuestions.length < totalQuestions) {
+        toast({
+            title: "Quiz Adjusted",
+            description: `The AI generated ${allQuestions.length} valid questions instead of the requested ${totalQuestions}.`,
+        });
+      }
+
+      setGenerationProgress(prev => ({ ...prev, current: totalQuestions, message: 'Done!' }));
+      setQuiz({ questions: allQuestions });
+      setUserAnswers({});
+      setView('quiz');
+
+    } catch (error) {
+      console.error(error);
+      const message = error instanceof Error ? error.message : "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again.";
+      toast({
+        variant: "destructive",
+        title: "Error Generating Quiz",
+        description: message,
+      });
+      setView('setup');
+    } finally {
+      setIsGeneratingState(false);
+      setGenerationProgress({ current: 0, total: 0, message: '' });
+    }
+  };
+
+  const submitQuiz = (answers: Record<number, string>) => {
+    setUserAnswers(answers);
+    setView('results');
+  };
+
   const clearQuizSetup = useCallback(() => {
     setCombinedContent('');
     setFileNames([]);
@@ -217,6 +353,19 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     setParseProgress({ current: 0, total: 0, message: '' });
   }, []);
 
+  const restartQuiz = () => {
+    clearQuizSetup();
+    setQuiz(null);
+    setUserAnswers({});
+    setTimer(0);
+    setView('setup');
+  };
+
+  const retakeQuiz = () => {
+    setUserAnswers({});
+    setView('quiz');
+  };
+
   const value = {
     combinedContent,
     fileNames,
@@ -224,6 +373,18 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     isParsing,
     parseProgress,
     handleFileChange,
+    
+    view,
+    quiz,
+    userAnswers,
+    generationProgress,
+    timer,
+    isGenerating: isGeneratingState || isParsing,
+
+    startQuiz,
+    submitQuiz,
+    restartQuiz,
+    retakeQuiz,
     clearQuizSetup,
   };
 

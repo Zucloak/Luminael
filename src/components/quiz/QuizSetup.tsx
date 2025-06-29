@@ -51,7 +51,7 @@ const quizSetupSchema = z.object({
 type QuizSetupValues = z.infer<typeof quizSetupSchema>;
 
 interface QuizSetupProps {
-  onQuizStart: (fileContent: string, values: QuizSetupValues) => Promise<void>;
+  onQuizStart: (values: QuizSetupValues) => Promise<void>;
   isGenerating: boolean;
   isHellBound: boolean;
   onHellBoundToggle: (checked: boolean) => void;
@@ -59,7 +59,7 @@ interface QuizSetupProps {
 
 export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundToggle }: QuizSetupProps) {
   const [isClient, setIsClient] = useState(false);
-  const { apiKey, loading: apiKeyLoading, incrementUsage } = useApiKey();
+  const { apiKey, loading: apiKeyLoading } = useApiKey();
   const { 
     combinedContent,
     fileNames,
@@ -88,7 +88,6 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
 
   function onSubmit(values: QuizSetupValues) {
     if (!combinedContent) {
-      // This is a fallback, the button should be disabled anyway.
       form.setError("root", { type: "manual", message: "Please upload one or more files and wait for them to be processed." });
       return;
     }
@@ -96,11 +95,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
       form.setError("root", { type: "manual", message: "Please set your Gemini API key before starting the quiz." });
       return;
     }
-    // Increment for the summarization call which happens inside the flow
-    if (combinedContent.length > 20000) {
-      incrementUsage();
-    }
-    onQuizStart(combinedContent, values);
+    onQuizStart(values);
   }
 
   const isApiKeyMissing = !apiKey;

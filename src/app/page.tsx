@@ -2,10 +2,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import type { Quiz, UserProfile, Question } from '@/lib/types';
-import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
-import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
-import { useToast } from "@/hooks/use-toast";
 import { Header } from '@/components/layout/Header';
 import { QuizSetup } from '@/components/quiz/QuizSetup';
 import { QuizInterface } from '@/components/quiz/QuizInterface';
@@ -26,25 +22,29 @@ import { useQuizSetup } from '@/hooks/use-quiz-setup';
 
 const LAST_SEEN_VERSION_KEY = 'luminael_last_seen_version';
 
-type View = 'setup' | 'generating' | 'quiz' | 'results';
-
 export default function Home() {
-  const [view, setView] = useState<View>('setup');
-  const [quiz, setQuiz] = useState<Quiz | null>(null);
-  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
-  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
-  const [timer, setTimer] = useState<number>(0);
+  const { 
+    view, 
+    quiz, 
+    userAnswers, 
+    generationProgress, 
+    timer, 
+    startQuiz, 
+    submitQuiz, 
+    restartQuiz, 
+    retakeQuiz,
+    isGenerating,
+  } = useQuizSetup();
+  
   const { isHellBound, setIsHellBound, loading: themeLoading } = useTheme();
-  const { toast } = useToast();
   const { user } = useUser();
-  const { apiKey, loading: apiKeyLoading, incrementUsage } = useApiKey();
+  const { loading: apiKeyLoading } = useApiKey();
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
-  const { clearQuizSetup } = useQuizSetup();
 
   const isLoading = themeLoading || apiKeyLoading;
 
   useEffect(() => {
-    if (isLoading) return; // Don't check until other hooks are ready
+    if (isLoading) return;
     try {
       const lastSeenVersion = window.localStorage.getItem(LAST_SEEN_VERSION_KEY);
       if (lastSeenVersion !== LATEST_VERSION) {
@@ -52,7 +52,6 @@ export default function Home() {
       }
     } catch (error) {
         console.error("Could not read from localStorage", error);
-        // Fallback to showing patch notes if storage is inaccessible
         setIsPatchNotesOpen(true);
     }
   }, [isLoading]);
@@ -64,111 +63,6 @@ export default function Home() {
         console.error("Could not write to localStorage", error);
     }
     setIsPatchNotesOpen(false);
-  };
-
-  const handleQuizStart = async (fileContent: string, values: any) => {
-    if (!apiKey) {
-      toast({
-        variant: "destructive",
-        title: "API Key Required",
-        description: "Please set your Gemini API key in the header before generating a quiz.",
-      });
-      return;
-    }
-
-    const BATCH_SIZE = 5;
-    const totalQuestions = values.numQuestions;
-    
-    const timerToSet = values.timerEnabled ? values.timerPerQuestion : 0;
-    setTimer(timerToSet || 0);
-    setView('generating');
-    setGenerationProgress({ current: 0, total: totalQuestions });
-
-    let allQuestions: Question[] = [];
-    let existingQuestionTitles: string[] = [];
-
-    try {
-      for (let i = 0; i < totalQuestions; i += BATCH_SIZE) {
-        const questionsInBatch = Math.min(BATCH_SIZE, totalQuestions - i);
-        setGenerationProgress(prev => ({ ...prev, current: i }));
-
-        const generatorFn = isHellBound ? generateHellBoundQuiz : generateQuiz;
-        
-        let params: Omit<GenerateQuizInput, 'apiKey'> | Omit<GenerateHellBoundQuizInput, 'apiKey'>;
-        if (isHellBound) {
-          params = {
-            fileContent,
-            numQuestions: questionsInBatch,
-            existingQuestions: existingQuestionTitles,
-          };
-        } else {
-          params = {
-            content: fileContent,
-            numQuestions: questionsInBatch,
-            difficulty: values.difficulty || 'Medium',
-            questionFormat: values.questionFormat || 'multipleChoice',
-            existingQuestions: existingQuestionTitles,
-          };
-        }
-        
-        const result = await (generatorFn as any)({...params, apiKey});
-        incrementUsage(); // Increment for the generation call
-
-        if (result && result.quiz && Array.isArray(result.quiz.questions)) {
-          const newQuestions = result.quiz.questions.filter(q => q && q.question && q.question.trim() !== '');
-          allQuestions = [...allQuestions, ...newQuestions];
-          existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map(q => q.question)];
-        } else {
-            console.warn(`AI returned an invalid response or no questions in batch starting at ${i}.`);
-        }
-      }
-
-      if (allQuestions.length === 0) {
-        throw new Error("The AI failed to generate any valid questions. Please check your content or settings and try again.");
-      }
-      
-      if (allQuestions.length < totalQuestions) {
-        toast({
-            title: "Quiz Adjusted",
-            description: `The AI generated ${allQuestions.length} valid questions instead of the requested ${totalQuestions}.`,
-        });
-      }
-
-      setGenerationProgress(prev => ({ ...prev, current: totalQuestions }));
-      setQuiz({ questions: allQuestions });
-      setUserAnswers({});
-      setView('quiz');
-
-    } catch (error) {
-      console.error(error);
-      const message = error instanceof Error ? error.message : "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again.";
-      toast({
-        variant: "destructive",
-        title: "Error Generating Quiz",
-        description: message,
-      });
-      setView('setup');
-    } finally {
-      setGenerationProgress({ current: 0, total: 0 });
-    }
-  };
-
-  const handleQuizSubmit = (answers: Record<number, string>) => {
-    setUserAnswers(answers);
-    setView('results');
-  };
-
-  const handleRestart = () => {
-    setQuiz(null);
-    setUserAnswers({});
-    setTimer(0);
-    clearQuizSetup();
-    setView('setup');
-  };
-
-  const handleRetake = () => {
-    setUserAnswers({});
-    setView('quiz');
   };
 
   const renderContent = () => {
@@ -241,12 +135,12 @@ export default function Home() {
           </div>
         );
       case 'quiz':
-        return quiz && <QuizInterface quiz={quiz} timer={timer} onSubmit={handleQuizSubmit} onExit={handleRestart} isHellBound={isHellBound} />;
+        return quiz && <QuizInterface quiz={quiz} timer={timer} onSubmit={submitQuiz} onExit={restartQuiz} isHellBound={isHellBound} />;
       case 'results':
-        return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={handleRestart} onRetake={handleRetake} user={user} />;
+        return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={restartQuiz} onRetake={retakeQuiz} user={user} />;
       case 'setup':
       default:
-        return <QuizSetup onQuizStart={(fileContent, values) => handleQuizStart(fileContent, values)} isGenerating={view === 'generating'} isHellBound={isHellBound} onHellBoundToggle={setIsHellBound} />;
+        return <QuizSetup onQuizStart={startQuiz} isGenerating={isGenerating} isHellBound={isHellBound} onHellBoundToggle={setIsHellBound} />;
     }
   };
 
