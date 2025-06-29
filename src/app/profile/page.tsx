@@ -5,8 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Header } from "@/components/layout/Header";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
-import { BrainCircuit, Sparkles, ShieldCheck, Mail } from 'lucide-react';
+import { BrainCircuit, Sparkles, ShieldCheck, Mail, History } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { patchNotes } from '@/lib/patch-notes';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ProfilePage() {
   const { isHellBound, loading: themeLoading } = useTheme();
@@ -26,6 +29,7 @@ export default function ProfilePage() {
             <CardContent className="space-y-8 pt-6">
               <Skeleton className="h-24 w-full" />
               <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-48 w-full" />
             </CardContent>
           </Card>
         </main>
@@ -53,10 +57,10 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="font-headline text-3xl">Welcome, Pioneer!</CardTitle>
               <CardDescription>
-                You're at the forefront of AI-powered learning. Here's how we're building a smarter, more efficient tool for you.
+                You're at the forefront of AI-powered learning. Here's what's new and how we're building a smarter tool for you.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-8">
                 <div className="space-y-4">
                     <h3 className="font-semibold text-lg flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> The Luminael Method</h3>
                     <div className="p-4 rounded-md border bg-muted/30 space-y-4">
@@ -85,6 +89,40 @@ export default function ProfilePage() {
                            Send bug reports to: <a href="mailto:synpps@gmail.com" className="font-semibold underline hover:text-primary">synpps@gmail.com</a>
                         </p>
                      </div>
+                </div>
+                
+                <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2"><History className="h-5 w-5 text-primary" /> Version History</h3>
+                    <Card className="w-full bg-background/50">
+                        <CardContent className="p-0">
+                            <ScrollArea className="h-72 w-full">
+                                <Accordion type="single" collapsible defaultValue="item-0" className="p-4">
+                                    {patchNotes.map((patch, index) => (
+                                        <AccordionItem value={`item-${index}`} key={patch.version}>
+                                            <AccordionTrigger>
+                                                <div className="flex flex-col text-left">
+                                                    <span className="font-bold">Version {patch.version}: {patch.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{patch.date}</span>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent>
+                                                <ul className="space-y-3 pt-2">
+                                                    {patch.notes.map((note, noteIndex) => (
+                                                        <li key={noteIndex} className="flex items-start gap-3">
+                                                            <div className="bg-muted p-1.5 rounded-full mt-1">
+                                                                <note.icon className="h-4 w-4 text-muted-foreground" />
+                                                            </div>
+                                                            <p className="text-sm text-muted-foreground flex-1"><span className="font-semibold text-foreground">{note.category}:</span> {note.text}</p>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                </Accordion>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
                 </div>
 
             </CardContent>

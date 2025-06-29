@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Quiz, UserProfile, Question } from '@/lib/types';
 import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
 import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
@@ -20,6 +20,10 @@ import { PulsingCoreRed } from '@/components/common/PulsingCoreRed';
 import { LoadingQuotes } from '@/components/quiz/LoadingQuotes';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PatchNotesDialog } from '@/components/layout/PatchNotesDialog';
+import { patchNotes, LATEST_VERSION } from '@/lib/patch-notes';
+
+const LAST_SEEN_VERSION_KEY = 'luminael_last_seen_version';
 
 type View = 'setup' | 'generating' | 'quiz' | 'results';
 
@@ -33,8 +37,32 @@ export default function Home() {
   const { toast } = useToast();
   const { user } = useUser();
   const { apiKey, loading: apiKeyLoading } = useApiKey();
+  const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
 
   const isLoading = themeLoading || apiKeyLoading;
+
+  useEffect(() => {
+    if (isLoading) return; // Don't check until other hooks are ready
+    try {
+      const lastSeenVersion = window.localStorage.getItem(LAST_SEEN_VERSION_KEY);
+      if (lastSeenVersion !== LATEST_VERSION) {
+        setIsPatchNotesOpen(true);
+      }
+    } catch (error) {
+        console.error("Could not read from localStorage", error);
+        // Fallback to showing patch notes if storage is inaccessible
+        setIsPatchNotesOpen(true);
+    }
+  }, [isLoading]);
+
+  const handleClosePatchNotes = () => {
+    try {
+        window.localStorage.setItem(LAST_SEEN_VERSION_KEY, LATEST_VERSION);
+    } catch (error) {
+        console.error("Could not write to localStorage", error);
+    }
+    setIsPatchNotesOpen(false);
+  };
 
   const handleQuizStart = async (fileContent: string, values: any) => {
     if (!apiKey) {
@@ -214,6 +242,11 @@ export default function Home() {
   return (
     <div className={cn("theme-container min-h-screen flex flex-col transition-colors duration-1000", isHellBound && "hell-bound")}>
       <Header isHellBound={isHellBound} />
+      <PatchNotesDialog
+        isOpen={isPatchNotesOpen}
+        onClose={handleClosePatchNotes}
+        patch={patchNotes[0]}
+      />
       <main className="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
         {renderContent()}
       </main>
