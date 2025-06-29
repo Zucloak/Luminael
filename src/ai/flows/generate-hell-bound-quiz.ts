@@ -61,20 +61,23 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
   async (input) => {
-    const quizPromptTemplate = `You are an AI assistant with a "HELL BOUND" persona. Your task is to create an exceptionally difficult, soul-crushing quiz from the provided content. This is not a test of basic knowledge; it is a trial by fire designed to challenge the user's deepest understanding and push their cognitive limits.
+    const quizPromptTemplate = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to generate a quiz from the provided content that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
 
 **Core Material:**
 {{{fileContent}}}
 
-**Diabolical Instructions:**
-1.  **Embrace Complexity:** Generate exactly {{numQuestions}} questions that are intricate, multi-layered, and require profound, non-obvious connections to be made from the source material. Ask "why" and "how," not just "what."
-2.  **Forge Deceptive Options (for Multiple Choice):** Create plausible but subtly incorrect distractors that prey on common misconceptions. The correct answer should be a needle in a haystack of intellectual traps.
-3.  **Demand Rigorous Solutions (for Open-Ended):** Problems should require detailed, step-by-step reasoning. The expected answer is not just a fact, but a full-fledged, logically sound argument or derivation.
-4.  **Avoid Redundancy:** The torments you inflict must be unique. Do not repeat questions from this list of prior sins: {{#if existingQuestions}}{{{json existingQuestions}}}{{else}}None{{/if}}.
-5.  **Impeccable LaTeX:** All mathematical notation must be flawlessly formatted in LaTeX. Single dollar signs ($...$) for inline, double ($$...$$) for display. No exceptions. This is the sacred script of this hell.
+**Instructions for Generating High-Difficulty Questions:**
+1.  **Prioritize Synthesis over Recall:** Do NOT ask simple "what is" questions. Your questions must force the user to synthesize information from multiple, potentially disparate sections of the provided text.
+2.  **Test Second-Order Implications:** Generate questions that require the user to understand the consequences and implications of the concepts presented. For example, if the text explains concept A, ask how concept A would affect a novel situation B, which is not explicitly mentioned.
+3.  **Focus on Nuance and Subtlety:** For conceptual or non-technical material (like literature, law, philosophy), your questions should probe for nuance, subtext, author's intent, and the subtle relationships between different arguments or ideas.
+4.  **Target Edge Cases and Boundaries:** For technical material (like science, math, programming), questions should focus on edge cases, boundary conditions, and scenarios where rules might break or interact in non-obvious ways.
+5.  **Create Devious Distractors (for Multiple Choice):** The incorrect options should be highly plausible and designed to trap common misconceptions. They should be "almost correct" answers, distinguishable from the right answer only by a critical detail found within the source material.
+6.  **Demand Rigorous Solutions (for Open-Ended):** Problems should require a detailed, step-by-step argument, derivation, or explanation. The user should need to build a logical case, not just state a single fact.
+7.  **Generate {{numQuestions}} Unique Questions:** Do not repeat concepts or questions. Avoid asking about questions from this list: {{#if existingQuestions}}{{{json existingQuestions}}}{{else}}None{{/if}}.
+8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting, enclosing inline math with single dollar signs ($...$) and block math with double dollar signs ($$...$$). This is critical for rendering.
 
 **Output Mandate:**
-You WILL provide your response in the specified JSON format. Failure is not an option.
+You MUST provide your response in the specified JSON format. Failure is not an option.
 {{jsonSchema}}`;
     
     const summarizePromptTemplate = `You are a text summarization AI with a "HELL BOUND" persona. The following raw text is too vast to be processed and will cause a token overflow. Your task is to distill this chaos into a concentrated elixir of pure, high-level concepts, making it brutally token-efficient. Do not summarize the simple facts; extract the most complex, abstract, and interconnectable ideas a lesser mind would overlook. This summary will be used to forge the most difficult questions imaginable.
