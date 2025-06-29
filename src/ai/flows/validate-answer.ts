@@ -27,13 +27,6 @@ export const ValidateAnswerOutputSchema = z.object({
 });
 export type ValidateAnswerOutput = z.infer<typeof ValidateAnswerOutputSchema>;
 
-// This schema is for the prompt itself, excluding the API key.
-const ValidateAnswerPromptInputSchema = z.object({
-    question: z.string().describe("The original quiz question."),
-    userAnswer: z.string().describe("The answer provided by the user."),
-    correctAnswer: z.string().describe("The reference correct answer for the question."),
-});
-
 export async function validateAnswer(input: ValidateAnswerInput): Promise<ValidateAnswerOutput> {
   return validateAnswerFlow(input);
 }
@@ -53,12 +46,20 @@ const validateAnswerFlow = ai.defineFlow(
         };
       }
 
-      const promptTemplate = `You are a university-level teaching assistant AI, an expert in evaluating student answers with nuance and precision. Your task is to analyze a user's answer against a correct solution and provide a fair evaluation. Your judgment must be based on conceptual understanding, not just keyword matching.
+      const { apiKey } = input;
+      const runner = genkit({
+        plugins: [googleAI({apiKey})],
+        model: 'googleai/gemini-2.0-flash',
+      });
+
+      // Manually construct the prompt to avoid using the higher-level definePrompt abstraction,
+      // which appears to be the source of instability.
+      const promptText = `You are a university-level teaching assistant AI, an expert in evaluating student answers with nuance and precision. Your task is to analyze a user's answer against a correct solution and provide a fair evaluation. Your judgment must be based on conceptual understanding, not just keyword matching.
 
 **Evaluation Context:**
-- **Question Asked:** {{{question}}}
-- **The Ideal Correct Answer:** {{{correctAnswer}}}
-- **The Student's Submitted Answer:** {{{userAnswer}}}
+- **Question Asked:** ${input.question}
+- **The Ideal Correct Answer:** ${input.correctAnswer}
+- **The Student's Submitted Answer:** ${input.userAnswer}
 
 **Your Mandate (Follow these steps precisely):**
 
@@ -72,8 +73,6 @@ const validateAnswerFlow = ai.defineFlow(
 
     *   **Correct:** The student's answer fully and accurately captures the essential concepts of the ideal solution. Minor differences in wording are acceptable.
     *   **Partially Correct:** The student is on the right track but their answer is incomplete, contains a minor but significant error, or misses some key details.
-        *   *Example 1:* If the ideal answer is "It's because of A and B," and the student says "It's because of A," that is **Partially Correct**.
-        *   *Example 2:* If the student correctly describes a concept but uses a flawed example to illustrate it, that is **Partially Correct**.
     *   **Incorrect:** The student's answer is fundamentally wrong, demonstrates a major misunderstanding of the core concept, or is completely irrelevant.
 
 3.  **Constructive Feedback:**
@@ -83,34 +82,50 @@ const validateAnswerFlow = ai.defineFlow(
     *   If **Incorrect**, provide a clear and encouraging explanation of the correct concept.
 
 **Critical Output Format:**
-You MUST respond ONLY with the specified JSON object. Do not include your internal reasoning in the final output. Do not add any text before or after the JSON.
+You MUST respond ONLY with a valid JSON object matching this exact schema. Do not add any text, markdown, or commentary before or after the JSON.
+\`\`\`json
+{
+  "status": "'Correct' | 'Partially Correct' | 'Incorrect'",
+  "explanation": "string"
+}
+\`\`\`
+`;
 
-{{jsonSchema}}`;
-
-      const { apiKey, ...promptInput } = input;
-      const runner = genkit({
-        plugins: [googleAI({apiKey})],
-        model: 'googleai/gemini-2.0-flash',
+      // Use the lower-level 'generate' call for maximum stability.
+      const { text } = await runner.generate({
+        prompt: promptText,
+        config: {
+          // Force JSON output from the model
+          responseMIMEType: 'application/json',
+        }
       });
-
-      const prompt = runner.definePrompt({
-          name: 'validateAnswerPrompt',
-          input: {schema: ValidateAnswerPromptInputSchema},
-          output: {schema: ValidateAnswerOutputSchema},
-          prompt: promptTemplate,
-      });
-
-      const response = await prompt(promptInput);
-      const output = response.output;
       
-      if (!output) {
+      let output: ValidateAnswerOutput;
+      try {
+        // The model might still return a string with markdown ```json ... ``` wrapper.
+        // We need to robustly parse it.
+        const cleanedText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+        output = JSON.parse(cleanedText);
+      } catch (jsonParseError) {
+        console.error("Failed to parse JSON response from AI:", text, jsonParseError);
         return {
-            status: 'Incorrect',
-            explanation: "AI validation failed. The model's response was not in the expected format, possibly due to content safety filters. Please try again."
-        };
+          status: 'Incorrect',
+          explanation: "AI validation system error: The AI returned a response that was not valid JSON. Please try again."
+        }
       }
-      
-      return output;
+
+      // Final validation against the Zod schema to ensure type safety.
+      const parseResult = ValidateAnswerOutputSchema.safeParse(output);
+      if (!parseResult.success) {
+        console.error("AI output did not match Zod schema:", parseResult.error);
+        return {
+          status: 'Incorrect',
+          explanation: `AI validation system error: The AI returned an object with an invalid structure. Details: ${parseResult.error.message}`
+        }
+      }
+
+      return parseResult.data;
+
     } catch (error) {
         console.error("Critical error in validateAnswerFlow:", error);
         
@@ -121,7 +136,6 @@ You MUST respond ONLY with the specified JSON object. Do not include your intern
             message = error;
         } else {
             try {
-                // Attempt to stringify for more complex, non-Error objects
                 message = JSON.stringify(error);
             } catch (e) {
                 message = "An un-serializable error object was thrown."
