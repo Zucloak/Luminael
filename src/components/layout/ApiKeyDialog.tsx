@@ -29,22 +29,34 @@ import { Progress } from '../ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean }) {
-  const { apiKey, setApiKey, loading, usage, resetUsage } = useApiKey();
+  const { apiKey, setApiKey, clearApiKey, loading, usage, resetUsage } = useApiKey();
   const [keyInput, setKeyInput] = useState(apiKey || "");
   const { toast } = useToast();
 
   useEffect(() => {
     if (apiKey) {
       setKeyInput(apiKey);
+    } else {
+      setKeyInput("");
     }
   }, [apiKey]);
 
   const handleSave = () => {
-    setApiKey(keyInput);
-    toast({
-      title: 'Key Assimilated',
-      description: 'The new API Key is now active.',
-    });
+    const trimmedKey = keyInput.trim();
+    if (trimmedKey) {
+        setApiKey(trimmedKey);
+        toast({
+            title: 'Key Assimilated',
+            description: 'The new API Key is now active.',
+        });
+    } else {
+        clearApiKey();
+        toast({
+            title: 'API Key Removed',
+            description: 'Your API key has been cleared.',
+            variant: 'destructive'
+        });
+    }
   };
 
   const isSupercharged = apiKey && !loading;
