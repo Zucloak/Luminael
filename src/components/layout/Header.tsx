@@ -40,22 +40,22 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
               isHellBound ? "text-accent" : "text-foreground"
             )}>Welcome, {user.name}</span>
           ) : null}
-          <Link href="/" passHref>
-            <Button variant="outline" size="icon" aria-label="Home" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
+          <Button asChild variant="outline" size="icon" aria-label="Home" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
+            <Link href="/">
               <Home className="h-5 w-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           {isSupported && (
             <Button variant="outline" size="icon" aria-label="Toggle Fullscreen" onClick={toggleFullscreen} className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
               {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
             </Button>
           )}
           <ApiKeyDialog isHellBound={isHellBound} />
-          <Link href="/profile" passHref>
-            <Button variant="outline" size="icon" aria-label="User Profile" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
+          <Button asChild variant="outline" size="icon" aria-label="User Profile" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
+            <Link href="/profile">
               <User className="h-5 w-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     </header>
