@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -26,6 +27,48 @@ import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import Tesseract from 'tesseract.js';
+
+async function ocrImageWithFallback(
+  imageDataUrl: string,
+  apiKey: string,
+  incrementUsage: (amount?: number) => void
+): Promise<{ text: string; source: 'local' | 'ai' }> {
+  // Tier 1: Local OCR
+  const {
+    data: { text: localText, confidence },
+  } = await Tesseract.recognize(imageDataUrl, 'eng');
+
+  // If local OCR is good enough, use it.
+  if (localText && localText.trim().length > 20 && confidence > 70) {
+    return { text: localText, source: 'local' };
+  }
+
+  incrementUsage();
+
+  // Tier 2: AI OCR Fallback
+  const response = await fetch('/api/extract-text-from-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageDataUrl, localOcrAttempt: localText, apiKey }),
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    let errorDetails = responseText;
+    try {
+      const errorData = JSON.parse(responseText);
+      errorDetails =
+        errorData.details || errorData.error || 'An unknown server error occurred.';
+    } catch (e) {
+      /* Not JSON */
+    }
+    throw new Error(`AI OCR Failed: ${errorDetails}`);
+  }
+
+  const data = JSON.parse(responseText);
+  return { text: data.extractedText, source: 'ai' };
+}
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -68,7 +111,6 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
   
-  // A simple heuristic to check if a question is likely mathematical
   const isMathQuestion = currentQuestion.questionType === 'openEnded' && /[\$]/.test(currentQuestion.question);
 
   useEffect(() => {
@@ -122,11 +164,10 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
     reader.readAsDataURL(file);
     reader.onload = async () => {
       const imageDataUrl = reader.result as string;
-      const isMath = isMathQuestion;
-
+      
       try {
-        if (isMath) {
-            // For math, we directly use the specialized AI model without local OCR attempt.
+        let extractedText: string;
+        if (isMathQuestion) {
             const response = await fetch('/api/extract-latex-from-image', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -147,63 +188,31 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
             }
 
             const { latex_representation, confidence_score } = JSON.parse(responseText);
-            handleAnswerChange(latex_representation);
+            extractedText = latex_representation;
             toast({
                 title: "Math Extracted!",
                 description: `Content converted to LaTeX with ${confidence_score}% confidence. You can now edit it if needed.`
             });
         } else {
-            // For regular text, use the same fallback mechanism as file uploads.
-            // Tier 1: Local OCR with Tesseract
-            const { data: { text: localText, confidence } } = await Tesseract.recognize(imageDataUrl, 'eng');
-            
-            if (localText && localText.trim().length > 20 && confidence > 70) {
-                // Local OCR is good enough
-                handleAnswerChange(localText);
-                toast({
-                    title: "Text Extracted!",
-                    description: "Text extracted locally with Tesseract."
-                });
+            const { text, source } = await ocrImageWithFallback(imageDataUrl, apiKey, incrementUsage);
+            extractedText = text;
+             if (source === 'local') {
+                toast({ title: "Text Extracted!", description: "Text extracted locally with Tesseract." });
             } else {
-                // Tier 2: AI OCR Fallback
-                incrementUsage();
-                const response = await fetch('/api/extract-text-from-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageDataUrl, localOcrAttempt: localText, apiKey }),
-                });
-
-                const responseText = await response.text();
-                if (!response.ok) {
-                    let errorDetails = "Failed to extract text from image.";
-                    try {
-                        const errorJson = JSON.parse(responseText);
-                        errorDetails = errorJson.details || errorJson.error || errorDetails;
-                    } catch (e) {
-                        errorDetails = responseText.substring(0, 200);
-                    }
-                    throw new Error(errorDetails);
-                }
-
-                const { extractedText } = JSON.parse(responseText);
-                handleAnswerChange(extractedText);
-                toast({
-                    title: "Text Extracted with AI!",
-                    description: "The text from the image has been added to your answer."
-                });
+                toast({ title: "Text Extracted with AI!", description: "The text from the image has been added to your answer." });
             }
         }
+        handleAnswerChange(extractedText);
       } catch (error) {
         console.error("Image Extraction Error:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred during image processing.";
         toast({
           variant: "destructive",
-          title: isMath ? "LaTeX Extraction Failed" : "Text Extraction Failed",
+          title: isMathQuestion ? "LaTeX Extraction Failed" : "Text Extraction Failed",
           description: message,
         });
       } finally {
         setIsOcrRunning(false);
-        // Reset file input so user can upload the same file again
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
