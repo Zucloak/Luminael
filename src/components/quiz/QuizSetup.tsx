@@ -300,7 +300,9 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
         allContents.push(content);
       }
       setCombinedContent(allContents.join("\n\n---\n\n"));
-      toast({ title: "File processing complete!", description: "Your content is ready." });
+      if (allContents.length > 0) {
+        toast({ title: "File processing complete!", description: "Your content is ready." });
+      }
     } catch (error) {
       const message = String(error);
       setFileError(message);
@@ -541,7 +543,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                       )}
                     />
                   </div>
-                  <div className="relative rounded-md overflow-hidden">
+                  <div className="relative rounded-md overflow-hidden border">
                      <div className={cn(
                         "absolute inset-0",
                         "bg-gradient-to-r from-amber-400 via-red-500 to-yellow-500",
@@ -552,8 +554,8 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                     <div className="relative flex items-center space-x-4 p-4">
                       <PulsingCoreRed className="h-10 w-10 flex-shrink-0" />
                       <div className="flex-1 space-y-1">
-                        <Label htmlFor="hell-bound-mode" className="font-bold text-destructive-foreground">HELL BOUND MODE</Label>
-                        <p className="text-xs text-destructive-foreground/80">Generate an extremely difficult quiz to truly test your knowledge.</p>
+                        <Label htmlFor="hell-bound-mode" className={cn("font-bold", isHellBound ? "text-destructive-foreground" : "text-destructive")}>HELL BOUND MODE</Label>
+                        <p className={cn("text-xs", isHellBound ? "text-destructive-foreground/80" : "text-muted-foreground")}>Generate an extremely difficult quiz to truly test your knowledge.</p>
                       </div>
                       <Switch
                         id="hell-bound-mode"
