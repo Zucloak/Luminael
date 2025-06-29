@@ -67,6 +67,11 @@ const validateAnswerFlow = ai.defineFlow(
     });
 
     const {output} = await prompt(promptInput);
-    return output!;
+    
+    if (!output) {
+      throw new Error("AI validation failed. The model did not return a response, possibly due to content safety filters or an internal error.");
+    }
+    
+    return output;
   }
 );
