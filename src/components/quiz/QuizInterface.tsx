@@ -107,7 +107,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
       toast({
         variant: "destructive",
         title: "API Key Required",
-        description: "Please set your Gemini API key to use OCR.",
+        description: "Please set your Gemini API key to use the image upload feature.",
       });
       return;
     }
@@ -119,7 +119,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
     reader.onload = async () => {
       const imageDataUrl = reader.result as string;
       try {
-        const response = await fetch('/api/extract-text-from-image', {
+        const response = await fetch('/api/extract-latex-from-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageDataUrl, apiKey }),
@@ -138,18 +138,18 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
           throw new Error(errorDetails);
         }
 
-        const { extractedText } = JSON.parse(responseText);
-        handleAnswerChange(extractedText);
+        const { latex_representation, confidence_score } = JSON.parse(responseText);
+        handleAnswerChange(latex_representation);
         toast({
-            title: "Text Extracted",
-            description: "The text from your image has been added to the answer box. You can now edit it if needed."
+            title: "Math Extracted!",
+            description: `Content converted to LaTeX with ${confidence_score}% confidence. You can now edit the LaTeX if needed.`
         });
       } catch (error) {
-        console.error("OCR Error:", error);
-        const message = error instanceof Error ? error.message : "An unknown error occurred during OCR.";
+        console.error("Image-to-LaTeX Error:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred during image processing.";
         toast({
           variant: "destructive",
-          title: "OCR Failed",
+          title: "Extraction Failed",
           description: message,
         });
       } finally {
