@@ -44,7 +44,19 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
         const isCorrect = userAnswer === q.answer;
         return { ...q, userAnswer, isCorrect, isValidating: false };
       }
-      return { ...q, userAnswer, isCorrect: null, isValidating: true };
+      
+      // If open-ended, check if an answer was actually provided.
+      const hasUserAnswer = answers[index] && answers[index].trim() !== '';
+
+      return { 
+        ...q, 
+        userAnswer, 
+        isCorrect: null, // AI will determine correctness
+        isValidating: hasUserAnswer, // ONLY validate if there is an answer.
+        ...(!hasUserAnswer && { // If no answer, pre-populate the validation result.
+          validation: { status: 'Incorrect', explanation: 'No answer was provided.' } 
+        })
+      };
     });
     setDetailedResults(initialResults);
   }, [quiz, answers]);
