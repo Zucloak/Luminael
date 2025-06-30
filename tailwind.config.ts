@@ -11,6 +11,9 @@ export default {
   ],
   theme: {
     extend: {
+      minHeight: {
+        'screen-minus-header': 'calc(100vh - 81px)', // Adjust 81px to your header's height
+      },
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
         headline: ['Inter', 'sans-serif'],

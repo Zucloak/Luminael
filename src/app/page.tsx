@@ -3,14 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/Header';
 import { QuizSetup } from '@/components/quiz/QuizSetup';
 import { QuizInterface } from '@/components/quiz/QuizInterface';
 import { QuizResults } from '@/components/quiz/QuizResults';
 import { useUser } from '@/hooks/use-user';
 import { Progress } from '@/components/ui/progress';
 import { useApiKey } from '@/hooks/use-api-key';
-import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/use-theme';
 import { PulsingCore } from '@/components/common/PulsingCore';
 import { PulsingCoreRed } from '@/components/common/PulsingCoreRed';
@@ -195,21 +193,13 @@ export default function Home() {
   };
 
   return (
-    <div className={cn("theme-container min-h-screen flex flex-col transition-colors duration-1000", isHellBound && "hell-bound")}>
-      <Header isHellBound={isHellBound} />
+    <>
       <PatchNotesDialog
         isOpen={isPatchNotesOpen}
         onClose={handleClosePatchNotes}
         patch={patchNotes[0]}
       />
-      <main className="flex-grow container mx-auto p-4 md:p-8 flex items-start lg:items-center justify-center">
-        {renderContent()}
-      </main>
-      <footer className="text-center p-4 text-sm text-muted-foreground">
-        <p>
-          A Prototype from <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer/CEO: Mr. K. M.
-        </p>
-      </footer>
-    </div>
+      {renderContent()}
+    </>
   );
 }

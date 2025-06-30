@@ -9,10 +9,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApiKeyDialog } from './ApiKeyDialog';
 import { cn } from '@/lib/utils';
 import { useFullscreen } from '@/hooks/use-fullscreen';
+import { useTheme } from '@/hooks/use-theme';
 
-export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
+export function Header() {
   const { user, loading } = useUser();
   const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen();
+  const { isHellBound } = useTheme();
 
   return (
     <header className="py-4 px-4 md:px-8 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
