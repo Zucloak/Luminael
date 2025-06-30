@@ -92,7 +92,28 @@ You MUST respond ONLY with a valid JSON object matching this exact schema. Do no
         });
     }
 
-    const output = responseData?.candidates?.[0]?.content?.parts?.[0]?.json;
+    let output: any;
+
+    // Happy path: model returned structured JSON correctly
+    if (responseData?.candidates?.[0]?.content?.parts?.[0]?.json) {
+      output = responseData.candidates[0].content.parts[0].json;
+    } 
+    // Fallback: model returned JSON as a string, possibly with markdown fences
+    else if (responseData?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      let textResponse = responseData.candidates[0].content.parts[0].text;
+      
+      const jsonMatch = textResponse.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
+        textResponse = jsonMatch[1];
+      }
+
+      try {
+        output = JSON.parse(textResponse);
+      } catch (e) {
+        console.error("Failed to parse text response from Gemini as JSON", textResponse);
+        output = null;
+      }
+    }
 
     if (!output) {
       console.error("Invalid response structure from Gemini", responseData);
