@@ -14,22 +14,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useApiKey } from '@/hooks/use-api-key';
+import { useApiKey, KeyType } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { KeyRound, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from '../ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean }) {
-  const { apiKey, setApiKey, clearApiKey, loading, usage, resetUsage, incrementUsage } = useApiKey();
+  const { apiKey, setApiKey, clearApiKey, loading, keyType, usage, resetUsage, incrementUsage } = useApiKey();
   const [keyInput, setKeyInput] = useState(apiKey || "");
+  const [selectedType, setSelectedType] = useState<KeyType>(keyType);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
@@ -40,13 +36,15 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
     } else {
       setKeyInput("");
     }
-  }, [apiKey]);
+    setSelectedType(keyType);
+  }, [apiKey, keyType]);
 
   useEffect(() => {
     if (!isOpen) {
         setKeyInput(apiKey || "");
+        setSelectedType(keyType);
     }
-  }, [isOpen, apiKey]);
+  }, [isOpen, apiKey, keyType]);
 
   const handleSave = async () => {
     const trimmedKey = keyInput.trim();
@@ -73,8 +71,8 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
         const result = await response.json();
 
         if (response.ok && result.success) {
+            setApiKey(trimmedKey, selectedType);
             incrementUsage(); // Account for the validation call
-            setApiKey(trimmedKey);
             toast({
                 title: 'Key Verified & Assimilated',
                 description: 'The new API Key is valid and now active.',
@@ -143,14 +141,12 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
         <DialogHeader>
           <DialogTitle>Gemini API Key</DialogTitle>
           <DialogDescription>
-            Enter your Google AI Gemini API key here. We will verify it before saving.
+            Enter your Google AI Gemini API key and select your plan type.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
-            <Label htmlFor="api-key">
-              API Key
-            </Label>
+            <Label htmlFor="api-key">API Key</Label>
             <Input
               id="api-key"
               value={keyInput}
@@ -160,6 +156,31 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
               disabled={isVerifying}
               maxLength={39}
             />
+          </div>
+          <div className="space-y-3">
+             <Label>Plan Type</Label>
+             <RadioGroup value={selectedType} onValueChange={(v) => setSelectedType(v as KeyType)} className="grid grid-cols-2 gap-4">
+                <div>
+                    <RadioGroupItem value="free" id="plan-free" className="peer sr-only" />
+                    <Label
+                        htmlFor="plan-free"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    >
+                        Free Tier
+                        <span className="text-xs font-normal text-muted-foreground">50 calls/day</span>
+                    </Label>
+                </div>
+                <div>
+                    <RadioGroupItem value="paid" id="plan-paid" className="peer sr-only" />
+                    <Label
+                        htmlFor="plan-paid"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    >
+                        Paid Plan
+                         <span className="text-xs font-normal text-muted-foreground">Higher Limits</span>
+                    </Label>
+                </div>
+            </RadioGroup>
           </div>
           {isSupercharged && (
              <div className="space-y-3 pt-4 border-t">
@@ -177,7 +198,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
                             )}/>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>{usagePercentage}% of your suggested daily budget used.</p>
+                            <p>{usagePercentage}% of your daily {keyType} tier budget used.</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
@@ -188,25 +209,20 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             </div>
           )}
           {!isSupercharged && (
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="item-1" className="border-b-0">
-                <AccordionTrigger className="text-sm hover:no-underline py-2">Where can I find my Gemini API key?</AccordionTrigger>
-                <AccordionContent className="space-y-3 pt-2 text-sm text-muted-foreground">
-                  <p>
-                    You can create a free API key from Google AI Studio. The free tier is generous and perfect for getting started.
-                  </p>
-                  <a
-                    href="https://aistudio.google.com/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(buttonVariants({ variant: 'outline' }), "w-full")}
-                  >
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    Get your API Key from Google AI Studio
-                  </a>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <div className="space-y-3 pt-2 text-sm text-muted-foreground">
+                <p>
+                You can create a free API key from Google AI Studio. The free tier is generous and perfect for getting started.
+                </p>
+                <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(buttonVariants({ variant: 'outline' }), "w-full")}
+                >
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Get your API Key from Google AI Studio
+                </a>
+            </div>
           )}
         </div>
         <DialogFooter className="pt-2">

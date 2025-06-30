@@ -4,12 +4,18 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 
 const API_KEY = 'luminael_gemini_api_key';
+const API_KEY_TYPE = 'luminael_api_key_type';
 const API_USAGE_KEY = 'luminael_api_usage';
-const DAILY_CALL_BUDGET = 200; // A visual budget for the user
+
+const FREE_TIER_BUDGET = 50;
+const PAID_TIER_BUDGET = 2000; // A high number for visual representation
+
+export type KeyType = 'free' | 'paid';
 
 interface ApiKeyContextType {
   apiKey: string | null;
-  setApiKey: (key: string) => void;
+  keyType: KeyType;
+  setApiKey: (key: string, type: KeyType) => void;
   clearApiKey: () => void;
   loading: boolean;
   usage: { used: number; total: number };
@@ -21,18 +27,25 @@ const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 
 export function ApiKeyProvider({ children }: { children: ReactNode }) {
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [keyType, setKeyType] = useState<KeyType>('free');
   const [loading, setLoading] = useState(true);
-  const [usage, setUsage] = useState({ used: 0, total: DAILY_CALL_BUDGET });
+  const [usage, setUsage] = useState({ used: 0, total: FREE_TIER_BUDGET });
 
   useEffect(() => {
     try {
-      const item = window.localStorage.getItem(API_KEY);
-      if (item) {
-        setApiKey(item);
+      const storedKey = window.localStorage.getItem(API_KEY);
+      const storedType = window.localStorage.getItem(API_KEY_TYPE) as KeyType | null;
+
+      if (storedKey) {
+        setApiKey(storedKey);
+      }
+      if (storedType) {
+        setKeyType(storedType);
       }
     } catch (error) {
-      console.error("Failed to load API key from localStorage", error);
+      console.error("Failed to load API key info from localStorage", error);
       setApiKey(null);
+      setKeyType('free');
     } finally {
       setLoading(false);
     }
@@ -48,12 +61,10 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
         if (usageData.date === today) {
           setUsage(prev => ({ ...prev, used: usageData.used }));
         } else {
-          // New day, reset usage
           window.localStorage.setItem(API_USAGE_KEY, JSON.stringify({ used: 0, date: today }));
           setUsage(prev => ({ ...prev, used: 0 }));
         }
       } else {
-        // No usage data, initialize it
         window.localStorage.setItem(API_USAGE_KEY, JSON.stringify({ used: 0, date: today }));
       }
     } catch (error) {
@@ -61,31 +72,41 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const saveApiKey = useCallback((newKey: string) => {
+  useEffect(() => {
+    setUsage(prev => ({
+        ...prev,
+        total: keyType === 'free' ? FREE_TIER_BUDGET : PAID_TIER_BUDGET
+    }));
+  }, [keyType]);
+
+  const saveApiKey = useCallback((newKey: string, newType: KeyType) => {
     try {
-      // If the key is different from the one in state, reset the usage counter.
-      if (newKey !== apiKey) {
+      if (newKey !== apiKey || newType !== keyType) {
         const today = new Date().toISOString().split('T')[0];
         const usageData = { used: 0, date: today };
         window.localStorage.setItem(API_USAGE_KEY, JSON.stringify(usageData));
         setUsage(prev => ({ ...prev, used: 0 }));
       }
       window.localStorage.setItem(API_KEY, newKey);
+      window.localStorage.setItem(API_KEY_TYPE, newType);
       setApiKey(newKey);
+      setKeyType(newType);
     } catch (error) {
       console.error("Failed to save API key to localStorage", error);
     }
-  }, [apiKey]);
+  }, [apiKey, keyType]);
   
   const clearApiKey = useCallback(() => {
     try {
       window.localStorage.removeItem(API_KEY);
+      window.localStorage.removeItem(API_KEY_TYPE);
       setApiKey(null);
-      // Also reset usage when key is cleared
+      setKeyType('free');
+      
       const today = new Date().toISOString().split('T')[0];
       const usageData = { used: 0, date: today };
       window.localStorage.setItem(API_USAGE_KEY, JSON.stringify(usageData));
-      setUsage(prev => ({ ...prev, used: 0 }));
+      setUsage(prev => ({ ...prev, used: 0, total: FREE_TIER_BUDGET }));
     } catch (error) {
       console.error("Failed to remove API key from localStorage", error);
     }
@@ -116,7 +137,7 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = { apiKey, setApiKey: saveApiKey, clearApiKey, loading, usage, incrementUsage, resetUsage };
+  const value = { apiKey, keyType, setApiKey: saveApiKey, clearApiKey, loading, usage, incrementUsage, resetUsage };
 
   return React.createElement(ApiKeyContext.Provider, { value: value }, children);
 }
