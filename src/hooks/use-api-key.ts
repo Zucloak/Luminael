@@ -6,16 +6,23 @@ import React, { useState, useEffect, useCallback, createContext, useContext, Rea
 const API_KEY = 'luminael_gemini_api_key';
 const API_KEY_TYPE = 'luminael_api_key_type';
 const API_USAGE_KEY = 'luminael_api_usage';
+const API_PAID_CONFIG = 'luminael_api_paid_config';
 
-const FREE_TIER_BUDGET = 50;
-const PAID_TIER_BUDGET = 2000; // A high number for visual representation
+export const FREE_TIER_BUDGET = 50;
+export const UNLIMITED_BUDGET = 9999; // A high number for visual representation
 
 export type KeyType = 'free' | 'paid';
+
+export interface PaidTierConfig {
+  type: 'unlimited' | 'custom';
+  limit: number;
+}
 
 interface ApiKeyContextType {
   apiKey: string | null;
   keyType: KeyType;
-  setApiKey: (key: string, type: KeyType) => void;
+  paidTierConfig: PaidTierConfig;
+  setApiKey: (key: string, type: KeyType, paidConfig?: PaidTierConfig) => void;
   clearApiKey: () => void;
   loading: boolean;
   usage: { used: number; total: number };
@@ -28,6 +35,7 @@ const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 export function ApiKeyProvider({ children }: { children: ReactNode }) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [keyType, setKeyType] = useState<KeyType>('free');
+  const [paidTierConfig, setPaidTierConfig] = useState<PaidTierConfig>({ type: 'unlimited', limit: UNLIMITED_BUDGET });
   const [loading, setLoading] = useState(true);
   const [usage, setUsage] = useState({ used: 0, total: FREE_TIER_BUDGET });
 
@@ -35,17 +43,14 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
     try {
       const storedKey = window.localStorage.getItem(API_KEY);
       const storedType = window.localStorage.getItem(API_KEY_TYPE) as KeyType | null;
+      const storedPaidConfig = window.localStorage.getItem(API_PAID_CONFIG);
 
-      if (storedKey) {
-        setApiKey(storedKey);
-      }
-      if (storedType) {
-        setKeyType(storedType);
-      }
+      if (storedKey) setApiKey(storedKey);
+      if (storedType) setKeyType(storedType);
+      if (storedPaidConfig) setPaidTierConfig(JSON.parse(storedPaidConfig));
+
     } catch (error) {
       console.error("Failed to load API key info from localStorage", error);
-      setApiKey(null);
-      setKeyType('free');
     } finally {
       setLoading(false);
     }
@@ -54,7 +59,7 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const usageDataString = window.localStorage.getItem(API_USAGE_KEY);
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const today = new Date().toISOString().split('T')[0];
 
       if (usageDataString) {
         const usageData = JSON.parse(usageDataString);
@@ -73,13 +78,16 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setUsage(prev => ({
-        ...prev,
-        total: keyType === 'free' ? FREE_TIER_BUDGET : PAID_TIER_BUDGET
-    }));
-  }, [keyType]);
+    setUsage(prev => {
+        let newTotal = FREE_TIER_BUDGET;
+        if (keyType === 'paid') {
+            newTotal = paidTierConfig.type === 'custom' ? paidTierConfig.limit : UNLIMITED_BUDGET;
+        }
+        return { ...prev, total: newTotal };
+    });
+  }, [keyType, paidTierConfig]);
 
-  const saveApiKey = useCallback((newKey: string, newType: KeyType) => {
+  const saveApiKey = useCallback((newKey: string, newType: KeyType, newPaidConfig?: PaidTierConfig) => {
     try {
       if (newKey !== apiKey || newType !== keyType) {
         const today = new Date().toISOString().split('T')[0];
@@ -87,10 +95,16 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
         window.localStorage.setItem(API_USAGE_KEY, JSON.stringify(usageData));
         setUsage(prev => ({ ...prev, used: 0 }));
       }
+      
       window.localStorage.setItem(API_KEY, newKey);
       window.localStorage.setItem(API_KEY_TYPE, newType);
       setApiKey(newKey);
       setKeyType(newType);
+      
+      if (newType === 'paid' && newPaidConfig) {
+        window.localStorage.setItem(API_PAID_CONFIG, JSON.stringify(newPaidConfig));
+        setPaidTierConfig(newPaidConfig);
+      }
     } catch (error) {
       console.error("Failed to save API key to localStorage", error);
     }
@@ -100,13 +114,16 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.removeItem(API_KEY);
       window.localStorage.removeItem(API_KEY_TYPE);
+      window.localStorage.removeItem(API_PAID_CONFIG);
+      
       setApiKey(null);
       setKeyType('free');
+      setPaidTierConfig({ type: 'unlimited', limit: UNLIMITED_BUDGET });
       
       const today = new Date().toISOString().split('T')[0];
       const usageData = { used: 0, date: today };
       window.localStorage.setItem(API_USAGE_KEY, JSON.stringify(usageData));
-      setUsage(prev => ({ ...prev, used: 0, total: FREE_TIER_BUDGET }));
+      setUsage({ used: 0, total: FREE_TIER_BUDGET });
     } catch (error) {
       console.error("Failed to remove API key from localStorage", error);
     }
@@ -137,7 +154,7 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = { apiKey, keyType, setApiKey: saveApiKey, clearApiKey, loading, usage, incrementUsage, resetUsage };
+  const value = { apiKey, keyType, paidTierConfig, setApiKey: saveApiKey, clearApiKey, loading, usage, incrementUsage, resetUsage };
 
   return React.createElement(ApiKeyContext.Provider, { value: value }, children);
 }

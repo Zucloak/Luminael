@@ -14,38 +14,52 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useApiKey, KeyType } from '@/hooks/use-api-key';
+import { useApiKey, KeyType, PaidTierConfig, UNLIMITED_BUDGET } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { KeyRound, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from '../ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Checkbox } from '../ui/checkbox';
 
 export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean }) {
-  const { apiKey, setApiKey, clearApiKey, loading, keyType, usage, resetUsage, incrementUsage } = useApiKey();
+  const { apiKey, setApiKey, clearApiKey, loading, keyType, paidTierConfig, usage, resetUsage, incrementUsage } = useApiKey();
   const [keyInput, setKeyInput] = useState(apiKey || "");
   const [selectedType, setSelectedType] = useState<KeyType>(keyType);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (apiKey) {
-      setKeyInput(apiKey);
-    } else {
-      setKeyInput("");
-    }
-    setSelectedType(keyType);
-  }, [apiKey, keyType]);
+  const [isUnlimited, setIsUnlimited] = useState(paidTierConfig.type === 'unlimited');
+  const [customLimit, setCustomLimit] = useState<string>(paidTierConfig.type === 'custom' ? String(paidTierConfig.limit) : '');
 
+
+  useEffect(() => {
+    // Sync local state when global state changes (e.g., on initial load)
+    setKeyInput(apiKey || "");
+    setSelectedType(keyType);
+    setIsUnlimited(paidTierConfig.type === 'unlimited');
+    setCustomLimit(paidTierConfig.type === 'custom' && paidTierConfig.limit !== UNLIMITED_BUDGET ? String(paidTierConfig.limit) : '');
+  }, [apiKey, keyType, paidTierConfig]);
+  
+  // Reset local state when dialog is closed, to reflect the saved global state
   useEffect(() => {
     if (!isOpen) {
         setKeyInput(apiKey || "");
         setSelectedType(keyType);
+        setIsUnlimited(paidTierConfig.type === 'unlimited');
+        setCustomLimit(paidTierConfig.type === 'custom' && paidTierConfig.limit !== UNLIMITED_BUDGET ? String(paidTierConfig.limit) : '');
     }
-  }, [isOpen, apiKey, keyType]);
+  }, [isOpen, apiKey, keyType, paidTierConfig]);
 
+  // When "unlimited" checkbox changes, update the customLimit input
+  useEffect(() => {
+    if (isUnlimited) {
+      setCustomLimit('');
+    }
+  }, [isUnlimited]);
+  
   const handleSave = async () => {
     const trimmedKey = keyInput.trim();
     
@@ -60,6 +74,20 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
         return;
     }
 
+    const newPaidConfig: PaidTierConfig = {
+      type: isUnlimited ? 'unlimited' : 'custom',
+      limit: isUnlimited || !customLimit ? UNLIMITED_BUDGET : parseInt(customLimit, 10),
+    };
+
+    if (selectedType === 'paid' && newPaidConfig.type === 'custom' && (isNaN(newPaidConfig.limit) || newPaidConfig.limit <= 0)) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Limit',
+            description: 'Please enter a valid, positive number for the custom limit.',
+        });
+        return;
+    }
+
     setIsVerifying(true);
     try {
         const response = await fetch('/api/validate-api-key', {
@@ -71,7 +99,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
         const result = await response.json();
 
         if (response.ok && result.success) {
-            setApiKey(trimmedKey, selectedType);
+            setApiKey(trimmedKey, selectedType, newPaidConfig);
             incrementUsage(); // Account for the validation call
             toast({
                 title: 'Key Verified & Assimilated',
@@ -98,7 +126,8 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
   };
 
   const isSupercharged = apiKey && !loading;
-  const usagePercentage = Math.round((usage.used / usage.total) * 100);
+  const usagePercentage = usage.total > 0 ? Math.round((usage.used / usage.total) * 100) : 0;
+  const isPaidUnlimited = keyType === 'paid' && paidTierConfig.type === 'unlimited';
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -141,7 +170,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
         <DialogHeader>
           <DialogTitle>Gemini API Key</DialogTitle>
           <DialogDescription>
-            Enter your Google AI Gemini API key and select your plan type.
+            Your API key is stored securely in your browser and never sent to our servers.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
@@ -158,50 +187,68 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             />
           </div>
           <div className="space-y-3">
-             <Label>Plan Type</Label>
-             <RadioGroup value={selectedType} onValueChange={(v) => setSelectedType(v as KeyType)} className="grid grid-cols-2 gap-4">
-                <div>
-                    <RadioGroupItem value="free" id="plan-free" className="peer sr-only" />
-                    <Label
-                        htmlFor="plan-free"
-                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                    >
-                        Free Tier
-                        <span className="text-xs font-normal text-muted-foreground">50 calls/day</span>
-                    </Label>
-                </div>
-                <div>
-                    <RadioGroupItem value="paid" id="plan-paid" className="peer sr-only" />
-                    <Label
-                        htmlFor="plan-paid"
-                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                    >
-                        Paid Plan
-                         <span className="text-xs font-normal text-muted-foreground">Higher Limits</span>
-                    </Label>
-                </div>
+             <Label>What kind of key are you using?</Label>
+             <RadioGroup value={selectedType} onValueChange={(v) => setSelectedType(v as KeyType)} className="space-y-2">
+                <Label
+                    htmlFor="plan-free"
+                    className="flex items-center space-x-2 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground has-[:checked]:border-primary"
+                >
+                    <RadioGroupItem value="free" id="plan-free" />
+                    <span>I'm using a free Gemini API key</span>
+                </Label>
+                <Label
+                    htmlFor="plan-paid"
+                    className="flex items-center space-x-2 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground has-[:checked]:border-primary"
+                >
+                    <RadioGroupItem value="paid" id="plan-paid" />
+                    <span>I'm using a paid Gemini API key</span>
+                </Label>
             </RadioGroup>
           </div>
+          {selectedType === 'paid' && (
+             <div className="space-y-4 p-4 border rounded-md animate-in fade-in-50 duration-300">
+                <Label>Paid Plan Options</Label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="unlimited-check" checked={isUnlimited} onCheckedChange={(checked) => setIsUnlimited(checked as boolean)} />
+                  <label
+                    htmlFor="unlimited-check"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Use unlimited calls
+                  </label>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="custom-limit" className={cn(isUnlimited && 'text-muted-foreground/50')}>Custom Daily Limit</Label>
+                    <Input id="custom-limit" type="number" placeholder='e.g., 1000' value={customLimit} onChange={e => setCustomLimit(e.target.value)} disabled={isUnlimited}/>
+                 </div>
+             </div>
+          )}
           {isSupercharged && (
              <div className="space-y-3 pt-4 border-t">
                 <div className="flex justify-between items-end">
                     <Label>Daily Usage Budget</Label>
-                    <p className="text-sm font-medium text-muted-foreground">{usage.used} / {usage.total} Calls</p>
+                    {!isPaidUnlimited ? (
+                       <p className="text-sm font-medium text-muted-foreground">{usage.used} / {usage.total} Calls</p>
+                    ) : (
+                       <p className="text-sm font-bold text-primary">Unlimited</p>
+                    )}
                 </div>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <Progress value={usagePercentage} className="h-3" indicatorClassName={cn(
-                                "bg-gradient-to-r from-green-400 via-green-500 to-green-600 bg-[length:200%_200%] animate-progress-fluid",
-                                usagePercentage > 50 && "from-yellow-400 via-yellow-500 to-orange-500",
-                                usagePercentage > 80 && "from-orange-500 via-red-500 to-red-600",
-                            )}/>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{usagePercentage}% of your daily {keyType} tier budget used.</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                {!isPaidUnlimited && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Progress value={usagePercentage} className="h-3" indicatorClassName={cn(
+                                    "bg-gradient-to-r from-green-400 via-green-500 to-green-600 bg-[length:200%_200%] animate-progress-fluid",
+                                    usagePercentage > 50 && "from-yellow-400 via-yellow-500 to-orange-500",
+                                    usagePercentage > 80 && "from-orange-500 via-red-500 to-red-600",
+                                )}/>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{usagePercentage}% of your daily {keyType} tier budget used.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <a href="https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas?" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">See official Google quotas</a>
                     <Button variant="link" className="text-xs h-auto p-0" onClick={resetUsage}>Reset Count</Button>
