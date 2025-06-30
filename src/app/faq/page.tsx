@@ -18,7 +18,7 @@ const faqs = [
     },
     {
         question: "What file types are supported?",
-        answer: "You can upload text files (.txt), Markdown files (.md), PDFs (.pdf), and common image files (.png, .jpg, .jpeg). For images and scanned PDFs, we use a combination of local and AI-powered text recognition (OCR) to extract the content."
+        answer: "You can upload text files (.txt), Markdown files (.md), Word documents (.docx), PDFs (.pdf), and common image files (.png, .jpg, .jpeg). For images and scanned PDFs, we use a combination of local and AI-powered text recognition (OCR) to extract the content."
     },
     {
         question: "What is Hell Bound Mode?",

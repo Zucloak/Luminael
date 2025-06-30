@@ -166,7 +166,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
               }
           </CardDescription>
           <CardDescription className="pt-2">
-            Upload your materials (.txt, .pdf, .md, .png, .jpg) and the AI will create a custom quiz.
+            Upload your materials (.txt, .pdf, .md, .docx, .png, .jpg) and the AI will create a custom quiz.
           </CardDescription>
         </CardHeader>
         <Form {...form}>
@@ -180,7 +180,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                     <span className="flex-1">Please set your Gemini API key in the header to enable file uploads. An indicator will appear on the key icon.</span>
                   </div>
                 )}
-                <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing || isApiKeyMissing || apiKeyLoading} />
+                <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".txt,.pdf,.md,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*" className="pt-2 file:text-primary file:font-semibold" disabled={isProcessing || isApiKeyMissing || apiKeyLoading} />
                 {isParsing && (
                   <div className="flex items-center justify-between pt-2">
                     <p className="text-sm text-muted-foreground flex items-center gap-2">

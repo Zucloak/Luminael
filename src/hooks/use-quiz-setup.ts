@@ -3,6 +3,7 @@
 
 import React, { useState, useCallback, createContext, useContext, ReactNode } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { ocrImageWithFallback, isCanvasBlank } from '@/lib/ocr';
@@ -58,7 +59,7 @@ interface QuizSetupContextType {
 
 const QuizSetupContext = createContext<QuizSetupContextType | undefined>(undefined);
 
-export function QuizSetupProvider({ children }: { children: ReactNode }) {
+export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
   // File processing state
   const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
   const [fileError, setFileError] = useState<string>('');
@@ -184,7 +185,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
                     };
                     
                     const BATCH_SIZE = 2;
-                    const BATCH_DELAY = 4000;
+                    const BATCH_DELAY = 10000;
     
                     let processedCount = 0;
                     for (let i = 0; i < pagesToOcr.length; i += BATCH_SIZE) {
@@ -228,8 +229,26 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
                 throw new Error(`Could not process PDF: ${file.name}. ${message}`);
               }
           });
+        } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          doProcess(async f => {
+            const reader = new FileReader();
+            const arrayBuffer = await new Promise<ArrayBuffer>((res, rej) => {
+              reader.onload = e => res(e.target?.result as ArrayBuffer);
+              reader.onerror = () => rej(`Failed to read ${f.name}.`);
+              reader.readAsArrayBuffer(f);
+            });
+            if (!arrayBuffer) throw new Error(`Failed to read ${f.name}.`);
+
+            try {
+              const { value } = await mammoth.extractRawText({ arrayBuffer });
+              return { content: value };
+            } catch (error) {
+              console.error("Error processing .docx file:", error);
+              throw new Error(`Could not process Word document: ${f.name}. The file might be corrupted or in an unsupported format.`);
+            }
+          });
         } else {
-          reject(`Unsupported file type: ${file.name}. Please use .txt, .md, .pdf, or image files.`);
+          reject(`Unsupported file type: ${file.name}. Please use .txt, .md, .pdf, .docx, or image files.`);
         }
       });
     },
