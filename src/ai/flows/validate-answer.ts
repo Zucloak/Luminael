@@ -143,10 +143,9 @@ You MUST respond ONLY with a valid JSON object matching this exact schema. Do no
             }
         }
         
-        return {
-            status: 'Incorrect',
-            explanation: `AI validation system error: ${message}`
-        };
+        // Throw the error so the API route can catch it and return a proper HTTP status code.
+        // This prevents the server from crashing on AI model failures.
+        throw new Error(`AI validation system error: ${message}`);
     }
   }
 );
