@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useApiKey, KeyType, PaidTierConfig, UNLIMITED_BUDGET } from '@/hooks/use-api-key';
+import { useApiKey, KeyType, PaidTierConfig, UNLIMITED_BUDGET, FREE_TIER_BUDGET } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { KeyRound, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -126,8 +126,18 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
   };
 
   const isSupercharged = apiKey && !loading;
-  const usagePercentage = usage.total > 0 ? Math.round((usage.used / usage.total) * 100) : 0;
-  const isPaidUnlimited = keyType === 'paid' && paidTierConfig.type === 'unlimited';
+
+  // Real-time display logic
+  const isDisplayingPaidUnlimited = selectedType === 'paid' && isUnlimited;
+  
+  const customLimitValue = parseInt(customLimit, 10);
+  const displayTotal = isDisplayingPaidUnlimited
+    ? UNLIMITED_BUDGET
+    : selectedType === 'paid' && customLimitValue > 0
+    ? customLimitValue
+    : FREE_TIER_BUDGET;
+
+  const usagePercentage = displayTotal > 0 ? Math.round((usage.used / displayTotal) * 100) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -220,13 +230,13 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
              <div className="space-y-2 pt-3 border-t">
                 <div className="flex justify-between items-center text-sm">
                     <Label>Daily Usage Budget</Label>
-                    {!isPaidUnlimited ? (
-                       <p className="font-medium text-muted-foreground">{usage.used} / {usage.total} Calls</p>
+                    {!isDisplayingPaidUnlimited ? (
+                       <p className="font-medium text-muted-foreground">{usage.used} / {displayTotal} Calls</p>
                     ) : (
                        <p className="font-bold text-primary">Unlimited</p>
                     )}
                 </div>
-                {!isPaidUnlimited && (
+                {!isDisplayingPaidUnlimited && (
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -237,7 +247,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
                                 )}/>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>{usagePercentage}% of your daily {keyType} tier budget used.</p>
+                                <p>{usagePercentage}% of your daily {selectedType} tier budget used.</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
