@@ -10,6 +10,7 @@ import type { Quiz, Question } from '@/lib/types';
 import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
 import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
 import { useTheme } from '@/hooks/use-theme';
+import { addFileContent, getFileContent, deleteFileContent } from '@/lib/indexed-db';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -76,138 +77,169 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { isHellBound } = useTheme();
 
-  const processFile = useCallback((file: File): Promise<{ content: string }> => {
-    return new Promise(async (resolve, reject) => {
-      if (file.type === "text/plain" || file.type === "text/markdown") {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve({ content: e.target?.result as string });
-        reader.onerror = () => reject(`Error reading ${file.name}.`);
-        reader.readAsText(file);
-      } else if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
-            const imageDataUrl = e.target.result as string;
-            try {
-                const { text, source } = await ocrImageWithFallback(imageDataUrl, apiKey, incrementUsage);
-                toast({
-                    title: source === 'ai' ? "Image content extracted with AI!" : "Image content extracted locally!",
-                });
-                resolve({ content: text });
-            } catch (err) {
-                const message = err instanceof Error ? err.message : String(err);
-                reject(`OCR failed for ${file.name}: ${message}`);
-            }
+  const processFile = useCallback(
+    (file: File): Promise<{ content: string; source: 'cache' | 'processed' }> => {
+      return new Promise(async (resolve, reject) => {
+        // Tier 0: Check IndexedDB Cache
+        try {
+          const cachedFile = await getFileContent(file.name);
+          if (cachedFile) {
+            resolve({ content: cachedFile.content, source: 'cache' });
+            return;
+          }
+        } catch (e) {
+            console.warn("IndexedDB cache check failed, processing file from scratch.", e);
+        }
+
+        const doProcess = (
+          processor: (file: File) => Promise<{ content: string }>
+        ) => {
+          processor(file)
+            .then(async ({ content }) => {
+              await addFileContent({ name: file.name, content });
+              resolve({ content, source: 'processed' });
+            })
+            .catch(reject);
         };
-        reader.onerror = () => reject(`Error reading ${file.name}.`);
-        reader.readAsDataURL(file);
-      } else if (file.type === "application/pdf") {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          if (!e.target?.result) return reject(`Failed to read ${file.name}.`);
-          try {
-            const typedarray = new Uint8Array(e.target.result as ArrayBuffer);
-            const pdf = await pdfjsLib.getDocument(typedarray).promise;
-            
-            setParseProgress({ current: 0, total: pdf.numPages, message: "Analyzing PDF structure..." });
-            
-            const pagePromises = Array.from({ length: pdf.numPages }, (_, i) => pdf.getPage(i + 1));
-            const pages = await Promise.all(pagePromises);
 
-            const analysisPromises = pages.map(async (page, i) => {
-              const textContent = await page.getTextContent();
-              const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
-              
-              const isLikelyImage = pageText.length < 100 || pageText.replace(/\s/g, '').length < 50;
-              
-              setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `Analyzing page ${i + 1}...` }));
-
-              return {
-                pageNum: i + 1,
-                text: isLikelyImage ? null : pageText,
-                needsOcr: isLikelyImage,
-                page: page,
-              };
+        if (file.type === 'text/plain' || file.type === 'text/markdown') {
+          doProcess(f => new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = e => res({ content: e.target?.result as string });
+            reader.onerror = () => rej(`Error reading ${f.name}.`);
+            reader.readAsText(f);
+          }));
+        } else if (file.type.startsWith('image/')) {
+          doProcess(async f => {
+            const reader = new FileReader();
+            const dataUrl = await new Promise<string>((res, rej) => {
+              reader.onload = e => res(e.target?.result as string);
+              reader.onerror = () => rej(`Failed to read ${f.name}.`);
+              reader.readAsDataURL(f);
             });
+            if (!dataUrl) throw new Error(`Failed to read ${f.name}.`);
+            try {
+              const { text, source } = await ocrImageWithFallback(dataUrl, apiKey, incrementUsage);
+              toast({ title: source === 'ai' ? 'Image content extracted with AI!' : 'Image content extracted locally!' });
+              return { content: text };
+            } catch (err) {
+              const message = err instanceof Error ? err.message : String(err);
+              throw new Error(`OCR failed for ${f.name}: ${message}`);
+            }
+          });
+        } else if (file.type === 'application/pdf') {
+          doProcess(async f => {
+            const reader = new FileReader();
+            const arrayBuffer = await new Promise<ArrayBuffer>((res, rej) => {
+              reader.onload = e => res(e.target?.result as ArrayBuffer);
+              reader.onerror = () => rej(`Failed to read ${f.name}.`);
+              reader.readAsArrayBuffer(f);
+            });
+            if (!arrayBuffer) throw new Error(`Failed to read ${f.name}.`);
             
-            const initialPageData = await Promise.all(analysisPromises);
-            setParseProgress({ current: pdf.numPages, total: pdf.numPages, message: "Analysis complete." });
-
-            const pagesToOcr = initialPageData.filter(p => p.needsOcr);
-            const allPagesText = initialPageData.filter(p => !p.needsOcr).map(p => p.text as string);
-            
-            if (pagesToOcr.length > 0) {
-                const ocrProcessor = async (pageData: (typeof pagesToOcr)[0]): Promise<string> => {
-                    const page = pageData.page;
-                    const viewport = page.getViewport({ scale: 2.0 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    if (!context) return `[Canvas Error on page ${pageData.pageNum}]`;
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    
-                    const renderContext = { canvasContext: context, viewport: viewport };
-                    await page.render(renderContext).promise;
-
-                    if (isCanvasBlank(canvas)) return '';
-                    
-                    try {
-                       const { text } = await ocrImageWithFallback(canvas.toDataURL(), apiKey, incrementUsage);
-                       return text;
-                    } catch (err) {
-                       const message = err instanceof Error ? err.message : String(err);
-                       console.error(`OCR failed for page ${pageData.pageNum} of ${file.name}:`, message);
-                       return `[OCR Error on page ${pageData.pageNum}: ${message.substring(0, 100)}...]`;
-                    }
-                };
+            try {
+                const typedarray = new Uint8Array(arrayBuffer);
+                const pdf = await pdfjsLib.getDocument(typedarray).promise;
                 
-                const BATCH_SIZE = 2;
-                const BATCH_DELAY = 4000;
-
-                let processedCount = 0;
-                for (let i = 0; i < pagesToOcr.length; i += BATCH_SIZE) {
-                    const batch = pagesToOcr.slice(i, i + BATCH_SIZE);
-                    const batchNum = i / BATCH_SIZE + 1;
-                    const totalBatches = Math.ceil(pagesToOcr.length / BATCH_SIZE);
-
-                    setParseProgress({
-                        current: processedCount,
-                        total: pagesToOcr.length,
-                        message: `Processing OCR batch ${batchNum} of ${totalBatches}...`
-                    });
-
-                    const batchPromises = batch.map(ocrProcessor);
-                    const batchResults = await Promise.all(batchPromises);
-                    allPagesText.push(...batchResults);
+                setParseProgress({ current: 0, total: pdf.numPages, message: "Analyzing PDF structure..." });
+                
+                const pagePromises = Array.from({ length: pdf.numPages }, (_, i) => pdf.getPage(i + 1));
+                const pages = await Promise.all(pagePromises);
+    
+                const analysisPromises = pages.map(async (page, i) => {
+                  const textContent = await page.getTextContent();
+                  const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
+                  
+                  const isLikelyImage = pageText.length < 100 || pageText.replace(/\s/g, '').length < 50;
+                  
+                  setParseProgress(prev => ({ ...prev, current: i + 1, message: `Analyzing page ${i + 1}...` }));
+    
+                  return {
+                    pageNum: i + 1,
+                    text: isLikelyImage ? null : pageText,
+                    needsOcr: isLikelyImage,
+                    page: page,
+                  };
+                });
+                
+                const initialPageData = await Promise.all(analysisPromises);
+                setParseProgress({ current: pdf.numPages, total: pdf.numPages, message: "Analysis complete." });
+    
+                const pagesToOcr = initialPageData.filter(p => p.needsOcr);
+                const allPagesText = initialPageData.filter(p => !p.needsOcr).map(p => p.text as string);
+                
+                if (pagesToOcr.length > 0) {
+                    const ocrProcessor = async (pageData: (typeof pagesToOcr)[0]): Promise<string> => {
+                        const page = pageData.page;
+                        const viewport = page.getViewport({ scale: 2.0 });
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        if (!context) return `[Canvas Error on page ${pageData.pageNum}]`;
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        const renderContext = { canvasContext: context, viewport: viewport };
+                        await page.render(renderContext).promise;
+    
+                        if (isCanvasBlank(canvas)) return '';
+                        
+                        try {
+                           const { text } = await ocrImageWithFallback(canvas.toDataURL(), apiKey, incrementUsage);
+                           return text;
+                        } catch (err) {
+                           const message = err instanceof Error ? err.message : String(err);
+                           console.error(`OCR failed for page ${pageData.pageNum} of ${file.name}:`, message);
+                           return `[OCR Error on page ${pageData.pageNum}: ${message.substring(0, 100)}...]`;
+                        }
+                    };
                     
-                    processedCount += batch.length;
-
-                    if (i + BATCH_SIZE < pagesToOcr.length) {
-                         setParseProgress({
+                    const BATCH_SIZE = 2;
+                    const BATCH_DELAY = 4000;
+    
+                    let processedCount = 0;
+                    for (let i = 0; i < pagesToOcr.length; i += BATCH_SIZE) {
+                        const batch = pagesToOcr.slice(i, i + BATCH_SIZE);
+                        const batchNum = i / BATCH_SIZE + 1;
+                        const totalBatches = Math.ceil(pagesToOcr.length / BATCH_SIZE);
+    
+                        setParseProgress({
                             current: processedCount,
                             total: pagesToOcr.length,
-                            message: `Waiting to avoid rate limits...`
+                            message: `Processing OCR batch ${batchNum} of ${totalBatches}...`
                         });
-                        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+    
+                        const batchPromises = batch.map(ocrProcessor);
+                        const batchResults = await Promise.all(batchPromises);
+                        allPagesText.push(...batchResults);
+                        
+                        processedCount += batch.length;
+    
+                        if (i + BATCH_SIZE < pagesToOcr.length) {
+                             setParseProgress({
+                                current: processedCount,
+                                total: pagesToOcr.length,
+                                message: `Waiting to avoid rate limits...`
+                            });
+                            await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+                        }
                     }
                 }
-            }
-            
-            resolve({ content: allPagesText.join('\n\n---\n\n') });
-
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.error("Error processing PDF:", error);
-            reject(`Could not process PDF: ${file.name}. ${message}`);
-          }
-        };
-        reader.onerror = () => reject(`Error reading ${file.name}.`);
-        reader.readAsArrayBuffer(file);
-      } else {
-        reject(`Unsupported file type: ${file.name}. Please use .txt, .md, .pdf, or image files.`);
-      }
-    });
-  }, [apiKey, incrementUsage, toast]);
+                
+                return { content: allPagesText.join('\n\n---\n\n') };
+    
+              } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                console.error("Error processing PDF:", error);
+                throw new Error(`Could not process PDF: ${file.name}. ${message}`);
+              }
+          });
+        } else {
+          reject(`Unsupported file type: ${file.name}. Please use .txt, .md, .pdf, or image files.`);
+        }
+      });
+    },
+    [apiKey, incrementUsage, toast]
+  );
 
   const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -221,47 +253,60 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     setParsingController(controller);
 
-    setProcessedFiles([]);
     setFileError("");
     setIsParsing(true);
     setParseProgress({ current: 0, total: files.length, message: "Preparing to process files..." });
+    
     const fileList = Array.from(files);
-    let allProcessedFiles: ProcessedFile[] = [];
+    // Prevent adding duplicates to the list
+    const newFiles = fileList.filter(f => !processedFiles.some(pf => pf.name === f.name));
+    if(newFiles.length !== fileList.length) {
+        toast({ title: "Duplicate files skipped."});
+    }
+
+    if (newFiles.length === 0) {
+        setIsParsing(false);
+        setParseProgress({ current: 0, total: 0, message: "" });
+        return;
+    }
+    
+    let allProcessedFiles = [...processedFiles];
 
     try {
-      for (let i = 0; i < fileList.length; i++) {
-        if (controller.signal.aborted) {
-          throw new Error("Cancelled");
-        }
-        const file = fileList[i];
-        setParseProgress({ current: i + 1, total: fileList.length, message: `Processing ${file.name}...` });
-        const { content } = await processFile(file);
+      for (let i = 0; i < newFiles.length; i++) {
+        if (controller.signal.aborted) throw new Error("Cancelled");
+        
+        const file = newFiles[i];
+        setParseProgress({ current: i + 1, total: newFiles.length, message: `Processing ${file.name}...` });
+        
+        const { content, source } = await processFile(file);
+        
+        if (controller.signal.aborted) throw new Error("Cancelled");
+
         allProcessedFiles.push({ name: file.name, content });
 
-        if (controller.signal.aborted) {
-          throw new Error("Cancelled");
+        if (source === 'cache') {
+            toast({ title: "Loaded from cache!", description: `${file.name} was instantly loaded.` });
         }
       }
       
       setProcessedFiles(allProcessedFiles);
-      if (allProcessedFiles.length > 0) {
-        toast({ title: "File processing complete!", description: "Your content is ready." });
-      }
+
     } catch (error) {
         if ((error as Error).message === "Cancelled") {
-            setProcessedFiles([]);
+            // Don't change the file list if cancelled, just stop
         } else {
             const message = String(error);
             setFileError(message);
-            setProcessedFiles([]);
             toast({ variant: "destructive", title: "File Processing Error", description: message });
         }
     } finally {
       setIsParsing(false);
       setParsingController(null);
       setParseProgress({ current: 0, total: 0, message: "" });
+      if (event.target) event.target.value = ''; // Reset file input
     }
-  }, [processFile, apiKey, toast]);
+  }, [processFile, apiKey, toast, processedFiles]);
   
   const startQuiz = useCallback(async (values: any) => {
     if (!apiKey) {
@@ -311,16 +356,18 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
 
         const generatorFn = isHellBound ? generateHellBoundQuiz : generateQuiz;
         
+        const contentForAI = combinedContent;
+
         let params: Omit<GenerateQuizInput, 'apiKey'> | Omit<GenerateHellBoundQuizInput, 'apiKey'>;
         if (isHellBound) {
           params = {
-            fileContent: combinedContent,
+            fileContent: contentForAI,
             numQuestions: questionsInBatch,
             existingQuestions: existingQuestionTitles,
           };
         } else {
           params = {
-            content: combinedContent,
+            content: contentForAI,
             numQuestions: questionsInBatch,
             difficulty: values.difficulty || 'Medium',
             questionFormat: values.questionFormat || 'multipleChoice',
@@ -404,9 +451,16 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     setView('quiz');
   }, []);
 
-  const removeFile = useCallback((fileNameToRemove: string) => {
+  const removeFile = useCallback(async (fileNameToRemove: string) => {
     setProcessedFiles(prev => prev.filter(file => file.name !== fileNameToRemove));
-  }, []);
+    try {
+        await deleteFileContent(fileNameToRemove);
+        toast({ title: "File removed", description: `${fileNameToRemove} has been removed from your browser cache.` });
+    } catch(e) {
+        console.error("Failed to remove file from cache", e);
+        toast({ variant: "destructive", title: "Cache Error", description: "Could not remove file from cache." });
+    }
+  }, [toast]);
 
   const stopParsing = useCallback(() => {
     parsingController?.abort();
