@@ -9,6 +9,7 @@ import { ocrImageWithFallback, isCanvasBlank } from '@/lib/ocr';
 import type { Quiz, Question } from '@/lib/types';
 import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
 import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
+import { extractKeyConcepts } from '@/ai/flows/extract-key-concepts';
 import { useTheme } from '@/hooks/use-theme';
 import { getPastQuizById } from '@/lib/indexed-db';
 
@@ -323,14 +324,20 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     setIsGeneratingState(true);
     setGenerationProgress({ current: 0, total: totalQuestions, message: '' });
 
-    let allQuestions: Question[] = [];
-    let existingQuestionTitles: string[] = [];
-
     try {
+      // Step 1: Extract Key Concepts in a single call, as per your directive.
+      setGenerationProgress(prev => ({ ...prev, total: totalQuestions, message: "Synthesizing key concepts..." }));
+      const keyConceptsContext = await extractKeyConcepts({ files: processedFiles, apiKey });
+      incrementUsage(); // Account for concept extraction call
+
+      if (controller.signal.aborted) throw new Error("Cancelled");
+
+      // Step 2: Generate quiz from the extracted concepts.
+      let allQuestions: Question[] = [];
+      let existingQuestionTitles: string[] = [];
+
       for (let i = 0; i < totalQuestions; i += BATCH_SIZE) {
-        if (controller.signal.aborted) {
-            throw new Error("Cancelled");
-        }
+        if (controller.signal.aborted) throw new Error("Cancelled");
 
         const questionsInBatch = Math.min(BATCH_SIZE, totalQuestions - i);
         setGenerationProgress(prev => ({ ...prev, current: i, message: `Generating question batch ${Math.floor(i/BATCH_SIZE) + 1}...` }));
@@ -340,13 +347,13 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
         let params: Omit<GenerateQuizInput, 'apiKey'> | Omit<GenerateHellBoundQuizInput, 'apiKey'>;
         if (isHellBound) {
           params = {
-            files: processedFiles,
+            context: keyConceptsContext,
             numQuestions: questionsInBatch,
             existingQuestions: existingQuestionTitles,
           };
         } else {
           params = {
-            files: processedFiles,
+            context: keyConceptsContext,
             numQuestions: questionsInBatch,
             difficulty: values.difficulty || 'Medium',
             questionFormat: values.questionFormat || 'multipleChoice',
@@ -367,9 +374,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (controller.signal.aborted) {
-        throw new Error("Cancelled");
-      }
+      if (controller.signal.aborted) throw new Error("Cancelled");
 
       if (allQuestions.length === 0) {
         throw new Error("The AI failed to generate any valid questions. Please check your content or settings and try again.");

@@ -13,14 +13,8 @@ import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 
-const FileContentSchema = z.object({
-  name: z.string().describe("The name of the file."),
-  content: z.string().describe("The text content of the file."),
-});
-
 const GenerateHellBoundQuizInputSchema = z.object({
-  files: z.array(FileContentSchema)
-    .describe('An array of files, each with a name and its text content.'),
+  context: z.string().describe("A structured Markdown string containing key concepts from one or more documents."),
   numQuestions: z.number().describe('The number of questions to generate for this batch.'),
   existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
   apiKey: z.string().optional().describe('Optional Gemini API key.'),
@@ -62,30 +56,20 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     inputSchema: GenerateHellBoundQuizInputSchema,
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
-  async ({ files, numQuestions, existingQuestions, apiKey }) => {
+  async ({ context, numQuestions, existingQuestions, apiKey }) => {
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
-    
-    const processedContent = files.map(file => 
-      `# File: ${file.name}\n${file.content}`
-    ).join('\n\n---\n\n');
 
-    const conceptInstruction = files.length > 3
-        ? 'For each document, identify the 5 most complex, high-level concepts that can be used to forge hellishly difficult questions.'
-        : 'For each document, identify all of the most complex, high-level concepts that can be used to forge hellishly difficult questions.';
+    const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to use the provided **Key Concepts** to generate a quiz that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
 
-    const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to perform a two-step process:
-First, analyze the provided **Core Material**, which consists of one or more documents. ${conceptInstruction}
-Second, using ONLY those complex concepts you have identified, generate a quiz that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
-
-**Core Material:**
-${processedContent}
+**Key Concepts:**
+${context}
 
 **NON-NEGOTIABLE RULES:**
-1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All concepts, questions, options, and answers MUST be directly derived from the Core Material provided. The file structure (e.g., "# File: ...") is for context; synthesize information across files.
-2.  **Obey the Language:** The entire quiz MUST be in the same language as the Core Material. If the material is in Filipino, the quiz must be in Filipino. No exceptions.
-3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested. Re-read the material to find more details if necessary. Do not stop early.
-4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions (e.g., "What is the capital of France?", "What is a quick brown rabbit?"). This is an instant failure.
-5.  **Prioritize Synthesis:** Questions must force the user to synthesize information from multiple sections of the text.
+1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
+2.  **Obey the Language:** The entire quiz MUST be in the same language as the Key Concepts.
+3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested.
+4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions.
+5.  **Prioritize Synthesis:** Questions must force the user to synthesize information from multiple sections of the provided concepts.
 6.  **Devious Distractors:** For multiple-choice questions, the incorrect options must be highly plausible and designed to trap common misconceptions based on the text.
 7.  **Avoid Duplicates:** Do not repeat concepts or questions. Avoid asking about questions from this list: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
 8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.

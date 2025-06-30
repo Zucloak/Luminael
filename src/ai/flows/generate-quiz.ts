@@ -14,14 +14,8 @@ import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 
-const FileContentSchema = z.object({
-  name: z.string().describe("The name of the file."),
-  content: z.string().describe("The text content of the file."),
-});
-
 const GenerateQuizInputSchema = z.object({
-  files: z.array(FileContentSchema)
-    .describe('An array of files, each with a name and its text content.'),
+  context: z.string().describe("A structured Markdown string containing key concepts from one or more documents."),
   numQuestions: z.number().describe('The number of questions to generate for this batch.'),
   difficulty: z.string().describe('The difficulty level of the quiz.'),
   questionFormat: z.enum(['multipleChoice', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
@@ -64,31 +58,21 @@ const generateQuizFlow = ai.defineFlow(
     inputSchema: GenerateQuizInputSchema,
     outputSchema: GenerateQuizOutputSchema,
   },
-  async ({ files, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
+  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
-    
-    const processedContent = files.map(file => 
-      `# File: ${file.name}\n${file.content}`
-    ).join('\n\n---\n\n');
 
-    const conceptInstruction = files.length > 3
-        ? 'For each document, identify a maximum of 5 key concepts.'
-        : 'For each document, identify all relevant key concepts.';
+    const quizPrompt = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
 
-    const quizPrompt = `You are an expert AI educator. Your task is to perform a two-step process:
-First, analyze the provided **Core Material** which consists of one or more documents. ${conceptInstruction}
-Second, using ONLY those key concepts you have identified, generate a quiz that meets the specified criteria.
-
-**Core Material:**
-${processedContent}
+**Key Concepts:**
+${context}
 
 **NON-NEGOTIABLE RULES:**
-1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All key concepts, questions, options, and answers MUST be directly derived from the Core Material provided. The file structure (e.g., "# File: ...") is for context; synthesize information across files.
-2.  **Obey the Language:** The entire quiz MUST be in the same language as the Core Material. If the content is in Filipino, the quiz must be in Filipino. No exceptions.
-3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested. Your generated questions must be based on the key concepts you identified.
-4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions (e.g., "What is the capital of France?", "What is a quick brown fox?"). This is an instant failure.
+1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
+2.  **Obey the Language:** The entire quiz MUST be in the same language as the Key Concepts.
+3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested.
+4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions.
 5.  **Question Format:** Adhere to the requested format: '${questionFormat}'.
-6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level based on the content.
+6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
 7.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
 8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
     -   Enclose inline math with single dollar signs (\`$...$\`).
