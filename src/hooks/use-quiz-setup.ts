@@ -6,11 +6,11 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { ocrImageWithFallback, isCanvasBlank } from '@/lib/ocr';
-import type { Quiz, Question } from '@/lib/types';
+import type { Quiz, Question, PastQuiz } from '@/lib/types';
 import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
 import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
 import { useTheme } from '@/hooks/use-theme';
-import { addFileContent, getFileContent, deleteFileContent } from '@/lib/indexed-db';
+import { addFileContent, getFileContent, deleteFileContent, addPastQuiz, getPastQuizById } from '@/lib/indexed-db';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -52,6 +52,7 @@ interface QuizSetupContextType {
   retakeQuiz: () => void;
   clearQuizSetup: () => void;
   cancelGeneration: () => void;
+  loadQuizFromHistory: (id: number, mode: 'retake' | 'results') => Promise<void>;
 }
 
 const QuizSetupContext = createContext<QuizSetupContextType | undefined>(undefined);
@@ -429,7 +430,42 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
   const submitQuiz = useCallback((answers: Record<number, string>) => {
     setUserAnswers(answers);
     setView('results');
-  }, []);
+
+    if (quiz && processedFiles.length > 0) {
+      let correctCount = 0;
+      const multipleChoiceQuestions = quiz.questions.filter(q => q.questionType === 'multipleChoice');
+
+      multipleChoiceQuestions.forEach(q => {
+        const originalIndex = quiz.questions.findIndex(origQ => origQ.question === q.question);
+        if (answers[originalIndex] === q.answer) {
+          correctCount++;
+        }
+      });
+
+      const score = {
+        score: correctCount,
+        total: multipleChoiceQuestions.length,
+        percentage: multipleChoiceQuestions.length > 0 ? Math.round((correctCount / multipleChoiceQuestions.length) * 100) : 0,
+      };
+
+      const quizTitle = processedFiles.map(f => f.name).join(', ').substring(0, 100);
+      const pastQuiz: PastQuiz = {
+        id: Date.now(),
+        title: quizTitle || "Quiz",
+        date: new Date().toISOString(),
+        quiz,
+        userAnswers: answers,
+        score,
+      };
+
+      addPastQuiz(pastQuiz).then(() => {
+        toast({ title: "Quiz results saved to your history." });
+      }).catch(err => {
+        console.error("Failed to save quiz history", err);
+        toast({ variant: "destructive", title: "Could not save quiz history." });
+      });
+    }
+  }, [quiz, processedFiles, toast]);
 
   const clearQuizSetup = useCallback(() => {
     setProcessedFiles([]);
@@ -450,6 +486,27 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     setUserAnswers({});
     setView('quiz');
   }, []);
+  
+  const loadQuizFromHistory = useCallback(async (id: number, mode: 'retake' | 'results') => {
+    try {
+      const pastQuiz = await getPastQuizById(id);
+      if (pastQuiz) {
+        setQuiz(pastQuiz.quiz);
+        setTimer(0); // Timers aren't saved
+        if (mode === 'results') {
+          setUserAnswers(pastQuiz.userAnswers);
+          setView('results');
+        } else {
+          setUserAnswers({});
+          setView('quiz');
+        }
+      } else {
+        toast({ variant: "destructive", title: "History Not Found", description: "Could not find the specified quiz in your history." });
+      }
+    } catch(e) {
+      toast({ variant: "destructive", title: "Load Error", description: "Failed to load quiz from history." });
+    }
+  }, [toast]);
 
   const removeFile = useCallback(async (fileNameToRemove: string) => {
     setProcessedFiles(prev => prev.filter(file => file.name !== fileNameToRemove));
@@ -499,6 +556,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     retakeQuiz,
     clearQuizSetup,
     cancelGeneration,
+    loadQuizFromHistory,
   };
 
   return React.createElement(QuizSetupContext.Provider, { value }, children);

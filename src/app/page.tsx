@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { QuizSetup } from '@/components/quiz/QuizSetup';
 import { QuizInterface } from '@/components/quiz/QuizInterface';
@@ -37,7 +38,11 @@ export default function Home() {
     retakeQuiz,
     isGenerating,
     cancelGeneration,
+    loadQuizFromHistory,
   } = useQuizSetup();
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
   
   const { isHellBound, setIsHellBound, loading: themeLoading } = useTheme();
   const { user } = useUser();
@@ -58,6 +63,20 @@ export default function Home() {
         setIsPatchNotesOpen(true);
     }
   }, [isLoading]);
+
+  useEffect(() => {
+    const retakeId = searchParams.get('retake');
+    const resultsId = searchParams.get('results');
+    const id = retakeId || resultsId;
+
+    if (id && loadQuizFromHistory) {
+      const mode = retakeId ? 'retake' : 'results';
+      loadQuizFromHistory(Number(id), mode);
+      // Clean up URL to prevent re-triggering on reload
+      router.replace('/', { scroll: false }); 
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, loadQuizFromHistory]);
 
   const handleClosePatchNotes = () => {
     try {

@@ -22,3 +22,16 @@ export interface UserProfile {
   name: string;
   studentId: string;
 }
+
+export interface PastQuiz {
+  id: number; // Using timestamp as ID
+  title: string;
+  date: string;
+  quiz: Quiz;
+  userAnswers: Record<number, string>;
+  score: {
+    score: number;
+    total: number;
+    percentage: number;
+  };
+}

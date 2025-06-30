@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from 'next/link';
-import { User, Home, Maximize, Minimize } from 'lucide-react';
+import { User, Home, Maximize, Minimize, History } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,7 +32,7 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
             BY SYNAPPSE
           </a>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {loading ? (
             <Skeleton className="h-10 w-24 rounded-md" />
           ) : user ? (
@@ -43,6 +44,11 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
           <Button asChild variant="outline" size="icon" aria-label="Home" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
             <Link href="/">
               <Home className="h-5 w-5" />
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="icon" aria-label="Quiz History" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
+            <Link href="/history">
+              <History className="h-5 w-5" />
             </Link>
           </Button>
           {isSupported && (
