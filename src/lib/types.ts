@@ -30,7 +30,9 @@ export interface PastQuiz {
   date: string;
   quiz: Quiz;
   userAnswers: Record<number, string>;
-  score: {
+  sourceContent: string;
+  status: 'completed' | 'in-progress';
+  score?: {
     score: number;
     total: number;
     percentage: number;

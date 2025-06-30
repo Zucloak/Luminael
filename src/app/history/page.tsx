@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { getPastQuizzes, deletePastQuiz } from '@/lib/indexed-db';
 import type { PastQuiz } from '@/lib/types';
-import { Bookmark, FileText, Calendar, Percent, Eye, RotateCw, Trash2, Frown } from 'lucide-react';
+import { Bookmark, FileText, Calendar, Percent, Eye, RotateCw, Trash2, Frown, Play } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -164,22 +164,39 @@ export default function SavedQuizzesPage() {
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="flex-grow grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-muted/50">
-                                            <span className="text-sm text-muted-foreground">Score</span>
-                                            <span className="text-2xl font-bold">{pq.score.score}/{pq.score.total}</span>
-                                        </div>
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-muted/50">
-                                            <span className="text-sm text-muted-foreground">Percentage</span>
-                                            <span className="text-2xl font-bold flex items-center">{pq.score.percentage}<Percent className="h-5 w-5 ml-1"/></span>
-                                        </div>
+                                        {pq.status === 'completed' && pq.score ? (
+                                            <>
+                                                <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-muted/50">
+                                                    <span className="text-sm text-muted-foreground">Score</span>
+                                                    <span className="text-2xl font-bold">{pq.score.score}/{pq.score.total}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-muted/50">
+                                                    <span className="text-sm text-muted-foreground">Percentage</span>
+                                                    <span className="text-2xl font-bold flex items-center">{pq.score.percentage}<Percent className="h-5 w-5 ml-1"/></span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="col-span-2 flex flex-col items-center justify-center p-4 rounded-lg bg-muted/50">
+                                                <span className="text-sm text-muted-foreground">In Progress</span>
+                                                <span className="text-2xl font-bold">{Object.keys(pq.userAnswers).length} / {pq.quiz.questions.length} Answered</span>
+                                            </div>
+                                        )}
                                     </CardContent>
                                     <CardFooter className="gap-2">
-                                        <Button asChild className="flex-1" variant="outline">
-                                            <Link href={`/?results=${pq.id}`}><Eye className="mr-2 h-4 w-4" />Review</Link>
-                                        </Button>
-                                        <Button asChild className="flex-1">
-                                            <Link href={`/?retake=${pq.id}`}><RotateCw className="mr-2 h-4 w-4" />Retake</Link>
-                                        </Button>
+                                        {pq.status === 'completed' ? (
+                                            <>
+                                                <Button asChild className="flex-1" variant="outline">
+                                                    <Link href={`/?results=${pq.id}`}><Eye className="mr-2 h-4 w-4" />Review</Link>
+                                                </Button>
+                                                <Button asChild className="flex-1">
+                                                    <Link href={`/?retake=${pq.id}`}><RotateCw className="mr-2 h-4 w-4" />Retake</Link>
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Button asChild className="flex-1">
+                                                <Link href={`/?resume=${pq.id}`}><Play className="mr-2 h-4 w-4" />Resume</Link>
+                                            </Button>
+                                        )}
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <Button variant="destructive" size="icon">

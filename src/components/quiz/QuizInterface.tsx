@@ -2,11 +2,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import type { Quiz } from '@/lib/types';
+import type { Quiz, PastQuiz } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, CheckCircle, Timer, LogOut, ImageUp, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Timer, LogOut, ImageUp, Loader2, Save } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,11 +22,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { ocrImageWithFallback } from '@/lib/ocr';
+import { addPastQuiz } from '@/lib/indexed-db';
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -34,9 +43,20 @@ interface QuizInterfaceProps {
   onSubmit: (answers: Record<number, string>) => void;
   onExit: () => void;
   isHellBound?: boolean;
+  sourceContent: string;
 }
 
-export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = false }: QuizInterfaceProps) {
+const TAG_COLORS: { [key: string]: string } = {
+  gray: 'bg-gray-400 hover:bg-gray-500',
+  red: 'bg-red-400 hover:bg-red-500',
+  orange: 'bg-orange-400 hover:bg-orange-500',
+  yellow: 'bg-yellow-400 hover:bg-yellow-500',
+  green: 'bg-green-400 hover:bg-green-500',
+  blue: 'bg-blue-400 hover:bg-blue-500',
+  purple: 'bg-purple-400 hover:bg-purple-500',
+};
+
+export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = false, sourceContent }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(timer);
@@ -44,6 +64,9 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const { toast } = useToast();
   const [isOcrRunning, setIsOcrRunning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [saveQuizName, setSaveQuizName] = useState('');
+  const [saveQuizColor, setSaveQuizColor] = useState('gray');
 
   if (!quiz?.questions?.length) {
     return (
@@ -199,12 +222,81 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
     }
   };
 
+  const handleSaveAndExit = async () => {
+    if (!saveQuizName.trim()) {
+        toast({ variant: 'destructive', title: 'Name Required', description: 'Please enter a name for your quiz.' });
+        return;
+    }
+    const pastQuiz: PastQuiz = {
+        id: Date.now(),
+        title: saveQuizName,
+        date: new Date().toISOString(),
+        quiz,
+        userAnswers: answers,
+        sourceContent,
+        status: 'in-progress',
+        color: saveQuizColor,
+    };
+    try {
+        await addPastQuiz(pastQuiz);
+        toast({ title: 'Progress Saved!', description: `Your quiz "${saveQuizName}" has been saved. You can resume it later.` });
+        setIsSaveDialogOpen(false);
+        onExit();
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save the quiz progress.' });
+    }
+  };
+
+
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
       <CardHeader>
         <div className="flex justify-between items-center">
             <CardDescription>Question {currentQuestionIndex + 1} of {totalQuestions}</CardDescription>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+                  <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                          <Save className="mr-2 h-4 w-4" />
+                          Save & Exit
+                      </Button>
+                  </DialogTrigger>
+                  <DialogContent className={cn(isHellBound && "hell-bound text-foreground")}>
+                      <DialogHeader>
+                          <DialogTitle>Save Progress</DialogTitle>
+                          <DialogDescription>
+                            Don't have time? Save your quiz now and continue later from where you left off.
+                          </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-2">
+                          <div className="space-y-2">
+                              <Label htmlFor="quiz-name-progress">Quiz Name</Label>
+                              <Input id="quiz-name-progress" value={saveQuizName} onChange={(e) => setSaveQuizName(e.target.value)} placeholder="e.g., Midterm Study Session" />
+                          </div>
+                          <div className="space-y-2">
+                              <Label>Color Tag</Label>
+                              <div className="flex flex-wrap gap-2">
+                                  {Object.entries(TAG_COLORS).map(([colorName, colorClass]) => (
+                                  <button
+                                      key={colorName}
+                                      type="button"
+                                      onClick={() => setSaveQuizColor(colorName)}
+                                      className={cn(
+                                          'h-8 w-8 rounded-full transition-transform duration-200',
+                                          colorClass,
+                                          saveQuizColor === colorName ? 'ring-2 ring-offset-2 ring-primary ring-offset-background' : 'hover:scale-110'
+                                      )}
+                                      aria-label={`Select ${colorName} color tag`}
+                                  />
+                                  ))}
+                              </div>
+                          </div>
+                      </div>
+                      <DialogFooter>
+                          <Button onClick={handleSaveAndExit}>Save Progress</Button>
+                      </DialogFooter>
+                  </DialogContent>
+              </Dialog>
               {timer > 0 && (
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground rounded-full bg-muted px-3 py-1">
                       <Timer className="h-4 w-4" />
@@ -222,7 +314,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure you want to exit?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      All your progress in this quiz will be lost. You will be returned to the main setup screen.
+                      All your progress in this quiz will be lost. Use "Save & Exit" to keep your progress.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

@@ -22,6 +22,7 @@ interface QuizResultsProps {
   onRestart: () => void;
   onRetake: () => void;
   user: UserProfile | null;
+  sourceContent: string;
 }
 
 type ValidationStatus = 'Correct' | 'Partially Correct' | 'Incorrect' | null;
@@ -49,7 +50,7 @@ const TAG_COLORS: { [key: string]: string } = {
 };
 
 
-export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizResultsProps) {
+export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceContent }: QuizResultsProps) {
   const { apiKey, incrementUsage } = useApiKey();
   const [detailedResults, setDetailedResults] = useState<Result[]>([]);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
@@ -193,6 +194,8 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
       userAnswers: answers,
       score: { score, total, percentage },
       color: saveQuizColor,
+      status: 'completed',
+      sourceContent: sourceContent,
     };
     try {
       await addPastQuiz(pastQuiz);

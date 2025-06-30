@@ -10,7 +10,7 @@ import type { Quiz, Question } from '@/lib/types';
 import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
 import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
 import { useTheme } from '@/hooks/use-theme';
-import { addFileContent, getFileContent, deleteFileContent, getPastQuizById } from '@/lib/indexed-db';
+import { getPastQuizById } from '@/lib/indexed-db';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -52,7 +52,7 @@ interface QuizSetupContextType {
   retakeQuiz: () => void;
   clearQuizSetup: () => void;
   cancelGeneration: () => void;
-  loadQuizFromHistory: (id: number, mode: 'retake' | 'results') => Promise<void>;
+  loadQuizFromHistory: (id: number, mode: 'retake' | 'results' | 'resume') => Promise<void>;
 }
 
 const QuizSetupContext = createContext<QuizSetupContextType | undefined>(undefined);
@@ -79,26 +79,14 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
   const { isHellBound } = useTheme();
 
   const processFile = useCallback(
-    (file: File): Promise<{ content: string; source: 'cache' | 'processed' }> => {
+    (file: File): Promise<{ content: string }> => {
       return new Promise(async (resolve, reject) => {
-        // Tier 0: Check IndexedDB Cache
-        try {
-          const cachedFile = await getFileContent(file.name);
-          if (cachedFile) {
-            resolve({ content: cachedFile.content, source: 'cache' });
-            return;
-          }
-        } catch (e) {
-            console.warn("IndexedDB cache check failed, processing file from scratch.", e);
-        }
-
         const doProcess = (
           processor: (file: File) => Promise<{ content: string }>
         ) => {
           processor(file)
             .then(async ({ content }) => {
-              await addFileContent({ name: file.name, content });
-              resolve({ content, source: 'processed' });
+              resolve({ content });
             })
             .catch(reject);
         };
@@ -280,15 +268,11 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
         const file = newFiles[i];
         setParseProgress({ current: i + 1, total: newFiles.length, message: `Processing ${file.name}...` });
         
-        const { content, source } = await processFile(file);
+        const { content } = await processFile(file);
         
         if (controller.signal.aborted) throw new Error("Cancelled");
 
         allProcessedFiles.push({ name: file.name, content });
-
-        if (source === 'cache') {
-            toast({ title: "Loaded from cache!", description: `${file.name} was instantly loaded.` });
-        }
       }
       
       setProcessedFiles(allProcessedFiles);
@@ -452,17 +436,20 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     setView('quiz');
   }, []);
   
-  const loadQuizFromHistory = useCallback(async (id: number, mode: 'retake' | 'results') => {
+  const loadQuizFromHistory = useCallback(async (id: number, mode: 'retake' | 'results' | 'resume') => {
     try {
       const pastQuiz = await getPastQuizById(id);
       if (pastQuiz) {
         setQuiz(pastQuiz.quiz);
         setTimer(0); // Timers aren't saved
+        setUserAnswers(pastQuiz.userAnswers || {}); // handle partial answers
+        
+        // Load the source content back into the session
+        setProcessedFiles([{ name: `Source for "${pastQuiz.title}"`, content: pastQuiz.sourceContent }]);
+
         if (mode === 'results') {
-          setUserAnswers(pastQuiz.userAnswers);
           setView('results');
-        } else {
-          setUserAnswers({});
+        } else { // 'retake' or 'resume'
           setView('quiz');
         }
       } else {
@@ -475,14 +462,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
 
   const removeFile = useCallback(async (fileNameToRemove: string) => {
     setProcessedFiles(prev => prev.filter(file => file.name !== fileNameToRemove));
-    try {
-        await deleteFileContent(fileNameToRemove);
-        toast({ title: "File removed", description: `${fileNameToRemove} has been removed from your browser cache.` });
-    } catch(e) {
-        console.error("Failed to remove file from cache", e);
-        toast({ variant: "destructive", title: "Cache Error", description: "Could not remove file from cache." });
-    }
-  }, [toast]);
+  }, []);
 
   const stopParsing = useCallback(() => {
     parsingController?.abort();

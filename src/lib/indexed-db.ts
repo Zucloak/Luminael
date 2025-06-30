@@ -4,16 +4,8 @@
 import type { PastQuiz } from '@/lib/types';
 
 const DB_NAME = 'LuminaelCacheDB';
-const DB_VERSION = 2; // Incremented to add new object store
-const FILE_STORE_NAME = 'fileContents';
+const DB_VERSION = 3; // Incremented to remove old object store
 const QUIZ_STORE_NAME = 'pastQuizzes';
-
-
-interface StoredFile {
-    name: string;
-    content: string;
-    timestamp: number;
-}
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -42,10 +34,15 @@ function openDB(): Promise<IDBDatabase> {
 
         request.onupgradeneeded = (event) => {
             const db = (event.target as IDBOpenDBRequest).result;
-            if (!db.objectStoreNames.contains(FILE_STORE_NAME)) {
-                db.createObjectStore(FILE_STORE_NAME, { keyPath: 'name' });
+            const oldVersion = event.oldVersion;
+
+            if (oldVersion < 2 && !db.objectStoreNames.contains(QUIZ_STORE_NAME)) {
+                db.createObjectStore(QUIZ_STORE_NAME, { keyPath: 'id' });
             }
-            if (!db.objectStoreNames.contains(QUIZ_STORE_NAME)) {
+            if (oldVersion > 0 && oldVersion < 3 && db.objectStoreNames.contains('fileContents')) {
+                db.deleteObjectStore('fileContents');
+            }
+             if (!db.objectStoreNames.contains(QUIZ_STORE_NAME)) {
                 db.createObjectStore(QUIZ_STORE_NAME, { keyPath: 'id' });
             }
         };
@@ -54,71 +51,7 @@ function openDB(): Promise<IDBDatabase> {
     return dbPromise;
 }
 
-export async function addFileContent(file: { name: string; content: string }): Promise<void> {
-    try {
-        const db = await openDB();
-        const transaction = db.transaction(FILE_STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(FILE_STORE_NAME);
-        const dataToStore: StoredFile = {
-            ...file,
-            timestamp: Date.now()
-        };
-        store.put(dataToStore);
-
-        return new Promise((resolve, reject) => {
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => {
-                console.error('Transaction error:', transaction.error);
-                reject(transaction.error);
-            };
-        });
-    } catch (error) {
-        console.error("Could not add file to IndexedDB:", error);
-    }
-}
-
-export async function getFileContent(name: string): Promise<StoredFile | undefined> {
-    try {
-        const db = await openDB();
-        const transaction = db.transaction(FILE_STORE_NAME, 'readonly');
-        const store = transaction.objectStore(FILE_STORE_NAME);
-        const request = store.get(name);
-
-        return new Promise((resolve, reject) => {
-            request.onsuccess = () => {
-                resolve(request.result as StoredFile | undefined);
-            };
-            request.onerror = () => {
-                console.error('Get request error:', request.error);
-                reject(request.error);
-            };
-        });
-    } catch (error) {
-        console.error("Could not get file from IndexedDB:", error);
-        return undefined;
-    }
-}
-
-export async function deleteFileContent(name: string): Promise<void> {
-    try {
-        const db = await openDB();
-        const transaction = db.transaction(FILE_STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(FILE_STORE_NAME);
-        store.delete(name);
-
-        return new Promise((resolve, reject) => {
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => {
-                console.error('Delete transaction error:', transaction.error);
-                reject(transaction.error);
-            };
-        });
-    } catch (error) {
-        console.error("Could not delete file from IndexedDB:", error);
-    }
-}
-
-// --- New Functions for Quiz History ---
+// --- Functions for Quiz History ---
 
 export async function addPastQuiz(quizData: PastQuiz): Promise<void> {
     try {

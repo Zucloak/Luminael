@@ -39,6 +39,7 @@ export default function Home() {
     isGenerating,
     cancelGeneration,
     loadQuizFromHistory,
+    processedFiles,
   } = useQuizSetup();
 
   const searchParams = useSearchParams();
@@ -67,10 +68,23 @@ export default function Home() {
   useEffect(() => {
     const retakeId = searchParams.get('retake');
     const resultsId = searchParams.get('results');
-    const id = retakeId || resultsId;
+    const resumeId = searchParams.get('resume');
 
-    if (id && loadQuizFromHistory) {
-      const mode = retakeId ? 'retake' : 'results';
+    let id: string | null = null;
+    let mode: 'retake' | 'results' | 'resume' | null = null;
+    
+    if (retakeId) {
+        id = retakeId;
+        mode = 'retake';
+    } else if (resultsId) {
+        id = resultsId;
+        mode = 'results';
+    } else if (resumeId) {
+        id = resumeId;
+    mode = 'resume';
+    }
+
+    if (id && mode && loadQuizFromHistory) {
       loadQuizFromHistory(Number(id), mode);
       // Clean up URL to prevent re-triggering on reload
       router.replace('/', { scroll: false }); 
@@ -125,6 +139,8 @@ export default function Home() {
         </Card>
       );
     }
+    const combinedContent = processedFiles.map(f => f.content).join('\n\n---\n\n');
+
     switch (view) {
       case 'generating':
         const progressPercentage = generationProgress.total > 0 ? (generationProgress.current / generationProgress.total) * 100 : 0;
@@ -169,9 +185,9 @@ export default function Home() {
           </div>
         );
       case 'quiz':
-        return quiz && <QuizInterface quiz={quiz} timer={timer} onSubmit={submitQuiz} onExit={restartQuiz} isHellBound={isHellBound} />;
+        return quiz && <QuizInterface quiz={quiz} timer={timer} onSubmit={submitQuiz} onExit={restartQuiz} isHellBound={isHellBound} sourceContent={combinedContent} />;
       case 'results':
-        return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={restartQuiz} onRetake={retakeQuiz} user={user} />;
+        return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={restartQuiz} onRetake={retakeQuiz} user={user} sourceContent={combinedContent} />;
       case 'setup':
       default:
         return <QuizSetup onQuizStart={startQuiz} isGenerating={isGenerating} isHellBound={isHellBound} onHellBoundToggle={setIsHellBound} />;
