@@ -263,7 +263,7 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     }
   }, [processFile, apiKey, toast]);
   
-  const startQuiz = async (values: any) => {
+  const startQuiz = useCallback(async (values: any) => {
     if (!apiKey) {
       toast({
         variant: "destructive",
@@ -377,12 +377,12 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
       setGenerationController(null);
       setGenerationProgress({ current: 0, total: 0, message: '' });
     }
-  };
+  }, [apiKey, toast, processedFiles, isHellBound, incrementUsage]);
 
-  const submitQuiz = (answers: Record<number, string>) => {
+  const submitQuiz = useCallback((answers: Record<number, string>) => {
     setUserAnswers(answers);
     setView('results');
-  };
+  }, []);
 
   const clearQuizSetup = useCallback(() => {
     setProcessedFiles([]);
@@ -391,18 +391,18 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
     setParseProgress({ current: 0, total: 0, message: '' });
   }, []);
 
-  const restartQuiz = () => {
+  const restartQuiz = useCallback(() => {
     clearQuizSetup();
     setQuiz(null);
     setUserAnswers({});
     setTimer(0);
     setView('setup');
-  };
+  }, [clearQuizSetup]);
 
-  const retakeQuiz = () => {
+  const retakeQuiz = useCallback(() => {
     setUserAnswers({});
     setView('quiz');
-  };
+  }, []);
 
   const removeFile = useCallback((fileNameToRemove: string) => {
     setProcessedFiles(prev => prev.filter(file => file.name !== fileNameToRemove));
