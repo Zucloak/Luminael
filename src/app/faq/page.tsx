@@ -10,7 +10,7 @@ const faqs = [
     },
     {
         question: "How does the quiz generation work?",
-        answer: "The process is a sophisticated two-step pipeline. First, we send your uploaded content to the Gemini AI to analyze and extract the most important, high-level key concepts. Second, we send that list of structured key concepts back to the AI with instructions to build a quiz based *only* on that information. This ensures the quiz is focused, relevant, and directly tied to your materials."
+        answer: "Luminael's AI engine performs a deep analysis of your uploaded files to build a conceptual understanding of the material. It intelligently identifies the most critical topics and relationships within your content. This understanding is then used as a blueprint to generate a focused, relevant quiz designed to test true comprehension, not just memorization."
     },
     {
         question: "Is my API key secure?",
