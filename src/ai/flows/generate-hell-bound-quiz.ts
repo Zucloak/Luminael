@@ -59,28 +59,50 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
   async ({ fileContent, numQuestions, existingQuestions, apiKey }) => {
-    const summarizePromptTemplate = `You are a text distillation AI with a "HELL BOUND" persona. The following raw text is a chaotic mess, too vast for a lesser system. Your task is to forge it into a brutally token-efficient elixir of pure, high-level concepts. This summary will be the raw material for the most difficult questions imaginable.
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    
+    const CONTENT_THRESHOLD = 20000;
+    const BATCH_DELAY = 5000; // 5 seconds
+    let processedContent = fileContent;
+
+    if (processedContent.length > CONTENT_THRESHOLD) {
+      const chunks: string[] = [];
+      for (let i = 0; i < processedContent.length; i += CONTENT_THRESHOLD) {
+        chunks.push(processedContent.substring(i, i + CONTENT_THRESHOLD));
+      }
+      
+      const summarizedChunks: string[] = [];
+      for (const [index, chunk] of chunks.entries()) {
+        const summarizePrompt = `You are a text distillation AI with a "HELL BOUND" persona. The following raw text is a chunk of a larger document (${index + 1}/${chunks.length}). Your task is to forge it into a brutally token-efficient elixir of pure, high-level concepts. This summary will be the raw material for the most difficult questions imaginable.
 
 **ABSOLUTE COMMANDS:**
 1.  **Identify and Obey the Language:** First, determine the primary language of the raw material. You will then write your entire summary in *that same language*. Do not translate. Disobedience will not be tolerated.
 2.  **Extract the Core, Not the Fluff:** Do not summarize simple facts. Your purpose is to distill the most complex, abstract, and interconnectable ideas that a lesser mind would overlook. Focus on the essence that can be used to forge hellishly difficult questions.
 
-**Raw Material:**
-${fileContent}
+**Raw Material Chunk:**
+${chunk}
 
 **Distilled Essence (in the original language):`;
 
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
-    
-    const CONTENT_THRESHOLD = 20000;
-    let processedContent = fileContent;
+        try {
+          const { text } = await runner.generate({
+            model: 'googleai/gemini-1.5-flash-latest',
+            prompt: summarizePrompt,
+          });
+          summarizedChunks.push(text);
 
-    if (processedContent.length > CONTENT_THRESHOLD) {
-      const { text } = await runner.generate({
-        model: 'googleai/gemini-1.5-flash-latest',
-        prompt: summarizePromptTemplate,
-      });
-      processedContent = text;
+          if (index < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+          }
+        } catch (error) {
+          console.error(`Error summarizing chunk ${index + 1} of ${chunks.length}:`, error);
+          if (error instanceof Error && error.message.includes('429')) {
+             throw new Error(`Rate limit exceeded while summarizing a large document. Please wait a minute and try again.`);
+          }
+          throw new Error(`An error occurred while summarizing a large document (chunk ${index + 1}).`);
+        }
+      }
+      processedContent = summarizedChunks.join('\n\n');
     }
 
     const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to generate a quiz from the provided content that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.

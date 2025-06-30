@@ -59,29 +59,51 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async ({ content, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
-    const summarizePromptTemplate = `You are a highly intelligent text processing AI. The following content is too long for direct processing. Your task is to create a token-efficient summary that will be used to generate a quiz.
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    
+    const CONTENT_THRESHOLD = 20000;
+    const BATCH_DELAY = 5000; // 5 seconds
+    let processedContent = content;
+
+    if (processedContent.length > CONTENT_THRESHOLD) {
+      const chunks: string[] = [];
+      for (let i = 0; i < processedContent.length; i += CONTENT_THRESHOLD) {
+        chunks.push(processedContent.substring(i, i + CONTENT_THRESHOLD));
+      }
+      
+      const summarizedChunks: string[] = [];
+      for (const [index, chunk] of chunks.entries()) {
+        const summarizePrompt = `You are a highly intelligent text processing AI. The following content is a chunk of a larger document (${index + 1}/${chunks.length}). Your task is to create a token-efficient summary of this chunk that will be used to generate a quiz.
 
 **CRITICAL INSTRUCTIONS:**
 1.  **Identify Language:** First, determine the primary language of the original content.
 2.  **Summarize in Same Language:** You MUST write your summary in the *exact same language* you identified. Do not translate. If the original content is in Filipino, the summary must be in Filipino.
 3.  **Focus on Quiz-Worthy Material:** Do not create a generic summary. Instead, extract and condense the key concepts, main characters, plot points, definitions, and important facts. The goal is to create a dense, fact-rich summary suitable for generating detailed quiz questions.
 
-**Original Content:**
-${content}
+**Content Chunk:**
+${chunk}
 
-**Fact-Rich Summary (in the original language):`;
+**Fact-Rich Summary of this Chunk (in the original language):`;
+        
+        try {
+          const { text } = await runner.generate({
+            model: 'googleai/gemini-1.5-flash-latest',
+            prompt: summarizePrompt,
+          });
+          summarizedChunks.push(text);
 
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
-    
-    const CONTENT_THRESHOLD = 20000;
-    let processedContent = content;
-
-    if (processedContent.length > CONTENT_THRESHOLD) {
-      const { text } = await runner.generate({
-        model: 'googleai/gemini-1.5-flash-latest',
-        prompt: summarizePromptTemplate,
-      });
-      processedContent = text;
+          if (index < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+          }
+        } catch (error) {
+          console.error(`Error summarizing chunk ${index + 1} of ${chunks.length}:`, error);
+          if (error instanceof Error && error.message.includes('429')) {
+             throw new Error(`Rate limit exceeded while summarizing a large document. Please wait a minute and try again.`);
+          }
+          throw new Error(`An error occurred while summarizing a large document (chunk ${index + 1}).`);
+        }
+      }
+      processedContent = summarizedChunks.join('\n\n');
     }
 
     const quizPrompt = `You are an AI assistant tasked with creating a quiz based on the provided content.
