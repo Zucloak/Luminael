@@ -70,11 +70,12 @@ ${context}
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
 2.  **Obey the Language:** The entire quiz MUST be in the same language as the Key Concepts.
 3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested.
-4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions.
-5.  **Question Format:** Adhere to the requested format: '${questionFormat}'.
-6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
-7.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
-8.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
+4.  **Question Format:** Adhere to the requested format: '${questionFormat}'.
+5.  **Question Type Integrity:** If a question is inherently explanatory or requires a detailed answer (e.g., starts with "Explain...", "Describe...", "Why..."), you MUST classify it as 'openEnded', even if the requested format is 'multipleChoice'. Do not force an explanatory question into a multiple-choice structure.
+6.  **No Placeholders or Garbage:** All fields (question, options, answer) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer". For multiple-choice questions, all four options must be distinct and plausible.
+7.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
+8.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
+9.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
     -   Enclose inline math with single dollar signs (\`$...$\`).
     -   Enclose block math with double dollar signs (\`$$...$$\`).
     -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`.
