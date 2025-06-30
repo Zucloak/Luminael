@@ -76,7 +76,8 @@ ${context}
 9.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
     -   Enclose inline math with single dollar signs (\`$...$\`).
     -   Enclose block math with double dollar signs (\`$$...$$\`).
-    -   **CRITICAL:** For multi-character superscripts or subscripts, you MUST use curly braces. For example: write \`$10^{-19}$\` NOT \`$10^-19$\`. Write \`$U_{235}$\` NOT \`$U_235$\`.
+    -   **CRITICAL:** For ALL superscripts or subscripts, you MUST use curly braces, even for single characters. For example: write \`$z^{6}$\` NOT \`$z^6$\`. Write \`$x^{2}$\` NOT \`$x^2$\`. Write \`$10^{-19}$\` NOT \`$10^-19$\`.
+    -   Use standard LaTeX commands for functions and symbols (e.g., \`\\sin\`, \`\\cos\`, \`\\theta\`, \`\\alpha\`, \`\\sqrt{}\`, \`\\frac{}{}\`). For example, write \`$x = a \\sin \\theta$\` instead of \`x = a sin θ\`.
     -   **DO NOT** use parentheses for math, such as \`\\(\` or \`\\)\`. Only use dollar signs.
 
 **Output Mandate:**

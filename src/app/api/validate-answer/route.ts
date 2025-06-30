@@ -55,7 +55,7 @@ async function performAnswerValidation(input: ValidateAnswerInput): Promise<Next
     *   If **Correct**, briefly affirm their understanding.
     *   If **Partially Correct**, praise what they got right and then gently clarify what was missing or needed correction.
     *   If **Incorrect**, provide a clear and encouraging explanation of the correct concept.
-    *   **CRITICAL LaTeX Formatting:** Any math in your explanation MUST use proper LaTeX. Enclose inline math with single dollar signs (\`$...$\`) and block-level math with double dollar signs (\`$$...$$\`). For multi-character exponents/subscripts, use curly braces (e.g., \`$10^{-19}$\`, NOT \`$10^-19$\`). **Never use parentheses like \`\\(\`... \`\\)\` for math.**
+    *   **CRITICAL LaTeX Formatting:** Any math in your explanation MUST use proper LaTeX. Enclose inline math with single dollar signs (\`$...$\`) and block-level math with double dollar signs (\`$$...$$\`). For ALL exponents/subscripts, use curly braces (e.g., \`$x^{2}$\`, \`$10^{-19}$\`). Never use parentheses like \`\\(\`... \`\\)\` for math.
 
 **Critical Output Format:**
 You MUST respond ONLY with a valid JSON object matching this exact schema. Do not add any text, markdown, or commentary before or after the JSON.

@@ -93,8 +93,6 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
   
-  const isMathQuestion = currentQuestion.questionType === 'openEnded' && /[\$]/.test(currentQuestion.question);
-
   useEffect(() => {
     if (timer <= 0) return;
 
@@ -149,7 +147,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
       
       try {
         let extractedText: string;
-        if (isMathQuestion) {
+        if (currentQuestion.questionType === 'openEnded') {
             const response = await fetch('/api/extract-latex-from-image', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -190,7 +188,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
         const message = error instanceof Error ? error.message : "An unknown error occurred during image processing.";
         toast({
           variant: "destructive",
-          title: isMathQuestion ? "LaTeX Extraction Failed" : "Text Extraction Failed",
+          title: currentQuestion.questionType === 'openEnded' ? "LaTeX Extraction Failed" : "Text Extraction Failed",
           description: message,
         });
       } finally {
