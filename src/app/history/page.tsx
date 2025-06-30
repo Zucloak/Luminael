@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { getPastQuizzes, deletePastQuiz } from '@/lib/indexed-db';
 import type { PastQuiz } from '@/lib/types';
-import { History, FileText, Calendar, Percent, Eye, RotateCw, Trash2, Frown } from 'lucide-react';
+import { Bookmark, FileText, Calendar, Percent, Eye, RotateCw, Trash2, Frown } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +25,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
-function HistoryCardSkeleton() {
+function SavedQuizSkeleton() {
     return (
         <Card>
             <CardHeader>
@@ -51,9 +51,19 @@ function HistoryCardSkeleton() {
     )
 }
 
-export default function HistoryPage() {
+const TAG_COLORS: { [key: string]: string } = {
+  red: 'bg-red-500',
+  orange: 'bg-orange-500',
+  yellow: 'bg-yellow-500',
+  green: 'bg-green-500',
+  blue: 'bg-blue-500',
+  purple: 'bg-purple-500',
+  gray: 'bg-gray-500',
+};
+
+export default function SavedQuizzesPage() {
     const { isHellBound, loading: themeLoading } = useTheme();
-    const [pastQuizzes, setPastQuizzes] = useState<PastQuiz[]>([]);
+    const [savedQuizzes, setSavedQuizzes] = useState<PastQuiz[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
@@ -61,12 +71,12 @@ export default function HistoryPage() {
         setIsLoading(true);
         try {
             const quizzes = await getPastQuizzes();
-            setPastQuizzes(quizzes);
+            setSavedQuizzes(quizzes);
         } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not load quiz history from your browser database.',
+                description: 'Could not load saved quizzes from your browser database.',
             });
         } finally {
             setIsLoading(false);
@@ -81,15 +91,15 @@ export default function HistoryPage() {
         try {
             await deletePastQuiz(id);
             toast({
-                title: 'History Deleted',
-                description: 'The quiz has been removed from your history.',
+                title: 'Quiz Deleted',
+                description: 'The quiz has been removed from your saved library.',
             });
             fetchQuizzes(); // Refresh the list
         } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not delete the quiz from your history.',
+                description: 'Could not delete the quiz from your library.',
             });
         }
     };
@@ -110,25 +120,25 @@ export default function HistoryPage() {
             <main className="flex-grow container mx-auto p-4 md:p-8">
                 <div className="max-w-4xl mx-auto">
                     <div className="flex items-center gap-4 mb-8">
-                        <History className="h-10 w-10 text-primary" />
+                        <Bookmark className="h-10 w-10 text-primary" />
                         <div>
-                            <h1 className="text-3xl md:text-4xl font-headline font-bold">Quiz History</h1>
-                            <p className="text-muted-foreground">Review your past quizzes. All data is stored securely on your device.</p>
+                            <h1 className="text-3xl md:text-4xl font-headline font-bold">Saved Quizzes</h1>
+                            <p className="text-muted-foreground">Review, retake, or delete your saved quizzes. All data is stored securely on your device.</p>
                         </div>
                     </div>
 
                     {isLoading || themeLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <HistoryCardSkeleton />
-                           <HistoryCardSkeleton />
+                           <SavedQuizSkeleton />
+                           <SavedQuizSkeleton />
                         </div>
-                    ) : pastQuizzes.length === 0 ? (
+                    ) : savedQuizzes.length === 0 ? (
                         <Card className="text-center py-12 px-6">
                             <CardHeader>
                                 <Frown className="h-16 w-16 mx-auto text-muted-foreground" />
-                                <CardTitle className="mt-4">No History Found</CardTitle>
+                                <CardTitle className="mt-4">No Quizzes Saved</CardTitle>
                                 <CardDescription>
-                                    You haven't completed any quizzes yet. Once you do, your results will appear here.
+                                    You haven't saved any quizzes yet. After completing a quiz, you'll have the option to save it here.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -139,12 +149,15 @@ export default function HistoryPage() {
                         </Card>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {pastQuizzes.map((pq) => (
+                            {savedQuizzes.map((pq) => (
                                 <Card key={pq.id} className="flex flex-col">
                                     <CardHeader>
-                                        <CardTitle className="truncate font-semibold flex items-start gap-2">
-                                            <FileText className="h-5 w-5 mt-1 text-primary flex-shrink-0" />
-                                            <span title={pq.title}>{pq.title}</span>
+                                        <CardTitle className="font-semibold flex items-start justify-between gap-2">
+                                            <div className="flex items-start gap-2 min-w-0">
+                                                <FileText className="h-5 w-5 mt-1 text-primary flex-shrink-0" />
+                                                <span className="truncate" title={pq.title}>{pq.title}</span>
+                                            </div>
+                                            {pq.color && <div className={cn("h-3 w-3 rounded-full flex-shrink-0 mt-1.5", TAG_COLORS[pq.color] || 'bg-gray-500')} title={`Color tag: ${pq.color}`} />}
                                         </CardTitle>
                                         <CardDescription className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4" /> {formatDate(pq.date)}
@@ -177,7 +190,7 @@ export default function HistoryPage() {
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        This action cannot be undone. This will permanently delete this quiz history from your browser.
+                                                        This action cannot be undone. This will permanently delete this quiz from your browser.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>

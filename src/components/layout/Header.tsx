@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { User, Home, Maximize, Minimize, History } from 'lucide-react';
+import { User, Home, Maximize, Minimize, Bookmark } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -46,9 +46,9 @@ export function Header({ isHellBound = false }: { isHellBound?: boolean }) {
               <Home className="h-5 w-5" />
             </Link>
           </Button>
-          <Button asChild variant="outline" size="icon" aria-label="Quiz History" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
+          <Button asChild variant="outline" size="icon" aria-label="Saved Quizzes" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
             <Link href="/history">
-              <History className="h-5 w-5" />
+              <Bookmark className="h-5 w-5" />
             </Link>
           </Button>
           {isSupported && (

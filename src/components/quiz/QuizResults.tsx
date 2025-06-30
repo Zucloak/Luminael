@@ -1,15 +1,20 @@
 
 "use client";
 
-import type { Quiz, UserProfile, Question } from '@/lib/types';
+import type { Quiz, UserProfile, Question, PastQuiz } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Check, X, Award, RotateCw, Pencil, Sparkles, BrainCircuit, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Check, X, Award, RotateCw, Pencil, Sparkles, BrainCircuit, CheckCircle, AlertCircle, XCircle, Save } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { useApiKey } from '@/hooks/use-api-key';
+import { useToast } from '@/hooks/use-toast';
+import { addPastQuiz } from '@/lib/indexed-db';
 
 interface QuizResultsProps {
   quiz: Quiz;
@@ -33,9 +38,24 @@ type Result = (Question & {
   isValidating?: boolean;
 });
 
+const TAG_COLORS: { [key: string]: string } = {
+  gray: 'bg-gray-400 hover:bg-gray-500',
+  red: 'bg-red-400 hover:bg-red-500',
+  orange: 'bg-orange-400 hover:bg-orange-500',
+  yellow: 'bg-yellow-400 hover:bg-yellow-500',
+  green: 'bg-green-400 hover:bg-green-500',
+  blue: 'bg-blue-400 hover:bg-blue-500',
+  purple: 'bg-purple-400 hover:bg-purple-500',
+};
+
+
 export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizResultsProps) {
   const { apiKey, incrementUsage } = useApiKey();
   const [detailedResults, setDetailedResults] = useState<Result[]>([]);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [saveQuizName, setSaveQuizName] = useState('');
+  const [saveQuizColor, setSaveQuizColor] = useState('gray');
+  const { toast } = useToast();
   
   useEffect(() => {
     const initialResults: Result[] = quiz.questions.map((q, index) => {
@@ -45,15 +65,14 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
         return { ...q, userAnswer, isCorrect, isValidating: false };
       }
       
-      // If open-ended, check if an answer was actually provided.
       const hasUserAnswer = answers[index] && answers[index].trim() !== '';
 
       return { 
         ...q, 
         userAnswer, 
-        isCorrect: null, // AI will determine correctness
-        isValidating: hasUserAnswer, // ONLY validate if there is an answer.
-        ...(!hasUserAnswer && { // If no answer, pre-populate the validation result.
+        isCorrect: null, 
+        isValidating: hasUserAnswer,
+        ...(!hasUserAnswer && {
           validation: { status: 'Incorrect', explanation: 'No answer was provided.' } 
         })
       };
@@ -160,6 +179,30 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
     if (percentage >= 50) return "Good Effort!";
     return "Keep Reviewing!";
   };
+
+  const handleSaveQuiz = async () => {
+    if (!saveQuizName.trim()) {
+      toast({ variant: 'destructive', title: 'Name Required', description: 'Please enter a name for your quiz.' });
+      return;
+    }
+    const pastQuiz: PastQuiz = {
+      id: Date.now(),
+      title: saveQuizName,
+      date: new Date().toISOString(),
+      quiz,
+      userAnswers: answers,
+      score: { score, total, percentage },
+      color: saveQuizColor,
+    };
+    try {
+      await addPastQuiz(pastQuiz);
+      toast({ title: 'Quiz Saved!', description: `"${saveQuizName}" has been saved to your library.` });
+      setIsSaveDialogOpen(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save the quiz to your browser.' });
+    }
+  };
+
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
@@ -286,6 +329,46 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user }: QuizRe
           <Button onClick={onRestart} size="lg">
             <Sparkles className="mr-2 h-4 w-4" /> Create New Quiz
           </Button>
+            <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button size="lg" variant="secondary"><Save className="mr-2 h-4 w-4" />Save Quiz</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Save Quiz</DialogTitle>
+                        <DialogDescription>
+                            Save this quiz session to your library for later review or retakes.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="quiz-name">Quiz Name</Label>
+                            <Input id="quiz-name" value={saveQuizName} onChange={(e) => setSaveQuizName(e.target.value)} placeholder="e.g., Chapter 5 Biology Review" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Color Tag</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.entries(TAG_COLORS).map(([colorName, colorClass]) => (
+                                <button
+                                    key={colorName}
+                                    type="button"
+                                    onClick={() => setSaveQuizColor(colorName)}
+                                    className={cn(
+                                        'h-8 w-8 rounded-full transition-transform duration-200',
+                                        colorClass,
+                                        saveQuizColor === colorName ? 'ring-2 ring-offset-2 ring-primary ring-offset-background' : 'hover:scale-110'
+                                    )}
+                                    aria-label={`Select ${colorName} color tag`}
+                                />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleSaveQuiz}>Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
       </CardContent>
     </Card>

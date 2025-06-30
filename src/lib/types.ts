@@ -1,3 +1,4 @@
+
 export type MultipleChoiceQuestion = {
   questionType: 'multipleChoice';
   question: string;
@@ -34,4 +35,5 @@ export interface PastQuiz {
     total: number;
     percentage: number;
   };
+  color?: string;
 }
