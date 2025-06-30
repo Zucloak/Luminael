@@ -302,18 +302,14 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-    const combinedContent = processedFiles.map(f => f.content).join('\n\n---\n\n');
-    if (!combinedContent) {
+    
+    if (processedFiles.length === 0) {
         toast({
             variant: "destructive",
             title: "Content Missing",
             description: "Please upload content before starting a quiz.",
         });
         return;
-    }
-
-    if (combinedContent.length > 20000) {
-      incrementUsage();
     }
 
     const controller = new AbortController();
@@ -341,18 +337,16 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
 
         const generatorFn = isHellBound ? generateHellBoundQuiz : generateQuiz;
         
-        const contentForAI = combinedContent;
-
         let params: Omit<GenerateQuizInput, 'apiKey'> | Omit<GenerateHellBoundQuizInput, 'apiKey'>;
         if (isHellBound) {
           params = {
-            fileContent: contentForAI,
+            files: processedFiles,
             numQuestions: questionsInBatch,
             existingQuestions: existingQuestionTitles,
           };
         } else {
           params = {
-            content: contentForAI,
+            files: processedFiles,
             numQuestions: questionsInBatch,
             difficulty: values.difficulty || 'Medium',
             questionFormat: values.questionFormat || 'multipleChoice',

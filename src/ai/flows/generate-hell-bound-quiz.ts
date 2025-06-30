@@ -13,10 +13,14 @@ import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 
+const FileContentSchema = z.object({
+  name: z.string().describe("The name of the file."),
+  content: z.string().describe("The text content of the file."),
+});
+
 const GenerateHellBoundQuizInputSchema = z.object({
-  fileContent: z
-    .string()
-    .describe('The content of the uploaded files, which may span multiple subjects.'),
+  files: z.array(FileContentSchema)
+    .describe('An array of files, each with a name and its text content.'),
   numQuestions: z.number().describe('The number of questions to generate for this batch.'),
   existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
   apiKey: z.string().optional().describe('Optional Gemini API key.'),
@@ -58,52 +62,60 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     inputSchema: GenerateHellBoundQuizInputSchema,
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
-  async ({ fileContent, numQuestions, existingQuestions, apiKey }) => {
+  async ({ files, numQuestions, existingQuestions, apiKey }) => {
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
     const CONTENT_THRESHOLD = 20000;
     const BATCH_DELAY = 5000; // 5 seconds
-    let processedContent = fileContent;
+    
+    const processedFileContents: string[] = [];
 
-    if (processedContent.length > CONTENT_THRESHOLD) {
-      const chunks: string[] = [];
-      for (let i = 0; i < processedContent.length; i += CONTENT_THRESHOLD) {
-        chunks.push(processedContent.substring(i, i + CONTENT_THRESHOLD));
-      }
-      
-      const summarizedChunks: string[] = [];
-      for (const [index, chunk] of chunks.entries()) {
-        const summarizePrompt = `You are a text distillation AI with a "HELL BOUND" persona. The following raw text is a chunk of a larger document (${index + 1}/${chunks.length}). Your task is to forge it into a brutally token-efficient elixir of pure, high-level concepts. This summary will be the raw material for the most difficult questions imaginable.
+    for (const file of files) {
+        let fileContent = file.content;
+
+        if (fileContent.length > CONTENT_THRESHOLD) {
+            const chunks: string[] = [];
+            for (let i = 0; i < fileContent.length; i += CONTENT_THRESHOLD) {
+                chunks.push(fileContent.substring(i, i + CONTENT_THRESHOLD));
+            }
+            
+            const summarizedChunks: string[] = [];
+            for (const [index, chunk] of chunks.entries()) {
+                const summarizePrompt = `You are a text distillation AI with a "HELL BOUND" persona. The following raw text is chunk ${index + 1} of ${chunks.length} from the document "${file.name}". Your task is to forge it into a brutally token-efficient elixir of pure, high-level concepts. This summary will be the raw material for the most difficult questions imaginable.
 
 **ABSOLUTE COMMANDS:**
 1.  **Identify and Obey the Language:** First, determine the primary language of the raw material. You will then write your entire summary in *that same language*. Do not translate. Disobedience will not be tolerated.
 2.  **Extract the Core, Not the Fluff:** Do not summarize simple facts. Your purpose is to distill the most complex, abstract, and interconnectable ideas that a lesser mind would overlook. Focus on the essence that can be used to forge hellishly difficult questions.
 
-**Raw Material Chunk:**
+**Raw Material Chunk from "${file.name}":**
 ${chunk}
 
 **Distilled Essence (in the original language):`;
 
-        try {
-          const { text } = await runner.generate({
-            model: 'googleai/gemini-1.5-flash-latest',
-            prompt: summarizePrompt,
-          });
-          summarizedChunks.push(text);
+                try {
+                    const { text } = await runner.generate({
+                        model: 'googleai/gemini-1.5-flash-latest',
+                        prompt: summarizePrompt,
+                    });
+                    summarizedChunks.push(text);
 
-          if (index < chunks.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
-          }
-        } catch (error) {
-          console.error(`Error summarizing chunk ${index + 1} of ${chunks.length}:`, error);
-          if (error instanceof Error && error.message.includes('429')) {
-             throw new Error(`Rate limit exceeded while summarizing a large document. Please wait a minute and try again.`);
-          }
-          throw new Error(`An error occurred while summarizing a large document (chunk ${index + 1}).`);
+                    if (index < chunks.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+                    }
+                } catch (error) {
+                    console.error(`Error summarizing chunk ${index + 1} from ${file.name}:`, error);
+                    if (error instanceof Error && error.message.includes('429')) {
+                        throw new Error(`Rate limit exceeded while summarizing a large document (${file.name}). Please wait a minute and try again.`);
+                    }
+                    throw new Error(`An error occurred while summarizing ${file.name} (chunk ${index + 1}).`);
+                }
+            }
+            fileContent = summarizedChunks.join('\n\n');
         }
-      }
-      processedContent = summarizedChunks.join('\n\n');
+        processedFileContents.push(`# File: ${file.name}\n${fileContent}`);
     }
+
+    const processedContent = processedFileContents.join('\n\n---\n\n');
 
     const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to generate a quiz from the provided content that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
 
@@ -111,7 +123,7 @@ ${chunk}
 ${processedContent}
 
 **NON-NEGOTIABLE RULES:**
-1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. Every question, option, and answer MUST be directly derived from the Core Material provided. If the material is a story, do not ask about geography.
+1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. Every question, option, and answer MUST be directly derived from the Core Material provided. If the material is a story, do not ask about geography. The file structure (e.g., "# File: ...") is for context; synthesize information across files.
 2.  **Obey the Language:** The entire quiz MUST be in the same language as the Core Material. If the material is in Filipino, the quiz must be in Filipino. No exceptions.
 3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested. Re-read the material to find more details if necessary. Do not stop early.
 4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions (e.g., "What is the capital of France?", "What is a quick brown rabbit?"). This is an instant failure.
