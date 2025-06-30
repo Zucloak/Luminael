@@ -32,7 +32,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
   const { toast } = useToast();
 
   const [isUnlimited, setIsUnlimited] = useState(paidTierConfig.type === 'unlimited');
-  const [customLimit, setCustomLimit] = useState<string>(paidTierConfig.type === 'custom' ? String(paidTierConfig.limit) : '');
+  const [customLimit, setCustomLimit] = useState<string>(paidTierConfig.type === 'custom' && paidTierConfig.limit !== UNLIMITED_BUDGET ? String(paidTierConfig.limit) : '');
 
 
   useEffect(() => {
@@ -173,7 +173,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             Your API key is stored securely in your browser and never sent to our servers.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 pt-4">
+        <div className="space-y-4 pt-2">
           <div className="space-y-2">
             <Label htmlFor="api-key">API Key</Label>
             <Input
@@ -186,28 +186,21 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
               maxLength={39}
             />
           </div>
-          <div className="space-y-3">
-             <Label>What kind of key are you using?</Label>
-             <RadioGroup value={selectedType} onValueChange={(v) => setSelectedType(v as KeyType)} className="space-y-2">
-                <Label
-                    htmlFor="plan-free"
-                    className="flex items-center space-x-2 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground has-[:checked]:border-primary"
-                >
+          <div className="space-y-2">
+             <Label>Key Type</Label>
+             <RadioGroup value={selectedType} onValueChange={(v) => setSelectedType(v as KeyType)} className="space-y-1">
+                <div className="flex items-center space-x-2">
                     <RadioGroupItem value="free" id="plan-free" />
-                    <span>I'm using a free Gemini API key</span>
-                </Label>
-                <Label
-                    htmlFor="plan-paid"
-                    className="flex items-center space-x-2 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground has-[:checked]:border-primary"
-                >
+                    <Label htmlFor="plan-free" className="font-normal">I'm using a free Gemini API key</Label>
+                </div>
+                <div className="flex items-center space-x-2">
                     <RadioGroupItem value="paid" id="plan-paid" />
-                    <span>I'm using a paid Gemini API key</span>
-                </Label>
+                    <Label htmlFor="plan-paid" className="font-normal">I'm using a paid Gemini API key</Label>
+                </div>
             </RadioGroup>
           </div>
           {selectedType === 'paid' && (
-             <div className="space-y-4 p-4 border rounded-md animate-in fade-in-50 duration-300">
-                <Label>Paid Plan Options</Label>
+             <div className="space-y-3 pt-3 border-t animate-in fade-in-50 duration-300">
                 <div className="flex items-center space-x-2">
                   <Checkbox id="unlimited-check" checked={isUnlimited} onCheckedChange={(checked) => setIsUnlimited(checked as boolean)} />
                   <label
@@ -217,27 +210,27 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
                     Use unlimited calls
                   </label>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="custom-limit" className={cn(isUnlimited && 'text-muted-foreground/50')}>Custom Daily Limit</Label>
-                    <Input id="custom-limit" type="number" placeholder='e.g., 1000' value={customLimit} onChange={e => setCustomLimit(e.target.value)} disabled={isUnlimited}/>
+                 <div className="space-y-1">
+                    <Label htmlFor="custom-limit" className={cn('text-xs', isUnlimited && 'text-muted-foreground/50')}>Custom Daily Limit</Label>
+                    <Input id="custom-limit" type="number" placeholder='e.g., 1000' value={customLimit} onChange={e => setCustomLimit(e.target.value)} disabled={isUnlimited} className="h-9"/>
                  </div>
              </div>
           )}
           {isSupercharged && (
-             <div className="space-y-3 pt-4 border-t">
-                <div className="flex justify-between items-end">
+             <div className="space-y-2 pt-3 border-t">
+                <div className="flex justify-between items-center text-sm">
                     <Label>Daily Usage Budget</Label>
                     {!isPaidUnlimited ? (
-                       <p className="text-sm font-medium text-muted-foreground">{usage.used} / {usage.total} Calls</p>
+                       <p className="font-medium text-muted-foreground">{usage.used} / {usage.total} Calls</p>
                     ) : (
-                       <p className="text-sm font-bold text-primary">Unlimited</p>
+                       <p className="font-bold text-primary">Unlimited</p>
                     )}
                 </div>
                 {!isPaidUnlimited && (
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Progress value={usagePercentage} className="h-3" indicatorClassName={cn(
+                                <Progress value={usagePercentage} className="h-2" indicatorClassName={cn(
                                     "bg-gradient-to-r from-green-400 via-green-500 to-green-600 bg-[length:200%_200%] animate-progress-fluid",
                                     usagePercentage > 50 && "from-yellow-400 via-yellow-500 to-orange-500",
                                     usagePercentage > 80 && "from-orange-500 via-red-500 to-red-600",
@@ -250,13 +243,13 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
                     </TooltipProvider>
                 )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <a href="https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas?" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">See official Google quotas</a>
+                    <a href="https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas?" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">See official quotas</a>
                     <Button variant="link" className="text-xs h-auto p-0" onClick={resetUsage}>Reset Count</Button>
                 </div>
             </div>
           )}
           {!isSupercharged && (
-            <div className="space-y-3 pt-2 text-sm text-muted-foreground">
+            <div className="space-y-2 pt-2 text-sm text-muted-foreground">
                 <p>
                 You can create a free API key from Google AI Studio. The free tier is generous and perfect for getting started.
                 </p>
@@ -272,11 +265,11 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             </div>
           )}
         </div>
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-4">
            <Button type="button" onClick={handleSave} disabled={isVerifying}>
               {isVerifying ? (
                   <>
-                      <Loader2 className="animate-spin" /> Verifying...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...
                   </>
               ) : (
                   "Save and Verify"
