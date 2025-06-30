@@ -213,6 +213,11 @@ export function QuizSetupProvider({ children }: { children: ReactNode }) {
                             await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
                         }
                     }
+
+                    toast({
+                      title: 'AI OCR Complete',
+                      description: `Successfully processed ${pagesToOcr.length} image-based pages.`,
+                    });
                 }
                 
                 return { content: allPagesText.join('\n\n---\n\n') };
