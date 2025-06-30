@@ -65,66 +65,19 @@ const generateHellBoundQuizFlow = ai.defineFlow(
   async ({ files, numQuestions, existingQuestions, apiKey }) => {
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
-    const CONTENT_THRESHOLD = 15000;
-    const BATCH_DELAY = 5000; // 5 seconds
-    
-    const processedFileContents: string[] = [];
+    const processedContent = files.map(file => 
+      `# File: ${file.name}\n${file.content}`
+    ).join('\n\n---\n\n');
 
-    for (const file of files) {
-        let fileContent = file.content;
-
-        if (fileContent.length > CONTENT_THRESHOLD) {
-            const chunks: string[] = [];
-            for (let i = 0; i < fileContent.length; i += CONTENT_THRESHOLD) {
-                chunks.push(fileContent.substring(i, i + CONTENT_THRESHOLD));
-            }
-            
-            const summarizedChunks: string[] = [];
-            for (const [index, chunk] of chunks.entries()) {
-                const summarizePrompt = `You are a text distillation AI with a "HELL BOUND" persona. The following raw text is chunk ${index + 1} of ${chunks.length} from the document "${file.name}". Your task is to forge it into a brutally token-efficient list of the most complex, high-level concepts.
-
-**ABSOLUTE COMMANDS:**
-1.  **Identify and Obey Language:** Determine the primary language of the raw text. You will then write your entire output in *that same language*. Do not translate. Disobedience will not be tolerated.
-2.  **Extract the Crux:** Do not summarize simple facts. Your purpose is to distill only the most complex, abstract, and interconnectable ideas. Focus on the core essence that can be used to forge hellishly difficult questions.
-3.  **Maximum 5 Concepts:** You MUST return a maximum of 5 key concepts. Use a bulleted list. This is a strict, non-negotiable limit.
-
-**Raw Material Chunk from "${file.name}":**
-${chunk}
-
-**Distilled Concepts (Max 5, in original language):`;
-
-                try {
-                    const { text } = await runner.generate({
-                        model: 'googleai/gemini-1.5-flash-latest',
-                        prompt: summarizePrompt,
-                    });
-                    summarizedChunks.push(text);
-
-                    if (index < chunks.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
-                    }
-                } catch (error) {
-                    console.error(`Error summarizing chunk ${index + 1} from ${file.name}:`, error);
-                    if (error instanceof Error && error.message.includes('429')) {
-                        throw new Error(`Rate limit exceeded while summarizing a large document (${file.name}). Please wait a minute and try again.`);
-                    }
-                    throw new Error(`An error occurred while summarizing ${file.name} (chunk ${index + 1}).`);
-                }
-            }
-            fileContent = summarizedChunks.join('\n\n');
-        }
-        processedFileContents.push(`# File: ${file.name}\n${fileContent}`);
-    }
-
-    const processedContent = processedFileContents.join('\n\n---\n\n');
-
-    const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to generate a quiz from the provided content that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
+    const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to perform a two-step process:
+First, analyze the provided **Core Material**, which consists of one or more documents. For each document, identify the most complex, high-level concepts that can be used to forge hellishly difficult questions.
+Second, using ONLY those complex concepts you have identified, generate a quiz that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
 
 **Core Material:**
 ${processedContent}
 
 **NON-NEGOTIABLE RULES:**
-1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. Every question, option, and answer MUST be directly derived from the Core Material provided. If the material is a story, do not ask about geography. The file structure (e.g., "# File: ...") is for context; synthesize information across files.
+1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All concepts, questions, options, and answers MUST be directly derived from the Core Material provided. The file structure (e.g., "# File: ...") is for context; synthesize information across files.
 2.  **Obey the Language:** The entire quiz MUST be in the same language as the Core Material. If the material is in Filipino, the quiz must be in Filipino. No exceptions.
 3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested. Re-read the material to find more details if necessary. Do not stop early.
 4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions (e.g., "What is the capital of France?", "What is a quick brown rabbit?"). This is an instant failure.

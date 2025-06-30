@@ -67,68 +67,21 @@ const generateQuizFlow = ai.defineFlow(
   async ({ files, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
-    const CONTENT_THRESHOLD = 15000;
-    const BATCH_DELAY = 5000; // 5 seconds
-    
-    const processedFileContents: string[] = [];
+    const processedContent = files.map(file => 
+      `# File: ${file.name}\n${file.content}`
+    ).join('\n\n---\n\n');
 
-    for (const file of files) {
-        let fileContent = file.content;
+    const quizPrompt = `You are an expert AI educator. Your task is to perform a two-step process:
+First, analyze the provided **Core Material** which consists of one or more documents. For each document, identify a maximum of 5 key concepts.
+Second, using ONLY those key concepts you have identified, generate a quiz that meets the specified criteria.
 
-        if (fileContent.length > CONTENT_THRESHOLD) {
-            const chunks: string[] = [];
-            for (let i = 0; i < fileContent.length; i += CONTENT_THRESHOLD) {
-                chunks.push(fileContent.substring(i, i + CONTENT_THRESHOLD));
-            }
-            
-            const summarizedChunks: string[] = [];
-            for (const [index, chunk] of chunks.entries()) {
-                const summarizePrompt = `You are a text distillation AI. The following content is chunk ${index + 1} of ${chunks.length} from the document "${file.name}". Your task is to create a highly condensed, token-efficient list of the most important key concepts from this text.
-
-**CRITICAL INSTRUCTIONS:**
-1.  **Identify and Obey Language:** Determine the primary language of the raw text. Your entire output MUST be in that same language.
-2.  **Extract Core Concepts:** Do not write a prose summary. Extract only the most critical, quiz-worthy concepts, definitions, and facts.
-3.  **Maximum 5 Concepts:** You MUST return a maximum of 5 key concepts. Use a bulleted list. This is a strict limit.
-
-**Raw Text Chunk from "${file.name}":**
-${chunk}
-
-**Key Concepts (Max 5, in original language):`;
-                
-                try {
-                    const { text } = await runner.generate({
-                        model: 'googleai/gemini-1.5-flash-latest',
-                        prompt: summarizePrompt,
-                    });
-                    summarizedChunks.push(text);
-
-                    if (index < chunks.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
-                    }
-                } catch (error) {
-                    console.error(`Error summarizing chunk ${index + 1} from ${file.name}:`, error);
-                    if (error instanceof Error && error.message.includes('429')) {
-                        throw new Error(`Rate limit exceeded while summarizing a large document (${file.name}). Please wait a minute and try again.`);
-                    }
-                    throw new Error(`An error occurred while summarizing ${file.name} (chunk ${index + 1}).`);
-                }
-            }
-            fileContent = summarizedChunks.join('\n\n');
-        }
-        processedFileContents.push(`# File: ${file.name}\n${fileContent}`);
-    }
-
-    const processedContent = processedFileContents.join('\n\n---\n\n');
-
-    const quizPrompt = `You are an AI assistant tasked with creating a quiz based on the provided content.
-
-**Content:**
+**Core Material:**
 ${processedContent}
 
 **NON-NEGOTIABLE RULES:**
-1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. Every question, option, and answer MUST be directly derived from the Content provided. The file structure (e.g., "# File: ...") is for context; synthesize information across files.
-2.  **Obey the Language:** The entire quiz MUST be in the same language as the Content. If the content is in Filipino, the quiz must be in Filipino. No exceptions.
-3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested. Re-read the content to find more details if necessary. Do not stop early.
+1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All key concepts, questions, options, and answers MUST be directly derived from the Core Material provided. The file structure (e.g., "# File: ...") is for context; synthesize information across files.
+2.  **Obey the Language:** The entire quiz MUST be in the same language as the Core Material. If the content is in Filipino, the quiz must be in Filipino. No exceptions.
+3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested. Your generated questions must be based on the key concepts you identified.
 4.  **No Placeholders or Garbage:** Under no circumstances are you to output placeholder text like "Lorem Ipsum" or generic, unrelated questions (e.g., "What is the capital of France?", "What is a quick brown fox?"). This is an instant failure.
 5.  **Question Format:** Adhere to the requested format: '${questionFormat}'.
 6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level based on the content.
