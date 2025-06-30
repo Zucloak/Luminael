@@ -59,9 +59,10 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    try {
+        const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
 
-    const quizPrompt = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
+        const quizPrompt = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
 
 **Key Concepts:**
 ${context}
@@ -84,16 +85,33 @@ ${context}
 
 **Output Format:**
 You MUST provide your response in the specified JSON format.`;
-    
-    const {output} = await runner.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
-      prompt: quizPrompt,
-      output: {
-          format: 'json',
-          schema: GenerateQuizOutputSchema
-      }
-    });
-    
-    return output!;
+        
+        const {output} = await runner.generate({
+        model: 'googleai/gemini-1.5-flash-latest',
+        prompt: quizPrompt,
+        output: {
+            format: 'json',
+            schema: GenerateQuizOutputSchema
+        }
+        });
+        
+        if (!output) {
+          throw new Error("The AI failed to generate a quiz. It returned an empty or invalid response.");
+        }
+        return output;
+    } catch (error) {
+        console.error("Critical error in generateQuizFlow:", error);
+        let message = "An unknown error occurred during quiz generation.";
+        if (error instanceof Error) {
+            if (error.message.includes('503 Service Unavailable') || error.message.includes('overloaded')) {
+                message = "The AI model is temporarily overloaded. Please wait a moment and try again.";
+            } else {
+                message = error.message;
+            }
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        throw new Error(message);
+    }
   }
 );

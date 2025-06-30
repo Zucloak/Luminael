@@ -35,17 +35,18 @@ const extractKeyConceptsFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ files, apiKey }) => {
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
-    
-    const processedContent = files.map(file => 
-      `# File: ${file.name}\n\n${file.content}`
-    ).join('\n\n---\n\n');
+    try {
+      const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+      
+      const processedContent = files.map(file => 
+        `# File: ${file.name}\n\n${file.content}`
+      ).join('\n\n---\n\n');
 
-    const conceptInstruction = files.length > 3
-        ? 'For each document provided in the context, identify and extract a maximum of 5 key concepts. The concepts should be the most important, high-level ideas from the text.'
-        : 'For each document provided in the context, identify and extract all relevant key concepts. Be comprehensive.';
+      const conceptInstruction = files.length > 3
+          ? 'For each document provided in the context, identify and extract a maximum of 5 key concepts. The concepts should be the most important, high-level ideas from the text.'
+          : 'For each document provided in the context, identify and extract all relevant key concepts. Be comprehensive.';
 
-    const prompt = `You are an expert AI specializing in information synthesis. Your task is to analyze the provided Core Material, which consists of one or more documents, and extract the key concepts from each.
+      const prompt = `You are an expert AI specializing in information synthesis. Your task is to analyze the provided Core Material, which consists of one or more documents, and extract the key concepts from each.
 
 **Core Material:**
 ${processedContent}
@@ -66,12 +67,32 @@ ${processedContent}
 - Key Concept C
 - Key Concept D
 `;
-    
-    const {text} = await runner.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
-      prompt: prompt,
-    });
-    
-    return text;
+      
+      const {text} = await runner.generate({
+        model: 'googleai/gemini-1.5-flash-latest',
+        prompt: prompt,
+      });
+      
+      if (!text) {
+        throw new Error("The AI failed to synthesize key concepts. It returned an empty response.");
+      }
+      return text;
+
+    } catch (error) {
+      console.error("Critical error in extractKeyConceptsFlow:", error);
+      
+      let message = "An unknown error occurred during concept extraction.";
+      if (error instanceof Error) {
+        if (error.message.includes('503 Service Unavailable') || error.message.includes('overloaded')) {
+             message = "The AI model is temporarily overloaded. Please wait a moment and try again.";
+        } else {
+             message = error.message;
+        }
+      } else if (typeof error === 'string') {
+        message = error;
+      }
+      
+      throw new Error(message);
+    }
   }
 );
