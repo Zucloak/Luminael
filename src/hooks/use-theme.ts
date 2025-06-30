@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, createContext, ReactNode, useContext } from 'react';
@@ -38,6 +39,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       console.error("Failed to save theme to localStorage", error);
     }
   }, []);
+
+  // New useEffect to apply class to body
+  useEffect(() => {
+    const body = window.document.body;
+    if (isHellBound) {
+      body.classList.add('hell-bound');
+    } else {
+      body.classList.remove('hell-bound');
+    }
+  }, [isHellBound]);
 
   const value = { isHellBound, setIsHellBound: setHellBound, loading };
 

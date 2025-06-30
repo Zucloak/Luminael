@@ -19,7 +19,12 @@ export function MainContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className={cn("theme-container min-h-screen-minus-header flex flex-col transition-colors duration-1000", isHellBound && "hell-bound")}>
+    <div className="theme-container min-h-screen-minus-header flex flex-col transition-colors duration-1000">
+       {isHellBound && (
+            <div className="pointer-events-none fixed top-[81px] left-0 right-0 z-40 flex justify-center" aria-hidden="true">
+                <h2 className="hell-bound-title">HELL BOUND</h2>
+            </div>
+        )}
       <main className="flex-grow container mx-auto p-4 md:p-8 flex items-start lg:items-center justify-center">
         {children}
       </main>

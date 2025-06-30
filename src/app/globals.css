@@ -48,7 +48,7 @@
     --ring: 0 0% 98%;
   }
 
-  .hell-bound {
+  body.hell-bound {
     --background: 0 0% 7%;
     --foreground: 0 0% 95%;
     --card: 0 0% 10%;
@@ -78,7 +78,7 @@
   body {
     @apply bg-background text-foreground;
   }
-  .hell-bound.theme-container {
+  body.hell-bound .theme-container {
     background-color: hsl(var(--background));
     background-image: radial-gradient(ellipse at bottom, hsl(var(--destructive) / 0.2), transparent 70%);
     background-size: 200% 200%;
@@ -97,4 +97,27 @@
   .markdown-renderer pre > code {
     @apply bg-transparent p-0;
   }
+  .hell-bound-title {
+    font-family: 'Times New Roman', serif;
+    font-weight: bold;
+    color: hsl(var(--destructive));
+    font-size: 1.25rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 0.25rem 1rem;
+    border: 1px solid hsl(var(--destructive) / 0.5);
+    border-radius: var(--radius);
+    background: hsl(var(--background) / 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    text-shadow: 0 0 8px hsl(var(--destructive));
+    animation: fadeInOut 5s ease-in-out forwards;
+  }
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    20% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
 }
