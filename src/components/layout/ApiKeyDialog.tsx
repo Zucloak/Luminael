@@ -237,20 +237,23 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
                     )}
                 </div>
                 {!isDisplayingPaidUnlimited && (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Progress value={usagePercentage} className="h-2" indicatorClassName={cn(
-                                    "bg-gradient-to-r from-green-400 via-green-500 to-green-600 bg-[length:200%_200%] animate-progress-fluid",
-                                    usagePercentage > 50 && "from-yellow-400 via-yellow-500 to-orange-500",
-                                    usagePercentage > 80 && "from-orange-500 via-red-500 to-red-600",
-                                )}/>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>{usagePercentage}% of your daily {selectedType} tier budget used.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    <>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Progress value={usagePercentage} className="h-2" indicatorClassName={cn(
+                                        "bg-gradient-to-r from-green-400 via-green-500 to-green-600 bg-[length:200%_200%] animate-progress-fluid",
+                                        usagePercentage > 50 && "from-yellow-400 via-yellow-500 to-orange-500",
+                                        usagePercentage > 80 && "from-orange-500 via-red-500 to-red-600",
+                                    )}/>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{usagePercentage}% of your daily {selectedType} tier budget used.</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                        <p className="text-xs text-muted-foreground text-center pt-1">This counter only tracks calls made within this app.</p>
+                    </>
                 )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <a href="https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas?" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">See official quotas</a>
