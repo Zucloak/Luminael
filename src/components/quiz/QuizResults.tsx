@@ -265,17 +265,17 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                           key={optionIndex}
                           className={cn(
                             "p-3 rounded-md border text-left",
-                            isCorrectAnswer ? "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700" : "",
-                            isUserAnswer && !isCorrectAnswer ? "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700" : "",
+                            isCorrectAnswer ? "bg-green-500/10 border-green-500/40" : "",
+                            isUserAnswer && !isCorrectAnswer ? "bg-red-500/10 border-red-500/40" : "",
                             !isUserAnswer && !isCorrectAnswer ? "bg-muted/50" : ""
                           )}
                         >
                           <div className="font-medium flex items-start gap-2">
-                            {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/> : <X className="h-4 w-4 text-destructive flex-shrink-0 mt-1"/>)}
+                            {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/> : <X className="h-4 w-4 text-red-600 flex-shrink-0 mt-1"/>)}
                             {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/>}
                             <div className="flex-1"><MarkdownRenderer>{option}</MarkdownRenderer></div>
                           </div>
-                          {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-destructive pl-6">Your answer</p>}
+                          {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-red-600 pl-6">Your answer</p>}
                           {isCorrectAnswer && <p className="text-xs text-green-600 pl-6">Correct answer</p>}
                         </div>
                       )
@@ -297,21 +297,21 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                         ) : result.validation ? (
                             <div className={cn(
                                 "p-3 rounded-md border space-y-2",
-                                result.validation.status === 'Correct' && "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700",
-                                result.validation.status === 'Partially Correct' && "bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700",
-                                result.validation.status === 'Incorrect' && "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700",
+                                result.validation.status === 'Correct' && "bg-green-500/10 border-green-500/40",
+                                result.validation.status === 'Partially Correct' && "bg-yellow-500/10 border-yellow-500/40",
+                                result.validation.status === 'Incorrect' && "bg-destructive/10 border-destructive/40",
                             )}>
                                 <div className="flex items-center gap-2 font-bold">
                                     {result.validation.status === 'Correct' && <CheckCircle className="h-5 w-5 text-green-600" />}
                                     {result.validation.status === 'Partially Correct' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
                                     {result.validation.status === 'Incorrect' && <XCircle className="h-5 w-5 text-destructive" />}
                                     <span className={cn(
-                                        result.validation.status === 'Correct' && "text-green-700 dark:text-green-300",
-                                        result.validation.status === 'Partially Correct' && "text-yellow-700 dark:text-yellow-300",
+                                        result.validation.status === 'Correct' && "text-green-600",
+                                        result.validation.status === 'Partially Correct' && "text-yellow-600",
                                         result.validation.status === 'Incorrect' && "text-destructive",
                                     )}>{result.validation.status}</span>
                                 </div>
-                                <div className="text-sm text-foreground/80 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
+                                <div className="text-sm text-foreground/90 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
                             </div>
                         ) : null}
                     </div>
