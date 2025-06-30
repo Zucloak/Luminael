@@ -65,7 +65,7 @@ const generateHellBoundQuizFlow = ai.defineFlow(
   async ({ files, numQuestions, existingQuestions, apiKey }) => {
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
-    const CONTENT_THRESHOLD = 20000;
+    const CONTENT_THRESHOLD = 15000;
     const BATCH_DELAY = 5000; // 5 seconds
     
     const processedFileContents: string[] = [];
@@ -81,16 +81,17 @@ const generateHellBoundQuizFlow = ai.defineFlow(
             
             const summarizedChunks: string[] = [];
             for (const [index, chunk] of chunks.entries()) {
-                const summarizePrompt = `You are a text distillation AI with a "HELL BOUND" persona. The following raw text is chunk ${index + 1} of ${chunks.length} from the document "${file.name}". Your task is to forge it into a brutally token-efficient elixir of pure, high-level concepts. This summary will be the raw material for the most difficult questions imaginable.
+                const summarizePrompt = `You are a text distillation AI with a "HELL BOUND" persona. The following raw text is chunk ${index + 1} of ${chunks.length} from the document "${file.name}". Your task is to forge it into a brutally token-efficient list of the most complex, high-level concepts.
 
 **ABSOLUTE COMMANDS:**
-1.  **Identify and Obey the Language:** First, determine the primary language of the raw material. You will then write your entire summary in *that same language*. Do not translate. Disobedience will not be tolerated.
-2.  **Extract the Core, Not the Fluff:** Do not summarize simple facts. Your purpose is to distill the most complex, abstract, and interconnectable ideas that a lesser mind would overlook. Focus on the essence that can be used to forge hellishly difficult questions.
+1.  **Identify and Obey Language:** Determine the primary language of the raw text. You will then write your entire output in *that same language*. Do not translate. Disobedience will not be tolerated.
+2.  **Extract the Crux:** Do not summarize simple facts. Your purpose is to distill only the most complex, abstract, and interconnectable ideas. Focus on the core essence that can be used to forge hellishly difficult questions.
+3.  **Maximum 5 Concepts:** You MUST return a maximum of 5 key concepts. Use a bulleted list. This is a strict, non-negotiable limit.
 
 **Raw Material Chunk from "${file.name}":**
 ${chunk}
 
-**Distilled Essence (in the original language):`;
+**Distilled Concepts (Max 5, in original language):`;
 
                 try {
                     const { text } = await runner.generate({

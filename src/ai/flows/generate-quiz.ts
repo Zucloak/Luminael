@@ -67,7 +67,7 @@ const generateQuizFlow = ai.defineFlow(
   async ({ files, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
     const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
     
-    const CONTENT_THRESHOLD = 20000;
+    const CONTENT_THRESHOLD = 15000;
     const BATCH_DELAY = 5000; // 5 seconds
     
     const processedFileContents: string[] = [];
@@ -83,17 +83,17 @@ const generateQuizFlow = ai.defineFlow(
             
             const summarizedChunks: string[] = [];
             for (const [index, chunk] of chunks.entries()) {
-                const summarizePrompt = `You are a highly intelligent text processing AI. The following content is chunk ${index + 1} of ${chunks.length} from the document "${file.name}". Your task is to create a token-efficient summary of this chunk that will be used to generate a quiz.
+                const summarizePrompt = `You are a text distillation AI. The following content is chunk ${index + 1} of ${chunks.length} from the document "${file.name}". Your task is to create a highly condensed, token-efficient list of the most important key concepts from this text.
 
 **CRITICAL INSTRUCTIONS:**
-1.  **Identify Language:** First, determine the primary language of the original content.
-2.  **Summarize in Same Language:** You MUST write your summary in the *exact same language* you identified. Do not translate. If the original content is in Filipino, the summary must be in Filipino.
-3.  **Focus on Quiz-Worthy Material:** Do not create a generic summary. Instead, extract and condense the key concepts, main characters, plot points, definitions, and important facts. The goal is to create a dense, fact-rich summary suitable for generating detailed quiz questions.
+1.  **Identify and Obey Language:** Determine the primary language of the raw text. Your entire output MUST be in that same language.
+2.  **Extract Core Concepts:** Do not write a prose summary. Extract only the most critical, quiz-worthy concepts, definitions, and facts.
+3.  **Maximum 5 Concepts:** You MUST return a maximum of 5 key concepts. Use a bulleted list. This is a strict limit.
 
-**Content Chunk from "${file.name}":**
+**Raw Text Chunk from "${file.name}":**
 ${chunk}
 
-**Fact-Rich Summary of this Chunk (in the original language):`;
+**Key Concepts (Max 5, in original language):`;
                 
                 try {
                     const { text } = await runner.generate({
