@@ -69,8 +69,12 @@ const generateHellBoundQuizFlow = ai.defineFlow(
       `# File: ${file.name}\n${file.content}`
     ).join('\n\n---\n\n');
 
+    const conceptInstruction = files.length > 3
+        ? 'For each document, identify the 5 most complex, high-level concepts that can be used to forge hellishly difficult questions.'
+        : 'For each document, identify all of the most complex, high-level concepts that can be used to forge hellishly difficult questions.';
+
     const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to perform a two-step process:
-First, analyze the provided **Core Material**, which consists of one or more documents. For each document, identify the most complex, high-level concepts that can be used to forge hellishly difficult questions.
+First, analyze the provided **Core Material**, which consists of one or more documents. ${conceptInstruction}
 Second, using ONLY those complex concepts you have identified, generate a quiz that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
 
 **Core Material:**

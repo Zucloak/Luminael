@@ -71,8 +71,12 @@ const generateQuizFlow = ai.defineFlow(
       `# File: ${file.name}\n${file.content}`
     ).join('\n\n---\n\n');
 
+    const conceptInstruction = files.length > 3
+        ? 'For each document, identify a maximum of 5 key concepts.'
+        : 'For each document, identify all relevant key concepts.';
+
     const quizPrompt = `You are an expert AI educator. Your task is to perform a two-step process:
-First, analyze the provided **Core Material** which consists of one or more documents. For each document, identify a maximum of 5 key concepts.
+First, analyze the provided **Core Material** which consists of one or more documents. ${conceptInstruction}
 Second, using ONLY those key concepts you have identified, generate a quiz that meets the specified criteria.
 
 **Core Material:**
