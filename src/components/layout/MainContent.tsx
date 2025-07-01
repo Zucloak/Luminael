@@ -36,8 +36,11 @@ export function MainContent({ children }: { children: React.ReactNode }) {
             <Separator orientation="vertical" className="hidden sm:block h-4" />
             <Link href="/privacy" className="font-semibold underline hover:text-foreground">Privacy Policy</Link>
         </div>
-        <p>
-          A Prototype from <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer/CEO: Mr. K. M.
+        <p className="mt-2">
+          A Prototype from <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer/CEO: Ken Mosquera
+        </p>
+        <p className="mt-1">
+          &copy; 2025 Luminael AI. All Rights Reserved.
         </p>
       </footer>
     </div>

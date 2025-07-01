@@ -16,6 +16,48 @@ export interface PatchVersion {
 
 export const patchNotes: PatchVersion[] = [
     {
+      version: '1.2.1',
+      title: 'Stability & Accuracy Enhancements',
+      date: 'July 2024', // TODO: Update with actual release month/year
+      notes: [
+        {
+          icon: ShieldCheck,
+          category: 'Fix',
+          text: 'Resolved critical Vercel deployment errors by ensuring user-provided API keys are correctly and consistently used for all AI operations, enhancing privacy and reliability.'
+        },
+        {
+          icon: Bug,
+          category: 'Fix',
+          text: 'Corrected an issue in Hell Bound quiz mode that prevented quiz generation due to a missing model configuration on the server.'
+        },
+        {
+          icon: Bug,
+          category: 'Fix',
+          text: 'Fixed a navigation bug in the quiz interface where the "Back" button was incorrectly advancing to the next question.'
+        },
+        {
+          icon: Gem,
+          category: 'Improvement',
+          text: 'Improved Live LaTeX Preview in the quiz interface for open-ended answers to render mathematical notation more reliably.'
+        },
+        {
+          icon: Rocket,
+          category: 'Improvement',
+          text: 'Optimized PDF file processing by adjusting how AI OCR is handled for multi-page documents, reducing upload delays.'
+        },
+        {
+          icon: Zap,
+          category: 'Feature',
+          text: 'Added new Privacy Policy and Terms of Service pages with detailed information about Luminael\'s commitment to user privacy and client-side processing.'
+        },
+        {
+          icon: Gem,
+          category: 'Polish',
+          text: 'Updated footer information with developer details and copyright notice.'
+        }
+      ]
+    },
+    {
         version: '1.2.0',
         title: 'The Bedrock Update',
         date: 'June 2024',
@@ -111,4 +153,4 @@ export const patchNotes: PatchVersion[] = [
     }
 ];
 
-export const LATEST_VERSION = patchNotes[0].version;
+export const LATEST_VERSION = patchNotes[0].version; // This will now be 1.2.1

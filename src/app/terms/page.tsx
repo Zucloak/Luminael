@@ -1,81 +1,75 @@
+// src/app/terms/page.tsx
+import { Metadata } from 'next';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+export const metadata: Metadata = {
+  title: 'Terms of Service - Luminael AI',
+  description: 'Luminael AI Terms of Service.',
+};
 
 export default function TermsOfServicePage() {
   return (
-    <div className="relative w-full max-w-4xl mx-auto py-8">
-        <Card className="w-full relative shadow-lg">
-            <CardHeader className="text-center items-center">
-                <FileText className="h-10 w-10 text-primary" />
-                <CardTitle className="font-headline text-3xl mt-4">Terms of Service</CardTitle>
-                <CardDescription>
-                    Legal terms governing the use of SYNAPPSE services.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-left">
-                 <p>Last Updated: June 23, 2025</p>
-                <p>Welcome to SYNAPPSE! These Terms of Service ("Terms") govern your access to and use of the SYNAPPSE website (synappse.vercel.app/) and all related services, content, and functionalities (collectively, the "Services") provided by SYNAPPSE ("we," "us," or "our").</p>
-                <p>By accessing or using our Services, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use our Services.</p>
+    <div className="container mx-auto px-4 py-8 max-w-3xl prose dark:prose-invert lg:prose-xl">
+      <h1 className="text-3xl font-bold mb-6 font-headline text-center">Terms of Service</h1>
+      <p className="mb-6 text-center text-muted-foreground">Last Updated: {new Date().toLocaleDateString()}</p>
 
-                <h4 className="font-bold text-lg pt-4">1. Acceptance of Terms</h4>
-                <p>By using SYNAPPSE Services, you confirm that you are at least 18 years old and agree to comply with and be bound by these Terms, as well as our Privacy Policy.</p>
+      <section className="mb-6">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">1. Our Philosophy and Service</h2>
+        <p>
+          Luminael AI (&quot;the Service&quot;) is a free, client-side tool provided by SYNAPPSE. Our mission is to empower everyone to learn, educate themselves, and grow. The Service is provided &quot;as is&quot; with no fees, no user accounts, and no data collection by Luminael AI&apos;s servers regarding your content or API keys. It is a tool for you to use for your own educational purposes.
+        </p>
+      </section>
 
-                <h4 className="font-bold text-lg pt-4">2. Description of Services</h4>
-                <p>SYNAPPSE provides innovative digital creation services, including but not limited to:</p>
-                <ul className="list-disc pl-6 space-y-1">
-                    <li>Digital Content & Design: Brand Style Guides, Ad Campaign Posters/Pubmats, Website Visual Concepts, Logos, 3D Product Models, Animated Group Websites, and other digital visual content.</li>
-                    <li>On-Site Computer Servicing: Troubleshooting, repair, setup, and maintenance of computer systems.</li>
-                </ul>
-                <p>We reserve the right to modify or discontinue any part of the Services at any time without notice.</p>
+      <section className="mb-6">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">2. Your Responsibilities</h2>
+        <p>As a user of Luminael, you agree to the following:</p>
+        <ul className="list-disc list-inside space-y-2 pl-4 my-4">
+          <li>
+            <strong>Bring Your Own API Key:</strong> You are responsible for obtaining and using your own Google Gemini API key (or other compatible third-party AI model API keys as the Service may support in the future). All API calls made through the Service to such third-party AI models are made using your key, initiated from your browser. You are solely responsible for complying with the respective AI provider&apos;s (e.g., Google&apos;s) API terms of service, usage policies, and any costs you may incur with them. Luminael AI does not have access to, nor does it store, your API key on any server it operates. The key is stored locally in your browser&apos;s storage (IndexedDB) for your convenience.
+          </li>
+          <li>
+            <strong>Content Ownership:</strong> You represent and warrant that you have all necessary rights to any content (text, images, documents) you upload or input into the Service for processing. You retain all ownership of your content and the quizzes or other materials generated from it by the AI models. Luminael AI claims no ownership over your content or the AI-generated output derived from your content and API key.
+          </li>
+          <li>
+            <strong>Acceptable Use:</strong> You agree not to use the Service for any unlawful, harmful, or prohibited purpose. This includes, but is not limited to, generating content that is defamatory, obscene, infringing on intellectual property rights, or violating any applicable laws or regulations. You are responsible for the nature of the content you process and generate using the Service.
+          </li>
+        </ul>
+      </section>
 
-                <h4 className="font-bold text-lg pt-4">3. User Responsibilities</h4>
-                <p>As a user of SYNAPPSE Services, you agree to:</p>
-                <ul className="list-disc pl-6 space-y-1">
-                    <li>Provide accurate and complete information when engaging with our Services (e.g., during inquiries, project requests).</li>
-                    <li>Use the Services only for lawful purposes and in compliance with all applicable laws and regulations in the Philippines.</li>
-                    <li>Not engage in any activity that could damage, disable, overburden, or impair our Services or interfere with any other party's use of our Services.</li>
-                    <li>Not attempt to gain unauthorized access to any part of our Services, other accounts, computer systems, or networks connected to our Services.</li>
-                </ul>
+      <section className="mb-6">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">3. Disclaimer and Limitation of Liability</h2>
+        <p>We provide this tool with the best intentions, but it&apos;s important to understand its limitations:</p>
+        <ul className="list-disc list-inside space-y-2 pl-4 my-4">
+          <li>
+            <strong>No Guarantees:</strong> The Service is provided &quot;as is&quot; and &quot;as available,&quot; without warranty of any kind, express or implied. We do not guarantee the accuracy, completeness, reliability, availability, or timeliness of any information, content, or quizzes generated by the third-party AI models accessed through the Service. AI-generated content can contain inaccuracies or errors; always verify critical information.
+          </li>
+          <li>
+            <strong>No Liability:</strong> To the fullest extent permitted by applicable law, SYNAPPSE and the developer(s) of Luminael AI will not be liable for any direct, indirect, incidental, special, consequential, or punitive damages or losses arising from your use of, or inability to use, the Service. This includes, but is not limited to, any costs associated with your API key usage with third-party providers, data loss (as data is stored client-side), or reliance on information generated by the Service. Your use of the Service is solely at your own risk.
+          </li>
+          <li>
+            <strong>Intellectual Property:</strong> You own your content and the output generated using your content and your API key. We (SYNAPPSE) own the code, design, branding, and overall look and feel of the Luminael AI application. You may not copy, modify, distribute, sell, or lease any part of our Service or its underlying software, nor may you reverse engineer or attempt to extract the source code of that software, except to the extent that laws prohibit these restrictions or you have our written permission.
+          </li>
+        </ul>
+      </section>
 
-                <h4 className="font-bold text-lg pt-4">4. Intellectual Property</h4>
-                <p><strong>Our Content:</strong> All content on the SYNAPPSE website, including text, graphics, logos, images, software, and the compilation thereof, is the property of SYNAPPSE or its content suppliers and protected by Philippine and international copyright laws.</p>
-                <p><strong>Your Project Content:</strong> For design projects, you retain ownership of the intellectual property rights in any content you provide to us for the purpose of creating your project. SYNAPPSE retains the right to display completed projects in its portfolio for promotional purposes, unless otherwise agreed upon in writing.</p>
-                <p><strong>Service-Specific Deliverables:</strong> Upon full payment for completed services, ownership of the final deliverables (e.g., completed design files, website visual concepts) will transfer to you, as specified in your individual service agreement or project contract.</p>
+      <section className="mb-8">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">A Shared Vision</h2>
+        <p className="mb-3">
+          By using Luminael, you join us in a vision for a world where education is free and accessible to all. We provide the tool; you provide the curiosity. Together, we can create a brighter, more knowledgeable future.
+        </p>
+      </section>
 
-                <h4 className="font-bold text-lg pt-4">5. Payment Terms (For Paid Services)</h4>
-                <p>All fees for services rendered will be agreed upon in a separate service agreement or project proposal.</p>
-                <p>Payment terms, including deposit requirements, milestone payments, and final payment, will be specified in the individual agreement.</p>
-                <p>Failure to make timely payments may result in the suspension or termination of Services.</p>
+      <section className="mt-12 pt-6 border-t border-border">
+        <h2 className="text-2xl font-semibold mb-4 text-center font-headline">A Note to Our Friends at Google (and other AI Providers)</h2>
+        <p className="mb-3 text-center italic text-muted-foreground">
+          Luminael is an experiment in radical accessibility and educational empowerment. We believe everyone, everywhere, deserves the right to learn without barriers. By enabling users to leverage their own API keys, we are creating a decentralized, private, and powerful learning tool that respects user privacy and champions the universal right to education. We hope you see this project not as a circumvention, but as an innovation that aligns with the highest ideals of making information universally accessible and useful. Let&apos;s not hinder this journey; let&apos;s champion it together.
+        </p>
+      </section>
 
-                <h4 className="font-bold text-lg pt-4">6. Disclaimers and Limitation of Liability</h4>
-                <p><strong>No Warranties:</strong> The Services are provided "as is" and "as available" without any warranties of any kind, either express or implied, including, but not limited to, implied warranties of merchantability, fitness for a particular purpose, or non-infringement.</p>
-                <p><strong>Service Performance:</strong> While we strive for excellence, SYNAPPSE does not guarantee that the Services will be uninterrupted, error-free, or secure.</p>
-                <p><strong>Limitation of Liability:</strong> In no event shall SYNAPPSE, its owners, employees, or partners be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from (i) your access to or use of or inability to access or use the Services; (ii) any conduct or content of any third party on the Services; (iii) any content obtained from the Services; or (iv) unauthorized access, use, or alteration of your transmissions or content, whether based on warranty, contract, tort (including negligence), or any other legal theory, whether or not we have been informed of the possibility of such damage.</p>
-                <p>In no event shall SYNAPPSE's total liability to you for all damages, losses, and causes of action exceed the amount paid by you, if any, for accessing or using our Services within the six (6) months immediately preceding the date of the claim.</p>
-                <p><strong>Specific for On-Site Computer Servicing:</strong> While our partners exercise due diligence, SYNAPPSE is not responsible for any data loss, hardware damage, or other unforeseen issues that may occur during the troubleshooting, repair, or maintenance of computer systems. Clients are strongly advised to back up all critical data before any on-site service commences.</p>
-
-                <h4 className="font-bold text-lg pt-4">7. Indemnification</h4>
-                <p>You agree to defend, indemnify, and hold harmless SYNAPPSE, its owners, employees, contractors, agents, officers, and directors from and against any and all claims, damages, obligations, losses, liabilities, costs or debt, and expenses (including but not limited to attorney's fees), resulting from or arising out of a) your use and access of the Services, by you or any person using your account and password; b) a breach of these Terms; or c) any content posted by you on the Services.</p>
-
-                <h4 className="font-bold text-lg pt-4">8. Governing Law</h4>
-                <p>These Terms shall be governed and construed in accordance with the laws of the Republic of the Philippines, without regard to its conflict of law provisions.</p>
-
-                <h4 className="font-bold text-lg pt-4">9. Dispute Resolution</h4>
-                <p>Any dispute, controversy, or claim arising out of or relating to these Terms, or the breach, termination, or validity thereof, shall be primarily resolved through good faith negotiation between the parties. If an amicable settlement cannot be reached, the dispute shall be submitted to the competent courts of Taguig City, Metro Manila, Philippines, to the exclusion of all other courts.</p>
-
-                <h4 className="font-bold text-lg pt-4">10. Changes to Terms</h4>
-                <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion. By continuing to access or use our Services after those revisions become effective, you agree to be bound by the revised terms. If you do not agree to the new terms, please stop using the Services.</p>
-
-                <h4 className="font-bold text-lg pt-4">11. Termination</h4>
-                <p>We may terminate or suspend your access to our Services immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms. Upon termination, your right to use the Services will immediately cease.</p>
-
-                <h4 className="font-bold text-lg pt-4">12. Contact Information</h4>
-                <p>If you have any questions about these Terms of Service, please contact us at:<br />
-                Email: synpps@gmail.com<br />
-                Website: synappse.vercel.app/</p>
-            </CardContent>
-        </Card>
+      <section className="mt-8">
+         <p className="text-center text-sm text-muted-foreground">
+            If you have any questions about these Terms of Service, please contact us. (Developer: Please insert your contact email or method here).
+         </p>
+      </section>
     </div>
   );
 }
