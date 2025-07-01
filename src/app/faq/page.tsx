@@ -26,7 +26,7 @@ const faqs = [
     },
     {
         question: "Who is SYNAPPSE?",
-        answer: "SYNAPPSE is the innovative digital creation company behind Luminael AI, founded and led by Mr. K. M. We specialize in building intelligent applications and providing top-tier digital content and design services. You can learn more at synappse.vercel.app."
+        answer: "SYNAPPSE is the innovative digital creation company behind Luminael AI, founded and led by Mr. Ken Mosquera We specialize in building intelligent applications and providing top-tier digital content and design services. You can learn more at synappse.vercel.app."
     }
 ];
 
