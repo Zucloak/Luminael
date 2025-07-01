@@ -217,7 +217,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
 
   const goToPrevious = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
@@ -347,44 +347,56 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
             ))}
           </RadioGroup>
         ) : (
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="open-ended-answer">Your Answer</Label>
-              {currentQuestion.questionType === 'openEnded' && (
-                <>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleImageAnswerUpload}
-                    disabled={isOcrRunning}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isOcrRunning}
-                  >
-                    {isOcrRunning ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <ImageUp className="mr-2 h-4 w-4" />
-                    )}
-                    Upload Image
-                  </Button>
-                </>
-              )}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="open-ended-answer">Your Answer</Label>
+                {currentQuestion.questionType === 'openEnded' && (
+                  <>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      ref={fileInputRef}
+                      onChange={handleImageAnswerUpload}
+                      disabled={isOcrRunning}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isOcrRunning}
+                    >
+                      {isOcrRunning ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <ImageUp className="mr-2 h-4 w-4" />
+                      )}
+                      Upload Image
+                    </Button>
+                  </>
+                )}
+              </div>
+              <Textarea
+                id="open-ended-answer"
+                placeholder="Type your answer here, or upload an image of your work."
+                value={answers[currentQuestionIndex] || ''}
+                onChange={(e) => handleAnswerChange(e.target.value)}
+                rows={6}
+                className="text-base"
+              />
             </div>
-            <Textarea
-              id="open-ended-answer"
-              placeholder="Type your answer here, or upload an image of your work."
-              value={answers[currentQuestionIndex] || ''}
-              onChange={(e) => handleAnswerChange(e.target.value)}
-              rows={8}
-              className="text-base"
-            />
+            {(answers[currentQuestionIndex] || '').includes('$') && (
+              <div className="space-y-2">
+                <Label>Live Preview</Label>
+                <Card className="p-4 bg-muted/50 min-h-[4rem] flex items-center justify-center text-lg">
+                  <MarkdownRenderer>
+                    {answers[currentQuestionIndex]}
+                  </MarkdownRenderer>
+                </Card>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
