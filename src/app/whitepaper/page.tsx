@@ -4,7 +4,11 @@ import ReactMarkdown from "react-markdown";
 const markdown = `
 # The Luminael Protocol: A White Paper on Decentralized, AI-Powered Universal Learning
 
-The global landscape of education is fraught with barriers: prohibitive costs, unequal access, and centralized platforms that compromise user privacy. Luminael presents a new paradigm. It is a free, decentralized, universal, multi-lingual, and multi-subject learning application designed to return power and control to the individual learner. Its architecture is its philosophy: by operating fully client-side with a zero-database, zero-backend model, Luminael ensures that user data is never collected, stored, or monetized. The platform's novel Bring-Your-Own-API-Key (BYO-API) model is the cornerstone of this approach, empowering users to leverage the power of large language models for personalized education while maintaining absolute control over their data and API usage. This paper outlines the technical foundation, features, and societal vision of Luminael—a tool built not just for learning, but for intellectual liberation.
+The global landscape of education is fraught with barriers: prohibitive costs, unequal access, and centralized platforms that compromise user privacy. **Luminael presents a new paradigm.**  
+It is a free, decentralized, universal, multi-lingual, and multi-subject learning application designed to return power and control to the individual learner.
+
+Its architecture is its philosophy: by operating fully client-side with a zero-database, zero-backend model, Luminael ensures that user data is never collected, stored, or monetized.  
+The platform's novel **Bring-Your-Own-API-Key (BYO-API)** model is the cornerstone of this approach, empowering users to leverage the power of large language models for personalized education while maintaining absolute control over their data and API usage.
 
 ---
 
@@ -17,8 +21,8 @@ For centuries, access to high-quality education has been a privilege, not a righ
 - **Lack of Personalization:** One-size-fits-all curricula fail to cater to individual learning styles, paces, and interests, leading to disengagement and inefficient knowledge acquisition.
 - **Centralized Control & Data Exploitation:** Most online platforms operate on a centralized model, requiring users to surrender their personal data, learning habits, and content in exchange for access. This data is then stored, analyzed, and often monetized, creating significant privacy risks.
 
-**Luminael was conceived as a direct and radical response to these challenges.**  
-*Our Mission: To dismantle the barriers to knowledge by providing a free, secure, and infinitely adaptable learning tool that empowers every individual on Earth to pursue education without compromise.*
+> **Luminael was conceived as a direct and radical response to these challenges.**  
+> *Our Mission: To dismantle the barriers to knowledge by providing a free, secure, and infinitely adaptable learning tool that empowers every individual on Earth to pursue education without compromise.*
 
 ---
 
@@ -103,8 +107,24 @@ We invite you to experience this new paradigm of learning. We invite you to take
 
 export default function WhitepaperPage() {
   return (
-    <div className="prose prose-slate max-w-3xl mx-auto py-16 px-4">
-      <ReactMarkdown>{markdown}</ReactMarkdown>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-200 py-10 px-2">
+      <div className="prose prose-slate lg:prose-xl mx-auto bg-white/90 rounded-xl shadow-xl p-8">
+        <ReactMarkdown
+          components={{
+            h1: ({node, ...props}) => <h1 className="text-4xl font-extrabold mt-0 mb-6 text-center tracking-tight text-indigo-700" {...props} />,
+            h2: ({node, ...props}) => <h2 className="text-2xl font-bold mt-10 mb-4 border-b pb-2 border-gray-200 text-slate-700" {...props} />,
+            h3: ({node, ...props}) => <h3 className="text-xl font-semibold mt-8 mb-2 text-slate-600" {...props} />,
+            ul: ({node, ...props}) => <ul className="list-disc pl-6 my-2" {...props} />,
+            li: ({node, ...props}) => <li className="mb-1" {...props} />,
+            p: ({node, ...props}) => <p className="mb-4 leading-relaxed" {...props} />,
+            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-400 pl-4 italic text-slate-600 my-4 bg-indigo-50/40 rounded" {...props} />,
+            hr: () => <hr className="my-8 border-gray-300" />,
+            strong: ({node, ...props}) => <strong className="font-semibold text-indigo-700" {...props} />
+          }}
+        >
+          {markdown}
+        </ReactMarkdown>
+      </div>
     </div>
   );
 }
