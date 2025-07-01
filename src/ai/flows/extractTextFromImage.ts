@@ -32,8 +32,8 @@ const extractTextFromImageFlow = ai.defineFlow(
           return localOcrAttempt || '';
       }
 
-      if (!apiKey) {
-        throw new Error("API Key is required for extractTextFromImageFlow but was not provided.");
+      if (!apiKey || apiKey.trim() === '') {
+        throw new Error("A valid API Key is required for extractTextFromImageFlow but was not provided or was empty.");
       }
       const runner = genkit({ plugins: [googleAI({apiKey})] });
       

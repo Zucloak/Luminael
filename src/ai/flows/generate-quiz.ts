@@ -59,8 +59,8 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
-    if (!apiKey) {
-      throw new Error("API Key is required for generateQuizFlow but was not provided.");
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error("A valid API Key is required for generateQuizFlow but was not provided or was empty.");
     }
     const runner = genkit({ plugins: [googleAI({apiKey})] });
 
