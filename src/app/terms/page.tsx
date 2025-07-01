@@ -67,7 +67,9 @@ export default function TermsOfServicePage() {
 
       <section className="mt-8">
          <p className="text-center text-sm text-muted-foreground">
-            If you have any questions about these Terms of Service, please contact us. please contact us. Email: synpps@gmailcom Website: synappse.vercel.app or in my personal email mosqueraken16@gmail.com
+            If you have any questions about these Terms of Service, please contact us. please contact us. 
+            Email: synpps@gmailcom or in my personal email mosqueraken16@gmail.com
+            Website: synappse.vercel.app
          </p>
       </section>
     </div>
