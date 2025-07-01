@@ -94,7 +94,9 @@ export default function PrivacyPolicyPage() {
       <section className="mb-8">
         <h3 className="text-xl font-semibold mb-3">Contact Us</h3>
         <p>
-          If you have any questions about this Privacy Policy, please contact us. Email: synpps@gmailcom Website: synappse.vercel.app or in my personal email mosqueraken16@gmail.com
+          If you have any questions about these Terms of Service, please contact us. please contact us. 
+            Email: synpps@gmailcom or in my personal email mosqueraken16@gmail.com
+            Website: synappse.vercel.app
         </p>
       </section>
 
