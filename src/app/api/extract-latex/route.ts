@@ -1,4 +1,4 @@
-import {GoogleGenerativeAI} from '@google/generative-ai';
+import {GoogleGenerativeAI, Schema} from '@google/generative-ai';
 import {NextRequest, NextResponse} from 'next/server';
 import {z} from 'zod';
 
@@ -12,11 +12,23 @@ const extractLatexRequestSchema = z.object({
     ),
 });
 
+// This Zod schema is for our internal validation of the JSON we get back
 const extractLatexResponseSchema = z.object({
   latex_representation: z.string(),
   confidence_score: z.number(),
   error: z.string().optional(),
 });
+
+// This is the JSON Schema the Google API expects
+const GoogleResponseSchema: Schema = {
+  type: 'OBJECT',
+  properties: {
+    latex_representation: {type: 'STRING'},
+    confidence_score: {type: 'NUMBER'},
+    error: {type: 'STRING'},
+  },
+  required: ['latex_representation', 'confidence_score'],
+};
 
 export async function POST(req: NextRequest) {
   let requestBody;
@@ -80,12 +92,14 @@ export async function POST(req: NextRequest) {
       contents: [{role: 'user', parts: [imagePart, {text: prompt}]}],
       generationConfig: {
         responseMimeType: 'application/json',
-        responseSchema: extractLatexResponseSchema,
+        responseSchema: GoogleResponseSchema,
       },
     });
 
     const responseText = result.response.text();
     const parsedJson = JSON.parse(responseText);
+
+    extractLatexResponseSchema.parse(parsedJson);
 
     return NextResponse.json(parsedJson, {status: 200});
   } catch (error: any) {
@@ -93,6 +107,9 @@ export async function POST(req: NextRequest) {
     let errorMessage = 'An unexpected error occurred during LaTeX extraction.';
     if (error.message) {
       errorMessage = error.message;
+    }
+    if (error instanceof z.ZodError) {
+      errorMessage = 'AI returned an object with an invalid structure.';
     }
     return NextResponse.json(
       {error: 'Failed to extract LaTeX: ' + errorMessage},
