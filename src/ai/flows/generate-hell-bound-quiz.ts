@@ -57,10 +57,9 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     outputSchema: GenerateHellBoundQuizOutputSchema,
   },
   async ({ context, numQuestions, existingQuestions, apiKey }) => {
-    try {
-        const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
 
-        const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to use the provided **Key Concepts** to generate a quiz that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
+    const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to use the provided **Key Concepts** to generate a quiz that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
 
 **Key Concepts:**
 ${context}
@@ -84,33 +83,46 @@ ${context}
 **Output Mandate:**
 You MUST provide your response in the specified JSON format. Failure is not an option.`;
 
-        const {output} = await runner.generate({
-            model: 'googleai/gemini-1.5-flash-latest',
-            prompt: quizPrompt,
-            output: {
-                format: 'json',
-                schema: GenerateHellBoundQuizOutputSchema,
+    const maxRetries = 3;
+    const initialDelay = 2000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const {output} = await runner.generate({
+                model: 'googleai/gemini-1.5-flash-latest',
+                prompt: quizPrompt,
+                output: {
+                    format: 'json',
+                    schema: GenerateHellBoundQuizOutputSchema,
+                }
+            });
+
+            if (!output) {
+              throw new Error("The AI failed to generate the Hell Bound quiz. It returned an empty or invalid response.");
             }
-        });
+            return output; // Success
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const isOverloaded = errorMessage.includes('503') || errorMessage.includes('overloaded');
 
-        if (!output) {
-          throw new Error("The AI failed to generate the Hell Bound quiz. It returned an empty or invalid response.");
-        }
-        return output;
-
-    } catch (error) {
-        console.error("Critical error in generateHellBoundQuizFlow:", error);
-        let message = "An unknown error occurred during Hell Bound quiz generation.";
-        if (error instanceof Error) {
-            if (error.message.includes('503 Service Unavailable') || error.message.includes('overloaded')) {
-                message = "The AI model is temporarily overloaded and cannot handle your infernal request. Please wait a moment and try again.";
-            } else {
+            if (isOverloaded && attempt < maxRetries) {
+                console.warn(`Attempt ${attempt} for Hell Bound quiz generation failed due to model overload. Retrying in ${initialDelay * attempt}ms...`);
+                await new Promise(resolve => setTimeout(resolve, initialDelay * attempt));
+                continue; // Retry
+            }
+            
+            console.error("Critical error in generateHellBoundQuizFlow:", error);
+            let message = "An unknown error occurred during Hell Bound quiz generation.";
+            if (isOverloaded) {
+                 message = "The AI model is still overloaded after multiple retries. Please wait a moment and try again.";
+            } else if (error instanceof Error) {
                 message = error.message;
+            } else if (typeof error === 'string') {
+                message = error;
             }
-        } else if (typeof error === 'string') {
-            message = error;
+            throw new Error(message);
         }
-        throw new Error(message);
     }
+    throw new Error("Hell Bound quiz generation failed after multiple retries.");
   }
 );

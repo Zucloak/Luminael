@@ -59,10 +59,9 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
-    try {
-        const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
 
-        const quizPrompt = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
+    const quizPrompt = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
 
 **Key Concepts:**
 ${context}
@@ -86,32 +85,46 @@ ${context}
 **Output Format:**
 You MUST provide your response in the specified JSON format.`;
         
-        const {output} = await runner.generate({
-        model: 'googleai/gemini-1.5-flash-latest',
-        prompt: quizPrompt,
-        output: {
-            format: 'json',
-            schema: GenerateQuizOutputSchema
-        }
-        });
-        
-        if (!output) {
-          throw new Error("The AI failed to generate a quiz. It returned an empty or invalid response.");
-        }
-        return output;
-    } catch (error) {
-        console.error("Critical error in generateQuizFlow:", error);
-        let message = "An unknown error occurred during quiz generation.";
-        if (error instanceof Error) {
-            if (error.message.includes('503 Service Unavailable') || error.message.includes('overloaded')) {
-                message = "The AI model is temporarily overloaded. Please wait a moment and try again.";
-            } else {
-                message = error.message;
+    const maxRetries = 3;
+    const initialDelay = 2000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const {output} = await runner.generate({
+            model: 'googleai/gemini-1.5-flash-latest',
+            prompt: quizPrompt,
+            output: {
+                format: 'json',
+                schema: GenerateQuizOutputSchema
             }
-        } else if (typeof error === 'string') {
-            message = error;
+            });
+            
+            if (!output) {
+                throw new Error("The AI failed to generate a quiz. It returned an empty or invalid response.");
+            }
+            return output; // Success
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const isOverloaded = errorMessage.includes('503') || errorMessage.includes('overloaded');
+
+            if (isOverloaded && attempt < maxRetries) {
+                console.warn(`Attempt ${attempt} for quiz generation failed due to model overload. Retrying in ${initialDelay * attempt}ms...`);
+                await new Promise(resolve => setTimeout(resolve, initialDelay * attempt));
+                continue; // Retry
+            }
+
+            console.error("Critical error in generateQuizFlow:", error);
+            let message = "An unknown error occurred during quiz generation.";
+            if (isOverloaded) {
+                message = "The AI model is still overloaded after multiple retries. Please wait a moment and try again.";
+            } else if (error instanceof Error) {
+                message = error.message;
+            } else if (typeof error === 'string') {
+                message = error;
+            }
+            throw new Error(message);
         }
-        throw new Error(message);
     }
+    throw new Error("Quiz generation failed after multiple retries.");
   }
 );

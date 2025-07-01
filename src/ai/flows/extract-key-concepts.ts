@@ -35,18 +35,17 @@ const extractKeyConceptsFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ files, apiKey }) => {
-    try {
-      const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
       
-      const processedContent = files.map(file => 
-        `# File: ${file.name}\n\n${file.content}`
-      ).join('\n\n---\n\n');
+    const processedContent = files.map(file => 
+      `# File: ${file.name}\n\n${file.content}`
+    ).join('\n\n---\n\n');
 
-      const conceptInstruction = files.length > 3
-          ? 'For each document provided in the context, identify and extract a maximum of 5 key concepts. The concepts should be the most important, high-level ideas from the text.'
-          : 'For each document provided in the context, identify and extract all relevant key concepts. Be comprehensive.';
+    const conceptInstruction = files.length > 3
+        ? 'For each document provided in the context, identify and extract a maximum of 5 key concepts. The concepts should be the most important, high-level ideas from the text.'
+        : 'For each document provided in the context, identify and extract all relevant key concepts. Be comprehensive.';
 
-      const prompt = `You are an expert AI specializing in information synthesis. Your task is to analyze the provided Core Material, which consists of one or more documents, and extract the key concepts from each.
+    const prompt = `You are an expert AI specializing in information synthesis. Your task is to analyze the provided Core Material, which consists of one or more documents, and extract the key concepts from each.
 
 **Core Material:**
 ${processedContent}
@@ -67,32 +66,45 @@ ${processedContent}
 - Key Concept C
 - Key Concept D
 `;
-      
-      const {text} = await runner.generate({
-        model: 'googleai/gemini-1.5-flash-latest',
-        prompt: prompt,
-      });
-      
-      if (!text) {
-        throw new Error("The AI failed to synthesize key concepts. It returned an empty response.");
-      }
-      return text;
+    
+    const maxRetries = 3;
+    const initialDelay = 2000; // 2 seconds
 
-    } catch (error) {
-      console.error("Critical error in extractKeyConceptsFlow:", error);
-      
-      let message = "An unknown error occurred during concept extraction.";
-      if (error instanceof Error) {
-        if (error.message.includes('503 Service Unavailable') || error.message.includes('overloaded')) {
-             message = "The AI model is temporarily overloaded. Please wait a moment and try again.";
-        } else {
-             message = error.message;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const {text} = await runner.generate({
+                model: 'googleai/gemini-1.5-flash-latest',
+                prompt: prompt,
+            });
+            
+            if (!text) {
+                throw new Error("The AI failed to synthesize key concepts. It returned an empty response.");
+            }
+            return text; // Success
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const isOverloaded = errorMessage.includes('503') || errorMessage.includes('overloaded');
+
+            if (isOverloaded && attempt < maxRetries) {
+                console.warn(`Attempt ${attempt} for concept extraction failed due to model overload. Retrying in ${initialDelay * attempt}ms...`);
+                await new Promise(resolve => setTimeout(resolve, initialDelay * attempt));
+                continue; // Retry
+            }
+            
+            console.error("Critical error in extractKeyConceptsFlow:", error);
+            
+            let message = "An unknown error occurred during concept extraction.";
+            if (isOverloaded) {
+                message = "The AI model is still overloaded after multiple retries. Please wait a moment and try again.";
+            } else if (error instanceof Error) {
+                message = error.message;
+            } else if (typeof error === 'string') {
+                message = error;
+            }
+            
+            throw new Error(message);
         }
-      } else if (typeof error === 'string') {
-        message = error;
-      }
-      
-      throw new Error(message);
     }
+    throw new Error("Concept extraction failed after multiple retries.");
   }
 );
