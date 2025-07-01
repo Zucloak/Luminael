@@ -389,9 +389,9 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
         incrementUsage();
 
         if (result && result.quiz && Array.isArray(result.quiz.questions)) {
-          const newQuestions = result.quiz.questions.filter(q => q && q.question && q.question.trim() !== '');
+          const newQuestions = result.quiz.questions.filter((q: Question) => q && q.question && q.question.trim() !== '');
           allQuestions = [...allQuestions, ...newQuestions];
-          existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map(q => q.question)];
+          existingQuestionTitles = [...existingQuestionTitles, ...newQuestions.map((q: Question) => q.question)];
           setGenerationProgress(prev => ({ ...prev, current: allQuestions.length }));
         } else {
             console.warn(`AI returned an invalid response or no questions in batch starting at ${i}.`);

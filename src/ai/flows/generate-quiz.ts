@@ -59,7 +59,13 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error("A valid API Key is required for generateQuizFlow but was not provided or was empty.");
+    }
+    const runner = genkit({
+      plugins: [googleAI({apiKey})],
+      model: 'googleai/gemini-1.5-flash-latest' // Explicitly set model for this runner
+    });
 
     const quizPrompt = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
 
@@ -91,7 +97,6 @@ You MUST provide your response in the specified JSON format.`;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const {output} = await runner.generate({
-            model: 'googleai/gemini-1.5-flash-latest',
             prompt: quizPrompt,
             output: {
                 format: 'json',

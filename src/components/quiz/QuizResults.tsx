@@ -66,14 +66,15 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
         return { ...q, userAnswer, isCorrect, isValidating: false };
       }
       
-      const hasUserAnswer = answers[index] && answers[index].trim() !== '';
+      // Ensure hasUserAnswer is strictly boolean
+      const userAnswerProvided = typeof answers[index] === 'string' && answers[index].trim() !== '';
 
       return { 
         ...q, 
         userAnswer, 
         isCorrect: null, 
-        isValidating: hasUserAnswer,
-        ...(!hasUserAnswer && {
+        isValidating: userAnswerProvided, // Use the corrected boolean variable
+        ...(!userAnswerProvided && { // Use the corrected boolean variable
           validation: { status: 'Incorrect', explanation: 'No answer was provided.' } 
         })
       };
@@ -94,7 +95,12 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
         return;
       }
       
-      for (const [index, result] of detailedResults.entries()) {
+      // Create a new array for modification to avoid issues with direct state mutation in loops
+      let newDetailedResults = [...detailedResults];
+      let madeChanges = false;
+
+      for (let index = 0; index < newDetailedResults.length; index++) {
+        const result = newDetailedResults[index];
         if (result.questionType === 'openEnded' && result.isValidating) {
           try {
             const res = await fetch('/api/validate-answer', {

@@ -32,10 +32,16 @@ const extractTextFromImageFlow = ai.defineFlow(
           return localOcrAttempt || '';
       }
 
-      const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+      if (!apiKey || apiKey.trim() === '') {
+        throw new Error("A valid API Key is required for extractTextFromImageFlow but was not provided or was empty.");
+      }
+      const runner = genkit({
+        plugins: [googleAI({apiKey})],
+        model: 'googleai/gemini-1.5-flash-latest'
+      });
       
       const { text } = await runner.generate({
-        model: 'googleai/gemini-1.5-flash-latest',
+        // Model is now set on the runner, can be omitted here if it's the same
         prompt: [
             { text: `You are an advanced OCR AI. Your task is to extract all text from the provided image with the highest possible accuracy.
 A local OCR tool has already made an attempt, but it may be flawed. Use the local attempt as a hint, but trust the image as the primary source of truth.

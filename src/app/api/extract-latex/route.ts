@@ -1,5 +1,5 @@
 
-import {GoogleGenerativeAI, Schema} from '@google/generative-ai';
+import {GoogleGenerativeAI, Schema, GenerationConfig, Part, SchemaType} from '@google/generative-ai';
 import {NextRequest, NextResponse} from 'next/server';
 import {z} from 'zod';
 
@@ -22,11 +22,11 @@ const extractLatexResponseSchema = z.object({
 
 // This is the JSON Schema the Google API expects
 const GoogleResponseSchema: Schema = {
-  type: 'OBJECT',
+  type: SchemaType.OBJECT,
   properties: {
-    latex_representation: {type: 'STRING'},
-    confidence_score: {type: 'NUMBER'},
-    error: {type: 'STRING'},
+    latex_representation: {type: SchemaType.STRING},
+    confidence_score: {type: SchemaType.NUMBER},
+    error: {type: SchemaType.STRING},
   },
   required: ['latex_representation', 'confidence_score'],
 };
@@ -88,13 +88,17 @@ export async function POST(req: NextRequest) {
     Do not add any explanations, apologies, or conversational text. Your entire response must be the raw JSON object.
     `;
 
+  const generationConfig: GenerationConfig = {
+    responseMimeType: 'application/json',
+    responseSchema: GoogleResponseSchema as Schema,
+  };
+
+  const requestParts: Part[] = [imagePart as Part, {text: prompt} as Part];
+
   try {
     const result = await model.generateContent({
-      contents: [{role: 'user', parts: [imagePart, {text: prompt}]}],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: GoogleResponseSchema,
-      },
+      contents: [{role: 'user', parts: requestParts}],
+      generationConfig: generationConfig,
     });
 
     const responseText = result.response.text();
