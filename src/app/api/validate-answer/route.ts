@@ -2,19 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 // --- Schemas are now self-contained within the API route for stability ---
-export const ValidateAnswerInputSchema = z.object({
+const ValidateAnswerInputSchema = z.object({
   question: z.string().describe("The original quiz question."),
   userAnswer: z.string().describe("The answer provided by the user."),
   correctAnswer: z.string().describe("The reference correct answer for the question."),
   apiKey: z.string().optional().describe('Optional Gemini API key.'),
 });
-export type ValidateAnswerInput = z.infer<typeof ValidateAnswerInputSchema>;
+type ValidateAnswerInput = z.infer<typeof ValidateAnswerInputSchema>;
 
-export const ValidateAnswerOutputSchema = z.object({
+const ValidateAnswerOutputSchema = z.object({
   status: z.enum(['Correct', 'Partially Correct', 'Incorrect']).describe("The validation status of the user's answer."),
   explanation: z.string().describe("A brief explanation for the validation status, providing constructive feedback to the user. All mathematical notation MUST be properly formatted in LaTeX, using $...$ for inline math and $$...$$ for block math. Multi-character superscripts or subscripts must use curly braces (e.g., `$10^{-19}$`)."),
 });
-export type ValidateAnswerOutput = z.infer<typeof ValidateAnswerOutputSchema>;
+type ValidateAnswerOutput = z.infer<typeof ValidateAnswerOutputSchema>;
 
 
 // This function contains the full logic for validating an answer,

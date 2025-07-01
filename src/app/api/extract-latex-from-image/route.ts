@@ -8,14 +8,14 @@ const ExtractLatexFromImageInputSchema = z.object({
   localOcrAttempt: z.string().optional().describe("Optional local OCR text."),
   apiKey: z.string().optional().describe('Optional Gemini API key.'),
 });
-export type ExtractLatexFromImageInput = z.infer<typeof ExtractLatexFromImageInputSchema>;
+type ExtractLatexFromImageInput = z.infer<typeof ExtractLatexFromImageInputSchema>;
 
-export const ExtractLatexFromImageOutputSchema = z.object({
+const ExtractLatexFromImageOutputSchema = z.object({
     latex_representation: z.string().describe("The full mathematical expression and steps converted into a single, valid LaTeX string."),
     steps_extracted: z.array(z.string()).describe("An array of strings, where each string is a distinct step or line from the original work."),
     confidence_score: z.number().min(0).max(100).describe("A confidence score from 0 to 100 on the accuracy of the transcription.")
 });
-export type ExtractLatexFromImageOutput = z.infer<typeof ExtractLatexFromImageOutputSchema>;
+type ExtractLatexFromImageOutput = z.infer<typeof ExtractLatexFromImageOutputSchema>;
 
 
 // This function contains the full logic for LaTeX extraction,
