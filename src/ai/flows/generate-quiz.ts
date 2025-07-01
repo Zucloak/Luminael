@@ -59,7 +59,10 @@ const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    if (!apiKey) {
+      throw new Error("API Key is required for generateQuizFlow but was not provided.");
+    }
+    const runner = genkit({ plugins: [googleAI({apiKey})] });
 
     const quizPrompt = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
 

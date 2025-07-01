@@ -35,7 +35,10 @@ const extractKeyConceptsFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ files, apiKey }) => {
-    const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+    if (!apiKey) {
+      throw new Error("API Key is required for extractKeyConceptsFlow but was not provided.");
+    }
+    const runner = genkit({ plugins: [googleAI({apiKey})] });
       
     const processedContent = files.map(file => 
       `# File: ${file.name}\n\n${file.content}`

@@ -32,7 +32,10 @@ const extractTextFromImageFlow = ai.defineFlow(
           return localOcrAttempt || '';
       }
 
-      const runner = apiKey ? genkit({ plugins: [googleAI({apiKey})] }) : ai;
+      if (!apiKey) {
+        throw new Error("API Key is required for extractTextFromImageFlow but was not provided.");
+      }
+      const runner = genkit({ plugins: [googleAI({apiKey})] });
       
       const { text } = await runner.generate({
         model: 'googleai/gemini-1.5-flash-latest',
