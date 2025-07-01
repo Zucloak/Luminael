@@ -160,9 +160,15 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
                 const allPagesText = initialPageData.filter(p => !p.needsOcr).map(p => p.text as string);
                 
                 if (pagesToOcr.length > 0) {
-                    const ocrProcessor = async (pageData: (typeof pagesToOcr)[0]): Promise<string> => {
+                    setParseProgress({
+                        current: 0,
+                        total: pagesToOcr.length,
+                        message: `Starting AI OCR for ${pagesToOcr.length} PDF pages...`
+                    });
+
+                    const ocrPromises = pagesToOcr.map(async (pageData, idx) => {
                         const page = pageData.page;
-                        const viewport = page.getViewport({ scale: 2.0 });
+                        const viewport = page.getViewport({ scale: 2.0 }); // Consider if 2.0 is always needed
                         const canvas = document.createElement('canvas');
                         const context = canvas.getContext('2d');
                         if (!context) return `[Canvas Error on page ${pageData.pageNum}]`;
@@ -172,48 +178,28 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
                         const renderContext = { canvasContext: context, viewport: viewport };
                         await page.render(renderContext).promise;
     
-                        if (isCanvasBlank(canvas)) return '';
+                        if (isCanvasBlank(canvas)) {
+                            setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `Page ${pageData.pageNum} is blank, skipping OCR.` }));
+                            return '';
+                        }
                         
                         try {
+                           // Update progress message before starting OCR for this page
+                           // Note: current count for setParseProgress might be tricky here due to parallel execution.
+                           // We'll update based on completion.
                            const { text } = await ocrImageWithFallback(canvas.toDataURL(), apiKey, incrementUsage);
+                           setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `AI OCR for page ${pageData.pageNum} complete.` }));
                            return text;
                         } catch (err) {
                            const message = err instanceof Error ? err.message : String(err);
                            console.error(`OCR failed for page ${pageData.pageNum} of ${file.name}:`, message);
+                           setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `AI OCR failed for page ${pageData.pageNum}.` }));
                            return `[OCR Error on page ${pageData.pageNum}: ${message.substring(0, 100)}...]`;
                         }
-                    };
-                    
-                    const BATCH_SIZE = 2;
-                    const BATCH_DELAY = 10000;
-    
-                    let processedCount = 0;
-                    for (let i = 0; i < pagesToOcr.length; i += BATCH_SIZE) {
-                        const batch = pagesToOcr.slice(i, i + BATCH_SIZE);
-                        const batchNum = i / BATCH_SIZE + 1;
-                        const totalBatches = Math.ceil(pagesToOcr.length / BATCH_SIZE);
-    
-                        setParseProgress({
-                            current: processedCount,
-                            total: pagesToOcr.length,
-                            message: `Processing OCR batch ${batchNum} of ${totalBatches}...`
-                        });
-    
-                        const batchPromises = batch.map(ocrProcessor);
-                        const batchResults = await Promise.all(batchPromises);
-                        allPagesText.push(...batchResults);
-                        
-                        processedCount += batch.length;
-    
-                        if (i + BATCH_SIZE < pagesToOcr.length) {
-                             setParseProgress({
-                                current: processedCount,
-                                total: pagesToOcr.length,
-                                message: `Waiting to avoid rate limits...`
-                            });
-                            await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
-                        }
-                    }
+                    });
+
+                    const ocrResults = await Promise.all(ocrPromises);
+                    allPagesText.push(...ocrResults);
 
                     toast({
                       title: 'AI OCR Complete',

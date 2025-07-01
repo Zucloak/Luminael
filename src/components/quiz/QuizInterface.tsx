@@ -217,7 +217,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
 
   const goToPrevious = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
@@ -392,7 +392,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
                 <Label>Live Preview</Label>
                 <Card className="p-4 bg-muted/50 min-h-[4rem] flex items-center justify-center text-lg">
                   <MarkdownRenderer>
-                    {answers[currentQuestionIndex]}
+                    {answers[currentQuestionIndex] || ''}
                   </MarkdownRenderer>
                 </Card>
               </div>
