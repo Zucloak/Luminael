@@ -38,7 +38,10 @@ const extractKeyConceptsFlow = ai.defineFlow(
     if (!apiKey || apiKey.trim() === '') {
       throw new Error("A valid API Key is required for extractKeyConceptsFlow but was not provided or was empty.");
     }
-    const runner = genkit({ plugins: [googleAI({apiKey})] });
+    const runner = genkit({
+      plugins: [googleAI({apiKey})],
+      model: 'googleai/gemini-1.5-flash-latest' // Explicitly set model for this runner
+    });
       
     const processedContent = files.map(file => 
       `# File: ${file.name}\n\n${file.content}`

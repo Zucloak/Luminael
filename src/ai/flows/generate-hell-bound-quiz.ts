@@ -92,7 +92,6 @@ You MUST provide your response in the specified JSON format. Failure is not an o
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const {output} = await runner.generate({
-                model: 'googleai/gemini-1.5-flash-latest',
                 prompt: quizPrompt,
                 output: {
                     format: 'json',
