@@ -56,7 +56,15 @@ const generateQuizFlow = ai.defineFlow(
 **Key Concepts:**
 ${context}
 
-**ABSOLUTE NON-NEGOTIABLE RULES FOR THIS TASK:**
+**ULTRA-CRITICAL RULE #0: MANDATORY LaTeX Delimiters for ALL Mathematical Notation!**
+For EVERY piece of mathematical notation, variable, or expression (e.g., \`x\`, \`a^2\`, \`(a^2 - x^2)\`, \`E=mc^2\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters.
+-   For inline mathematics (math within a line of text), use SINGLE dollar signs: \`\\$...\\$\`.
+    Examples: \`The variable \\$x\\$ is unknown.\`, \`Its value is \\$a^{2}\\$.\`, \`Consider the expression \\$(a^{2} - x^{2}) = 0\\$\`.
+-   For display mathematics (math on its own line), use DOUBLE dollar signs: \`\\$\\$...\\$\\$\`.
+    Example: \`\\$\\$ E = mc^{2} \\$\\$\`
+**There are NO exceptions to this rule.** Plain text that resembles math (e.g., `a^2 - x^2` without delimiters) is INCORRECT, will not render properly, and is considered a failure to meet fundamental formatting requirements. This is a primary directive.
+
+**ABSOLUTE NON-NEGOTIABLE RULES FOR THIS TASK (Problem Solving Questions ONLY):**
 1.  **ONLY 'problemSolving' Questions**: Every single question you generate MUST be a procedural, computation-based problem that requires a step-by-step derivation to reach a numeric or symbolic answer. Each question's \`questionType\` field MUST be set to exactly \`problemSolving\`.
 2.  **STRICT Schema Adherence**: Each generated question object MUST strictly conform to the ProblemSolvingQuestionSchema: \`{ questionType: 'problemSolving', question: string, answer: string (detailed step-by-step solution, ideally with a \\\\boxed{final_answer}) }\`.
 3.  **NO OTHER QUESTION TYPES**: Under NO circumstances are you to generate any \`multipleChoice\` questions or any \`openEnded\` (conceptual, theoretical, discussion-based) questions. Your output MUST NOT contain \`options\` fields (which belong to \`multipleChoice\`) or questions that ask for explanations or opinions. If the Key Concepts do not lend themselves to ${numQuestions} distinct calculative problems, generate as many as possible up to ${numQuestions}, but DO NOT substitute with other types.
@@ -65,7 +73,8 @@ ${context}
 6.  **Number of Questions**: Generate up to ${numQuestions} questions as specified. If fewer calculative problems can be derived, that is acceptable.
 7.  **Global De-duplication:** The provided list of \`existingQuestions\` (if any): ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}. DO NOT generate any question that is identical or substantially similar to any question in this list.
 8.  **Difficulty**: Calibrate questions to a '${difficulty}' level.
-9.  **Impeccable and Robust LaTeX Formatting:** (Same detailed LaTeX rules as before - see general prompt)
+9.  **Impeccable and Robust LaTeX Formatting (RECALL CRITICAL RULE #0 ON DELIMITERS):**
+    *   **MANDATORY DELIMITERS (Rule #0 REITERATED):** ALL math expressions, variables, and symbols (e.g., \`x\`, \`a^2\`, \`(a^2-x^2)\`) MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display).
     *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: \`The value is \\$x^{2}\\$ units.\`
     *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
     *   **CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS:** ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\\$x^y\\$\`, \`\\$a_b\\$\`.
@@ -87,7 +96,15 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
 **Key Concepts:**
 ${context}
 
-**NON-NEGOTIABLE RULES:**
+**ULTRA-CRITICAL RULE #0: MANDATORY LaTeX Delimiters for ALL Mathematical Notation!**
+For EVERY piece of mathematical notation, variable, or expression (e.g., \`x\`, \`a^2\`, \`(a^2 - x^2)\`, \`E=mc^2\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters.
+-   For inline mathematics (math within a line of text), use SINGLE dollar signs: \`\\$...\\$\`.
+    Examples: \`The variable \\$x\\$ is unknown.\`, \`Its value is \\$a^{2}\\$.\`, \`Consider the expression \\$(a^{2} - x^{2}) = 0\\$\`.
+-   For display mathematics (math on its own line), use DOUBLE dollar signs: \`\\$\\$...\\$\\$\`.
+    Example: \`\\$\\$ E = mc^{2} \\$\\$\`
+**There are NO exceptions to this rule.** Plain text that resembles math (e.g., `a^2 - x^2` without delimiters) is INCORRECT, will not render properly, and is considered a failure to meet fundamental formatting requirements. This is a primary directive.
+
+**NON-NEGOTIABLE RULES (for 'multipleChoice', 'openEnded', 'mixed' formats):**
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
 2.  **Obey the Language:** The entire quiz MUST be in the same language as the Key Concepts.
 3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested.
@@ -109,7 +126,8 @@ ${context}
 5.  **Schema Adherence & No Garbage:** All fields (\`question\`, \`options\` (if applicable), \`answer\`, \`questionType\`) MUST contain meaningful, relevant content derived ONLY from the provided Key Concepts. Do not use generic placeholders. For multiple-choice questions, all four options must be distinct and plausible. Ensure every generated question object perfectly matches its corresponding schema (MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, or OpenEndedQuestionSchema) based on its \`questionType\`.
 6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
 7.  **Global De-duplication:** The provided list of \`existingQuestions\` (if any) may contain questions of various types previously generated in this session. DO NOT generate any question (regardless of its type for the current batch) that is identical or substantially similar to any question found in this \`existingQuestions\` list. The goal is to ensure maximum variety and avoid all repetition across the entire quiz session.
-8.  **Impeccable and Robust LaTeX Formatting:** For ALL mathematical content (equations, symbols, variables in text):
+8.  **Impeccable and Robust LaTeX Formatting (RECALL CRITICAL RULE #0 ON DELIMITERS):**
+    *   **MANDATORY DELIMITERS (Rule #0 REITERATED):** ALL math expressions, variables, and symbols (e.g., \`x\`, \`a^2\`, \`(a^2-x^2)\`) MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display).
     *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: \`The value is \\$x^{2}\\$ units.\`
     *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
     *   **CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS:** ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\\$x^y\\$\`, \`\\$a_b\\$\`.
