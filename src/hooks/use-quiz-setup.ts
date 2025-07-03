@@ -6,9 +6,9 @@ import mammoth from 'mammoth';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { ocrImageWithFallback, isCanvasBlank } from '@/lib/ocr';
-import type { Quiz, Question } from '@/lib/types';
-import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
-import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/generate-hell-bound-quiz';
+import type { Quiz, Question, GenerateQuizInput, GenerateHellBoundQuizInput } from '@/lib/types'; // Import types from types.ts
+import { generateQuiz } from '@/ai/flows/generate-quiz'; // Only import the function
+import { generateHellBoundQuiz } from '@/ai/flows/generate-hell-bound-quiz'; // Only import the function
 import { extractKeyConcepts } from '@/ai/flows/extract-key-concepts';
 import { useTheme } from '@/hooks/use-theme';
 import { getPastQuizById } from '@/lib/indexed-db';

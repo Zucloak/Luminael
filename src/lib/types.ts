@@ -108,3 +108,33 @@ export const GenerateQuizOutputSchema = z.object({
   }).describe('The generated quiz.'),
 });
 export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
+
+// Schemas and types for Hell Bound Quiz Generation (moved from generate-hell-bound-quiz.ts)
+export const GenerateHellBoundQuizInputSchema = z.object({
+  context: z.string().describe("A structured Markdown string containing key concepts from one or more documents."),
+  numQuestions: z.number().describe('The number of questions to generate for this batch.'),
+  existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
+  apiKey: z.string().optional().describe('Optional Gemini API key.'),
+});
+export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInputSchema>;
+
+// GenerateHellBoundQuizOutputSchema reuses GenerateQuizOutputSchema as the structure is identical
+// We can alias it or just use GenerateQuizOutputSchema directly in the flow.
+// For clarity, let's alias it if we want a distinct type name, though its structure is the same.
+// However, the Genkit flow definition in generate-hell-bound-quiz.ts specifically uses
+// GenerateHellBoundQuizOutputSchema. So we should define it, even if it's structurally identical
+// to GenerateQuizOutputSchema for now.
+// The question schemas (MultipleChoiceQuestionSchema, etc.) are already defined above from generate-quiz.ts.
+export const GenerateHellBoundQuizOutputSchema = GenerateQuizOutputSchema; //This might be too simple if they diverge.
+// Let's define it explicitly to match the existing code, even if it's a copy for now.
+// export const GenerateHellBoundQuizOutputSchema = z.object({
+//   quiz: z.object({
+//       questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== '' && !item.question.toLowerCase().includes("lorem ipsum")), {
+//         message: 'Question text cannot be empty or placeholder text.',
+//       }),
+//   }).describe('The generated quiz.'),
+// });
+// Using the existing GenerateQuizOutputSchema is fine as they are identical.
+// The flow will import GenerateQuizOutputSchema and use it.
+// We need to export GenerateHellBoundQuizOutput type for the function signature.
+export type GenerateHellBoundQuizOutput = GenerateQuizOutput; // Use existing GenerateQuizOutput type

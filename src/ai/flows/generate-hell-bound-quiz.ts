@@ -9,48 +9,19 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+// import {z} from 'zod'; // Zod definitions are now in types.ts
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-
-const GenerateHellBoundQuizInputSchema = z.object({
-  context: z.string().describe("A structured Markdown string containing key concepts from one or more documents."),
-  numQuestions: z.number().describe('The number of questions to generate for this batch.'),
-  existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
-  apiKey: z.string().optional().describe('Optional Gemini API key.'),
-});
-export type GenerateHellBoundQuizInput = z.infer<typeof GenerateHellBoundQuizInputSchema>;
-
-const MultipleChoiceQuestionSchema = z.object({
-  questionType: z.enum(['multipleChoice']).describe("The type of the question."),
-  question: z.string().describe('The question text, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  options: z.array(z.string().describe('A multiple-choice option, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.')).length(4).describe('An array of 4 multiple-choice options.'),
-  answer: z.string().describe('The correct answer, which must be one of the provided options, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
-});
-
-const ProblemSolvingQuestionSchema = z.object({
-  questionType: z.enum(['problemSolving']).describe("The type of the question: calculative, step-by-step, numeric or symbolic problem."),
-  question: z.string().describe('The problem statement, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  answer: z.string().describe('The detailed, step-by-step solution, resulting in a numeric or symbolic answer (often boxed). Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
-});
-
-const OpenEndedQuestionSchema = z.object({
-  questionType: z.enum(['openEnded']).describe("The type of the question: theoretical, opinion-based, or conceptual."),
-  question: z.string().describe('The open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  answer: z.string().describe('The expected answer or key discussion points for the open-ended question. Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
-});
-
-const QuestionSchema = z.union([MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, OpenEndedQuestionSchema]);
-
-
-const GenerateHellBoundQuizOutputSchema = z.object({
-  quiz: z.object({
-      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== '' && !item.question.toLowerCase().includes("lorem ipsum")), {
-        message: 'Question text cannot be empty or placeholder text.',
-      }),
-  }).describe('The generated quiz.'),
-});
-export type GenerateHellBoundQuizOutput = z.infer<typeof GenerateHellBoundQuizOutputSchema>;
+import {
+  GenerateHellBoundQuizInputSchema,
+  GenerateHellBoundQuizInput,
+  GenerateHellBoundQuizOutputSchema, // This is an alias of GenerateQuizOutputSchema in types.ts
+  GenerateHellBoundQuizOutput,
+  // QuestionSchema, // Individual question schemas are part of GenerateHellBoundQuizOutputSchema
+  // MultipleChoiceQuestionSchema,
+  // ProblemSolvingQuestionSchema,
+  // OpenEndedQuestionSchema,
+} from '@/lib/types';
 
 export async function generateHellBoundQuiz(input: GenerateHellBoundQuizInput): Promise<GenerateHellBoundQuizOutput> {
   return generateHellBoundQuizFlow(input);
@@ -59,10 +30,10 @@ export async function generateHellBoundQuiz(input: GenerateHellBoundQuizInput): 
 const generateHellBoundQuizFlow = ai.defineFlow(
   {
     name: 'generateHellBoundQuizFlow',
-    inputSchema: GenerateHellBoundQuizInputSchema,
-    outputSchema: GenerateHellBoundQuizOutputSchema,
+    inputSchema: GenerateHellBoundQuizInputSchema, // Use imported schema
+    outputSchema: GenerateHellBoundQuizOutputSchema, // Use imported schema
   },
-  async ({ context, numQuestions, existingQuestions, apiKey }) => {
+  async ({ context, numQuestions, existingQuestions, apiKey }: GenerateHellBoundQuizInput): Promise<GenerateHellBoundQuizOutput> => {
     if (!apiKey || apiKey.trim() === '') {
       throw new Error("A valid API Key is required for generateHellBoundQuizFlow but was not provided or was empty.");
     }
