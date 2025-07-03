@@ -88,18 +88,18 @@ ${context}
     *   If '${questionFormat}' is 'openEnded', generate theoretical, opinion-based, or conceptual questions requiring free-form, textual answers.
     *   If '${questionFormat}' is 'mixed', generate a blend of 'multipleChoice', 'problemSolving', and 'openEnded' questions.
 5.  **Question Type Integrity:**
-    *   **'problemSolving'**: Questions should be solvable with definite steps and result in a specific answer (e.g., "Calculate X", "Solve for Y", "What is the output of this code?"). The `answer` field must contain the detailed solution.
-    *   **'openEnded'**: Questions should explore understanding of concepts, theories, or opinions (e.g., "Explain the concept of...", "Discuss the implications of...", "What is your interpretation of...?"). The `answer` field should provide a model answer or key discussion points.
-    *   **'multipleChoice'**: Standard single-correct-answer format. The `answer` field must exactly match one of the `options`.
+    *   **'problemSolving'**: Questions should be solvable with definite steps and result in a specific answer (e.g., "Calculate X", "Solve for Y", "What is the output of this code?"). The \`answer\` field must contain the detailed solution.
+    *   **'openEnded'**: Questions should explore understanding of concepts, theories, or opinions (e.g., "Explain the concept of...", "Discuss the implications of...", "What is your interpretation of...?"). The \`answer\` field should provide a model answer or key discussion points.
+    *   **'multipleChoice'**: Standard single-correct-answer format. The \`answer\` field must exactly match one of the \`options\`.
     *   Do not misclassify question types. For example, a question asking "Explain gravity" is 'openEnded', not 'problemSolving'. A question asking "Calculate the force of gravity given mass and acceleration" is 'problemSolving'.
 6.  **No Placeholders or Garbage:** All fields (question, options, answer) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer". For multiple-choice questions, all four options must be distinct and plausible.
 7.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
 8.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
 9.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
-    -   Enclose inline math with single dollar signs (\`$...$\`).
-    -   Enclose block math with double dollar signs (\`$$...$$\`).
-    -   **CRITICAL:** For ALL superscripts or subscripts, you MUST use curly braces, even for single characters. For example: write \`$z^{6}$\` NOT \`$z^6$\`. Write \`$x^{2}$\` NOT \`$x^2$\`. Write \`$10^{-19}$\` NOT \`$10^-19$\`.
-    -   Use standard LaTeX commands for functions and symbols (e.g., \`\\sin\`, \`\\cos\`, \`\\theta\`, \`\\alpha\`, \`\\sqrt{}\`, \`\\frac{}{}\`). For example, write \`$x = a \\sin \\theta$\` instead of \`x = a sin θ\`.
+    -   Enclose inline math with single dollar signs (\`\\$...\\$\`).
+    -   Enclose block math with double dollar signs (\`\\$\\$...\\$\\$\`).
+    -   **CRITICAL:** For ALL superscripts or subscripts, you MUST use curly braces, even for single characters. For example: write \`\\$z^{6}\\$\` NOT \`\\$z^6\\$\`. Write \`\\$x^{2}\\$\` NOT \`\\$x^2\\$\`. Write \`\\$10^{-19}\\$\` NOT \`\\$10^-19\\$\`.
+    -   Use standard LaTeX commands for functions and symbols (e.g., \`\\sin\`, \`\\cos\`, \`\\theta\`, \`\\alpha\`, \`\\sqrt{}\`, \`\\frac{}{}\`). For example, write \`\\$x = a \\sin \\theta\\$\` instead of \`x = a sin θ\`.
     -   **DO NOT** use parentheses for math, such as \`\\(\` or \`\\)\`. Only use dollar signs.
 
 **Output Format:**

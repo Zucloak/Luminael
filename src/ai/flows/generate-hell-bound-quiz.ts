@@ -81,17 +81,17 @@ ${context}
 5.  **Question Type Integrity (CRITICAL):**
     *   **'problemSolving'**: These questions MUST be procedural, computation-based problems requiring a step-by-step solution that results in a numeric or symbolic answer. The answer field MUST contain the detailed, step-by-step solution. These should be complex and multi-step if possible, derived from the content.
     *   **'openEnded'**: These questions MUST be theoretical, conceptual, or require deep explanation or critical analysis. They should not be simple recall. The answer field MUST provide a comprehensive model answer or key discussion points.
-    *   **'multipleChoice'**: These questions must have one correct answer and three highly plausible, devious distractors that test for common misconceptions or subtle details from the text. The `answer` field must exactly match one of the `options`.
+    *   **'multipleChoice'**: These questions must have one correct answer and three highly plausible, devious distractors that test for common misconceptions or subtle details from the text. The \`answer\` field must exactly match one of the \`options\`.
     *   **DO NOT MISCLASSIFY QUESTION TYPES.** For example, a question asking to "Explain the theory of relativity" is 'openEnded'. A question asking to "Calculate the energy released in a nuclear reaction given specific inputs" is 'problemSolving'.
 6.  **No Placeholders or Garbage:** All fields (question, options, answer) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer".
 7.  **Prioritize Synthesis:** Questions must force the user to synthesize information from multiple sections of the provided concepts.
 7.  **Devious Distractors:** For multiple-choice questions, the incorrect options must be highly plausible and designed to trap common misconceptions based on the text. All four options must be distinct.
 8.  **Avoid Duplicates:** Do not repeat concepts or questions. Avoid asking about questions from this list: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
 9.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
-    -   Enclose inline math with single dollar signs (\`$...$\`).
-    -   Enclose block math with double dollar signs (\`$$...$$\`).
-    -   **CRITICAL:** For ALL superscripts or subscripts, you MUST use curly braces, even for single characters. For example: write \`$z^{6}$\` NOT \`$z^6$\`. Write \`$x^{2}$\` NOT \`$x^2$\`. Write \`$10^{-19}$\` NOT \`$10^-19$\`.
-    -   Use standard LaTeX commands for functions and symbols (e.g., \`\\sin\`, \`\\cos\`, \`\\theta\`, \`\\alpha\`, \`\\sqrt{}\`, \`\\frac{}{}\`). For example, write \`$x = a \\sin \\theta$\` instead of \`x = a sin θ\`.
+    -   Enclose inline math with single dollar signs (\`\\$...\\$\`).
+    -   Enclose block math with double dollar signs (\`\\$\\$...\\$\\$\`).
+    -   **CRITICAL:** For ALL superscripts or subscripts, you MUST use curly braces, even for single characters. For example: write \`\\$z^{6}\\$\` NOT \`\\$z^6\\$\`. Write \`\\$x^{2}\\$\` NOT \`\\$x^2\\$\`. Write \`\\$10^{-19}\\$\` NOT \`\\$10^-19\\$\`.
+    -   Use standard LaTeX commands for functions and symbols (e.g., \`\\sin\`, \`\\cos\`, \`\\theta\`, \`\\alpha\`, \`\\sqrt{}\`, \`\\frac{}{}\`). For example, write \`\\$x = a \\sin \\theta\\$\` instead of \`x = a sin θ\`.
     -   **DO NOT** use parentheses for math, such as \`\\(\` or \`\\)\`. Only use dollar signs.
 
 **Output Mandate:**
