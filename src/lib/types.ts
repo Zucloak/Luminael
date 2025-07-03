@@ -45,3 +45,66 @@ export interface PastQuiz {
   };
   color?: string;
 }
+
+// Schemas and types for LaTeX analysis flow
+// Moved from analyzeForLaTeX.ts to comply with 'use server' constraints
+
+import { z } from 'zod'; // Make sure zod is imported here
+
+export const AnalyzeForLaTeXInputSchema = z.object({
+  content: z.string().describe('The text content to be analyzed for LaTeX or mathematical expressions.'),
+  apiKey: z.string().optional().describe('Optional Gemini API key.'),
+});
+export type AnalyzeForLaTeXInput = z.infer<typeof AnalyzeForLaTeXInputSchema>;
+
+export const AnalyzeForLaTeXOutputSchema = z.object({
+  hasLaTeXContent: z.boolean().describe('True if LaTeX or mathematical content is detected, false otherwise.'),
+});
+export type AnalyzeForLaTeXOutput = z.infer<typeof AnalyzeForLaTeXOutputSchema>;
+
+// Schemas and types for Quiz Generation (moved from generate-quiz.ts)
+
+// Note: The core Question types (MultipleChoiceQuestion, ProblemSolvingQuestion, OpenEndedQuestion, Question)
+// are already defined above. These Zod schemas provide runtime validation and AI-facing descriptions.
+// We should ensure they align with the existing TypeScript types or replace them if Zod is preferred as SoT.
+// For now, we'll add them and the AI flow will use these Zod definitions.
+
+export const GenerateQuizInputSchema = z.object({
+  context: z.string().describe("A structured Markdown string containing key concepts from one or more documents."),
+  numQuestions: z.number().describe('The number of questions to generate for this batch.'),
+  difficulty: z.string().describe('The difficulty level of the quiz.'),
+  questionFormat: z.enum(['multipleChoice', 'problemSolving', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
+  existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
+  apiKey: z.string().optional().describe('Optional Gemini API key.'),
+});
+export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
+
+export const MultipleChoiceQuestionSchema = z.object({
+  questionType: z.enum(['multipleChoice']).describe("The type of the question."),
+  question: z.string().describe('The question text, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  options: z.array(z.string().describe('A multiple-choice option, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.')).length(4).describe('An array of 4 multiple-choice options.'),
+  answer: z.string().describe('The correct answer, which must be one of the provided options, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+});
+
+export const ProblemSolvingQuestionSchema = z.object({
+  questionType: z.enum(['problemSolving']).describe("The type of the question: calculative, step-by-step, numeric or symbolic problem."),
+  question: z.string().describe('The problem statement, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The detailed, step-by-step solution, resulting in a numeric or symbolic answer (often boxed). Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+});
+
+export const OpenEndedQuestionSchema = z.object({
+  questionType: z.enum(['openEnded']).describe("The type of the question: theoretical, opinion-based, or conceptual."),
+  question: z.string().describe('The open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The expected answer or key discussion points for the open-ended question. Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+});
+
+export const QuestionSchema = z.union([MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, OpenEndedQuestionSchema]);
+
+export const GenerateQuizOutputSchema = z.object({
+  quiz: z.object({
+      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== '' && !item.question.toLowerCase().includes("lorem ipsum")), {
+        message: 'Question text cannot be empty or placeholder text.',
+      }),
+  }).describe('The generated quiz.'),
+});
+export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;

@@ -10,61 +10,36 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+// Zod is no longer directly used here for schema definition
+// import {z} from 'zod';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-
-const GenerateQuizInputSchema = z.object({
-  context: z.string().describe("A structured Markdown string containing key concepts from one or more documents."),
-  numQuestions: z.number().describe('The number of questions to generate for this batch.'),
-  difficulty: z.string().describe('The difficulty level of the quiz.'),
-  questionFormat: z.enum(['multipleChoice', 'problemSolving', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
-  existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
-  apiKey: z.string().optional().describe('Optional Gemini API key.'),
-});
-export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
-
-const MultipleChoiceQuestionSchema = z.object({
-  questionType: z.enum(['multipleChoice']).describe("The type of the question."),
-  question: z.string().describe('The question text, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  options: z.array(z.string().describe('A multiple-choice option, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.')).length(4).describe('An array of 4 multiple-choice options.'),
-  answer: z.string().describe('The correct answer, which must be one of the provided options, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
-});
-
-const ProblemSolvingQuestionSchema = z.object({
-  questionType: z.enum(['problemSolving']).describe("The type of the question: calculative, step-by-step, numeric or symbolic problem."),
-  question: z.string().describe('The problem statement, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  answer: z.string().describe('The detailed, step-by-step solution, resulting in a numeric or symbolic answer (often boxed). Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
-});
-
-const OpenEndedQuestionSchema = z.object({
-  questionType: z.enum(['openEnded']).describe("The type of the question: theoretical, opinion-based, or conceptual."),
-  question: z.string().describe('The open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  answer: z.string().describe('The expected answer or key discussion points for the open-ended question. Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
-});
-
-const QuestionSchema = z.union([MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, OpenEndedQuestionSchema]);
-
-const GenerateQuizOutputSchema = z.object({
-  quiz: z.object({
-      questions: z.array(QuestionSchema).refine(items => items.every(item => item.question.trim() !== '' && !item.question.toLowerCase().includes("lorem ipsum")), {
-        message: 'Question text cannot be empty or placeholder text.',
-      }),
-  }).describe('The generated quiz.'),
-});
-export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
+import {
+  GenerateQuizInputSchema,
+  GenerateQuizInput,
+  GenerateQuizOutputSchema,
+  GenerateQuizOutput,
+  // Individual question schemas are used by GenerateQuizOutputSchema which is imported
+  // MultipleChoiceQuestionSchema,
+  // ProblemSolvingQuestionSchema,
+  // OpenEndedQuestionSchema,
+  // QuestionSchema
+} from '@/lib/types'; // Import schemas and types
 
 export async function generateQuiz(input: GenerateQuizInput): Promise<GenerateQuizOutput> {
   return generateQuizFlow(input);
 }
 
+// The Genkit flow definition itself uses the imported schemas.
+// It's an object, but it's not typically imported by client components in a way that breaks "use server".
+// The `generateQuiz` async function is the primary server action export.
 const generateQuizFlow = ai.defineFlow(
   {
     name: 'generateQuizFlow',
-    inputSchema: GenerateQuizInputSchema,
-    outputSchema: GenerateQuizOutputSchema,
+    inputSchema: GenerateQuizInputSchema, // Use imported schema
+    outputSchema: GenerateQuizOutputSchema, // Use imported schema
   },
-  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }) => {
+  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }: GenerateQuizInput): Promise<GenerateQuizOutput> => {
     if (!apiKey || apiKey.trim() === '') {
       throw new Error("A valid API Key is required for generateQuizFlow but was not provided or was empty.");
     }

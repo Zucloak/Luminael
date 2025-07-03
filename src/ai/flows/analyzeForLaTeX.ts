@@ -2,31 +2,25 @@
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
+// Zod is no longer directly used here for schema definition, it's imported from types.ts
+// import { z } from 'zod';
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-
-// Input schema for the LaTeX analysis flow
-export const AnalyzeForLaTeXInputSchema = z.object({
-  content: z.string().describe('The text content to be analyzed for LaTeX or mathematical expressions.'),
-  apiKey: z.string().optional().describe('Optional Gemini API key.'),
-});
-export type AnalyzeForLaTeXInput = z.infer<typeof AnalyzeForLaTeXInputSchema>;
-
-// Output schema for the LaTeX analysis flow
-export const AnalyzeForLaTeXOutputSchema = z.object({
-  hasLaTeXContent: z.boolean().describe('True if LaTeX or mathematical content is detected, false otherwise.'),
-});
-export type AnalyzeForLaTeXOutput = z.infer<typeof AnalyzeForLaTeXOutputSchema>;
+import {
+  AnalyzeForLaTeXInputSchema,
+  AnalyzeForLaTeXInput,
+  AnalyzeForLaTeXOutputSchema,
+  AnalyzeForLaTeXOutput
+} from '@/lib/types'; // Import schemas and types
 
 // Define the AI flow
 export const analyzeForLaTeXFlow = ai.defineFlow(
   {
     name: 'analyzeForLaTeXFlow',
-    inputSchema: AnalyzeForLaTeXInputSchema,
-    outputSchema: AnalyzeForLaTeXOutputSchema,
+    inputSchema: AnalyzeForLaTeXInputSchema, // Use imported schema
+    outputSchema: AnalyzeForLaTeXOutputSchema, // Use imported schema
   },
-  async ({ content, apiKey }) => {
+  async ({ content, apiKey }: AnalyzeForLaTeXInput): Promise<AnalyzeForLaTeXOutput> => { // Add types to params
     if (!apiKey || apiKey.trim() === '') {
       // Fallback for safety: if no API key, assume no LaTeX to prevent blocking calculative mode unnecessarily.
       // Or, could throw an error if API key is strictly required for this check too.
