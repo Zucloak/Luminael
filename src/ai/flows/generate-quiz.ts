@@ -56,13 +56,13 @@ const generateQuizFlow = ai.defineFlow(
 **Key Concepts:**
 ${context}
 
-**ULTRA-CRITICAL RULE #0: MANDATORY LaTeX Delimiters for ALL Mathematical Notation!**
+ULTRA-CRITICAL RULE #0: MANDATORY LATEX DELIMITERS FOR ALL MATHEMATICAL NOTATION!
 For EVERY piece of mathematical notation, variable, or expression (e.g., \`x\`, \`a^2\`, \`(a^2 - x^2)\`, \`E=mc^2\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters.
 -   For inline mathematics (math within a line of text), use SINGLE dollar signs: \`\\$...\\$\`.
     Examples: \`The variable \\$x\\$ is unknown.\`, \`Its value is \\$a^{2}\\$.\`, \`Consider the expression \\$(a^{2} - x^{2}) = 0\\$\`.
 -   For display mathematics (math on its own line), use DOUBLE dollar signs: \`\\$\\$...\\$\\$\`.
     Example: \`\\$\\$ E = mc^{2} \\$\\$\`
-**There are NO exceptions to this rule.** Plain text that resembles math (e.g., `a^2 - x^2` without delimiters) is INCORRECT, will not render properly, and is considered a failure to meet fundamental formatting requirements. This is a primary directive.
+THERE ARE NO EXCEPTIONS TO THIS RULE. Plain text that resembles math (e.g., \`a^2 - x^2\` without delimiters) is INCORRECT, will not render properly, and is considered a failure to meet fundamental formatting requirements. THIS IS A PRIMARY DIRECTIVE.
 
 **ABSOLUTE NON-NEGOTIABLE RULES FOR THIS TASK (Problem Solving Questions ONLY):**
 1.  **ONLY 'problemSolving' Questions**: Every single question you generate MUST be a procedural, computation-based problem that requires a step-by-step derivation to reach a numeric or symbolic answer. Each question's \`questionType\` field MUST be set to exactly \`problemSolving\`.
@@ -96,13 +96,13 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
 **Key Concepts:**
 ${context}
 
-**ULTRA-CRITICAL RULE #0: MANDATORY LaTeX Delimiters for ALL Mathematical Notation!**
+ULTRA-CRITICAL RULE #0: MANDATORY LATEX DELIMITERS FOR ALL MATHEMATICAL NOTATION!
 For EVERY piece of mathematical notation, variable, or expression (e.g., \`x\`, \`a^2\`, \`(a^2 - x^2)\`, \`E=mc^2\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters.
 -   For inline mathematics (math within a line of text), use SINGLE dollar signs: \`\\$...\\$\`.
     Examples: \`The variable \\$x\\$ is unknown.\`, \`Its value is \\$a^{2}\\$.\`, \`Consider the expression \\$(a^{2} - x^{2}) = 0\\$\`.
 -   For display mathematics (math on its own line), use DOUBLE dollar signs: \`\\$\\$...\\$\\$\`.
     Example: \`\\$\\$ E = mc^{2} \\$\\$\`
-**There are NO exceptions to this rule.** Plain text that resembles math (e.g., `a^2 - x^2` without delimiters) is INCORRECT, will not render properly, and is considered a failure to meet fundamental formatting requirements. This is a primary directive.
+THERE ARE NO EXCEPTIONS TO THIS RULE. Plain text that resembles math (e.g., \`a^2 - x^2\` without delimiters) is INCORRECT, will not render properly, and is considered a failure to meet fundamental formatting requirements. THIS IS A PRIMARY DIRECTIVE.
 
 **NON-NEGOTIABLE RULES (for 'multipleChoice', 'openEnded', 'mixed' formats):**
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
