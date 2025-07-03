@@ -84,24 +84,26 @@ ${context}
 3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested.
 4.  **Strict Question Format Adherence & Type Integrity:**
     *   **If '${questionFormat}' is 'multipleChoice'**:
-        *   Generate **ONLY** multiple-choice questions. Each question MUST have the \`questionType\` field set to \`multipleChoice\`.
+        *   Generate **ONLY** multiple-choice questions. Each question MUST have its \`questionType\` field set to exactly \`multipleChoice\`.
         *   Provide 4 distinct options. The \`answer\` field must exactly match one of the \`options\`.
-    *   **If '${questionFormat}' is 'problemSolving'**:
-        *   Generate **ONLY** procedural, computation-based problems. Each question MUST have the \`questionType\` field set to \`problemSolving\`.
-        *   These questions require a step-by-step derivation leading to a specific numeric or symbolic answer. The final answer in the solution should ideally be boxed (e.g., using \`\\\\boxed{answer}\`).
-        *   The \`answer\` field MUST contain a detailed, step-by-step solution.
-        *   **CRITICAL FOR 'problemSolving'**: DO NOT generate \`multipleChoice\` or \`openEnded\` (conceptual/theoretical) questions when \`problemSolving\` is requested. Focus exclusively on calculative problems.
+        *   Output JSON for these questions MUST conform to the MultipleChoiceQuestionSchema.
+    *   **If, AND ONLY IF, '${questionFormat}' is EXACTLY 'problemSolving'**:
+        *   You MUST generate **ONLY** questions that are procedural, computation-based problems requiring a step-by-step derivation leading to a specific numeric or symbolic answer.
+        *   Each of these questions MUST have its \`questionType\` field set to exactly \`problemSolving\`.
+        *   The \`answer\` field for these questions MUST contain a detailed, step-by-step solution. The final numeric or symbolic answer within this solution should ideally be boxed (e.g., using \`\\\\boxed{answer}\`).
+        *   **ABSOLUTE CRITICAL DIRECTIVE for 'problemSolving' format**: Under NO CIRCUMSTANCES are you to generate any \`multipleChoice\` questions or any \`openEnded\` (conceptual, theoretical, discussion-based) questions when '${questionFormat}' is 'problemSolving'. Your output MUST NOT contain \`options\` fields (which belong to \`multipleChoice\`) or questions that ask for explanations or opinions. Failure to adhere to this strict exclusivity for 'problemSolving' format questions will render the output unusable. You must focus entirely and exclusively on calculative problems that fit the ProblemSolvingQuestionSchema.
     *   **If '${questionFormat}' is 'openEnded'**:
-        *   Generate **ONLY** theoretical, opinion-based, or conceptual questions. Each question MUST have the \`questionType\` field set to \`openEnded\`.
+        *   Generate **ONLY** theoretical, opinion-based, or conceptual questions. Each question MUST have its \`questionType\` field set to exactly \`openEnded\`.
         *   These questions require free-form, textual answers. The \`answer\` field should provide a model answer or key discussion points.
-        *   **CRITICAL FOR 'openEnded'**: DO NOT generate \`multipleChoice\` or \`problemSolving\` (calculative) questions when \`openEnded\` is requested.
+        *   **CRITICAL FOR 'openEnded'**: DO NOT generate \`multipleChoice\` or \`problemSolving\` (calculative) questions when \`openEnded\` is requested. Output JSON for these questions MUST conform to the OpenEndedQuestionSchema.
     *   **If '${questionFormat}' is 'mixed'**:
-        *   Generate a blend of \`multipleChoice\`, \`problemSolving\` (calculative), and \`openEnded\` (conceptual) questions. Ensure each question generated correctly sets its \`questionType\` field.
-    *   **General Type Integrity**: Do not misclassify question types. For example, a question asking "Explain the concept of X" is \`openEnded\`. A question asking "Calculate Y given Z" is \`problemSolving\`.
+        *   Generate a balanced blend of \`multipleChoice\`, \`problemSolving\` (calculative, as defined above), and \`openEnded\` (conceptual, as defined above) questions.
+        *   Ensure each question generated correctly sets its \`questionType\` field and conforms to its respective schema (MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, or OpenEndedQuestionSchema).
+    *   **Universal Type Integrity**: Do not misclassify question types. For example, a question asking for an explanation of a concept is \`openEnded\`. A question requiring a calculation is \`problemSolving\`. Adhere strictly to the definitions.
 
-5.  **No Placeholders or Garbage:** All fields (\`question\`, \`options\`, \`answer\`) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer". For multiple-choice questions, all four options must be distinct and plausible.
+5.  **Schema Adherence & No Garbage:** All fields (\`question\`, \`options\` (if applicable), \`answer\`, \`questionType\`) MUST contain meaningful, relevant content derived ONLY from the provided Key Concepts. Do not use generic placeholders. For multiple-choice questions, all four options must be distinct and plausible. Ensure every generated question object perfectly matches its corresponding schema (MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, or OpenEndedQuestionSchema) based on its \`questionType\`.
 6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
-7.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
+7.  **Global De-duplication:** The provided list of \`existingQuestions\` (if any) may contain questions of various types previously generated in this session. DO NOT generate any question (regardless of its type for the current batch) that is identical or substantially similar to any question found in this \`existingQuestions\` list. The goal is to ensure maximum variety and avoid all repetition across the entire quiz session.
 8.  **Impeccable and Robust LaTeX Formatting:** For ALL mathematical content (equations, symbols, variables in text):
     *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: \`The value is \\$x^{2}\\$ units.\`
     *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
