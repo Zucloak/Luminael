@@ -82,25 +82,38 @@ ${context}
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
 2.  **Obey the Language:** The entire quiz MUST be in the same language as the Key Concepts.
 3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested.
-4.  **Question Format Adherence:**
-    *   If '${questionFormat}' is 'multipleChoice', generate multiple-choice questions.
-    *   If '${questionFormat}' is 'problemSolving', generate procedural, computation-based problems that require a step-by-step solution leading to a numeric or symbolic answer (which should be clearly boxed or indicated).
-    *   If '${questionFormat}' is 'openEnded', generate theoretical, opinion-based, or conceptual questions requiring free-form, textual answers.
-    *   If '${questionFormat}' is 'mixed', generate a blend of 'multipleChoice', 'problemSolving', and 'openEnded' questions.
-5.  **Question Type Integrity:**
-    *   **'problemSolving'**: Questions should be solvable with definite steps and result in a specific answer (e.g., "Calculate X", "Solve for Y", "What is the output of this code?"). The \`answer\` field must contain the detailed solution.
-    *   **'openEnded'**: Questions should explore understanding of concepts, theories, or opinions (e.g., "Explain the concept of...", "Discuss the implications of...", "What is your interpretation of...?"). The \`answer\` field should provide a model answer or key discussion points.
-    *   **'multipleChoice'**: Standard single-correct-answer format. The \`answer\` field must exactly match one of the \`options\`.
-    *   Do not misclassify question types. For example, a question asking "Explain gravity" is 'openEnded', not 'problemSolving'. A question asking "Calculate the force of gravity given mass and acceleration" is 'problemSolving'.
-6.  **No Placeholders or Garbage:** All fields (question, options, answer) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer". For multiple-choice questions, all four options must be distinct and plausible.
-7.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
-8.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
-9.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.
-    -   Enclose inline math with single dollar signs (\`\\$...\\$\`).
-    -   Enclose block math with double dollar signs (\`\\$\\$...\\$\\$\`).
-    -   **CRITICAL:** For ALL superscripts or subscripts, you MUST use curly braces, even for single characters. For example: write \`\\$z^{6}\\$\` NOT \`\\$z^6\\$\`. Write \`\\$x^{2}\\$\` NOT \`\\$x^2\\$\`. Write \`\\$10^{-19}\\$\` NOT \`\\$10^-19\\$\`.
-    -   Use standard LaTeX commands for functions and symbols (e.g., \`\\sin\`, \`\\cos\`, \`\\theta\`, \`\\alpha\`, \`\\sqrt{}\`, \`\\frac{}{}\`). For example, write \`\\$x = a \\sin \\theta\\$\` instead of \`x = a sin θ\`.
-    -   **DO NOT** use parentheses for math, such as \`\\(\` or \`\\)\`. Only use dollar signs.
+4.  **Strict Question Format Adherence & Type Integrity:**
+    *   **If '${questionFormat}' is 'multipleChoice'**:
+        *   Generate **ONLY** multiple-choice questions. Each question MUST have the `questionType` field set to `multipleChoice`.
+        *   Provide 4 distinct options. The `answer` field must exactly match one of the `options`.
+    *   **If '${questionFormat}' is 'problemSolving'**:
+        *   Generate **ONLY** procedural, computation-based problems. Each question MUST have the `questionType` field set to `problemSolving`.
+        *   These questions require a step-by-step derivation leading to a specific numeric or symbolic answer. The final answer in the solution should ideally be boxed (e.g., using `\\boxed{answer}`).
+        *   The `answer` field MUST contain a detailed, step-by-step solution.
+        *   **CRITICAL FOR 'problemSolving'**: DO NOT generate 'multipleChoice' or 'openEnded' (conceptual/theoretical) questions when 'problemSolving' is requested. Focus exclusively on calculative problems.
+    *   **If '${questionFormat}' is 'openEnded'**:
+        *   Generate **ONLY** theoretical, opinion-based, or conceptual questions. Each question MUST have the `questionType` field set to `openEnded`.
+        *   These questions require free-form, textual answers. The `answer` field should provide a model answer or key discussion points.
+        *   **CRITICAL FOR 'openEnded'**: DO NOT generate 'multipleChoice' or 'problemSolving' (calculative) questions when 'openEnded' is requested.
+    *   **If '${questionFormat}' is 'mixed'**:
+        *   Generate a blend of 'multipleChoice', 'problemSolving' (calculative), and 'openEnded' (conceptual) questions. Ensure each question generated correctly sets its `questionType` field.
+    *   **General Type Integrity**: Do not misclassify question types. For example, a question asking "Explain the concept of X" is 'openEnded'. A question asking "Calculate Y given Z" is 'problemSolving'.
+
+5.  **No Placeholders or Garbage:** All fields (question, options, answer) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer". For multiple-choice questions, all four options must be distinct and plausible.
+6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
+7.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
+8.  **Impeccable and Robust LaTeX Formatting:** For ALL mathematical content (equations, symbols, variables in text):
+    *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: \`The value is \\$x^{2}\\$ units.\`
+    *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
+    *   **CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS:** ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\$x^y\$\`, \`\$a_b\$\`.
+    *   **Standard Commands:** Use standard LaTeX commands (e.g., \`\\sin\`, \`\\cos\`, \`\\frac{}{}\`, \`\\sqrt{}\`, \`\\sum_{i=0}^{n}\`, \`\\int_{a}^{b}\`, \`\\vec{F}\`, \`\\
+alpha\`, \`\\beta\`, \`\\Delta\`). For example, write \`\\$x = a \\sin \\theta\\$\` instead of \`x = a sin θ\`.
+    *   **Escaping Special LaTeX Characters:** If characters like `#`, `_`, `^`, `{`, `}` are needed as literal text *within* a math environment, they might need escaping (e.g., \`\\_\`, \`\\{\`). However, for math symbols, use LaTeX commands.
+    *   **Clarity for Renderer:** Ensure there are no ambiguous constructions. For instance, make sure fractions are clearly denoted \`\\frac{numerator}{denominator}\`. Ensure matrices or multi-line equations use appropriate LaTeX environments (e.g., `pmatrix`, `align`, `cases`).
+    *   **DO NOT** use Markdown for math. Only use LaTeX within dollar signs.
+    *   **DO NOT** use non-standard or custom LaTeX commands unless you are certain they are supported by MathJax or KaTeX.
+    *   **DO NOT** use parentheses for math delimiters like \`\\(\` or \`\\)\`. Only use dollar signs.
+    *   **Test your LaTeX output mentally:** If it looks like it might be ambiguous or break a renderer, simplify or clarify. For example, ensure all environments are correctly opened and closed.
 
 **Output Format:**
 You MUST provide your response in the specified JSON format.`;
