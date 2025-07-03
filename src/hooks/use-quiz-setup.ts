@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useCallback, createContext, useContext, ReactNode } from 'react';
+import React, { useState, useCallback, createContext, useContext, ReactNode, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -13,6 +12,7 @@ import { generateHellBoundQuiz, GenerateHellBoundQuizInput } from '@/ai/flows/ge
 import { extractKeyConcepts } from '@/ai/flows/extract-key-concepts';
 import { useTheme } from '@/hooks/use-theme';
 import { getPastQuizById } from '@/lib/indexed-db';
+import { analyzeContentForLaTeX } from '@/ai/flows/analyzeForLaTeX';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs`;
 
@@ -38,7 +38,9 @@ interface QuizSetupContextType {
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   removeFile: (fileName: string) => void;
   stopParsing: () => void;
-  
+  isAnalyzingContent: boolean;
+  canGenerateCalculative: boolean | null;
+
   // Quiz lifecycle state
   view: View;
   quiz: Quiz | null;
@@ -66,6 +68,9 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
   const [isParsing, setIsParsing] = useState<boolean>(false);
   const [parseProgress, setParseProgress] = useState<ParseProgress>({ current: 0, total: 0, message: '' });
   const [parsingController, setParsingController] = useState<AbortController | null>(null);
+  const [isAnalyzingContent, setIsAnalyzingContent] = useState<boolean>(false);
+  const [canGenerateCalculative, setCanGenerateCalculative] = useState<boolean | null>(null);
+
 
   // Quiz lifecycle state
   const [view, setView] = useState<View>('setup');
@@ -79,6 +84,53 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
   const { apiKey, incrementUsage } = useApiKey();
   const { toast } = useToast();
   const { isHellBound } = useTheme();
+
+  const performLatexAnalysis = useCallback(async (currentFiles: ProcessedFile[]) => {
+    if (!apiKey) {
+      // If no API key, we can't perform AI analysis. Default to allowing calculative.
+      // Or, we could set it to false if we want to be stricter. For now, true.
+      setCanGenerateCalculative(true);
+      return;
+    }
+    if (currentFiles.length > 0) {
+      const combinedContent = currentFiles.map(f => f.content).join("\n\n");
+      if (combinedContent.trim()) {
+        setIsAnalyzingContent(true);
+        setCanGenerateCalculative(null);
+        try {
+          const analysisResult = await analyzeContentForLaTeX({ content: combinedContent, apiKey });
+          incrementUsage(); // Assuming this analysis also counts as usage
+          setCanGenerateCalculative(analysisResult.hasLaTeXContent);
+          if (!analysisResult.hasLaTeXContent) {
+            toast({
+              title: "Content Analysis",
+              description: "No mathematical expressions suitable for 'Problem Solving (Calculative)' questions were detected.",
+              duration: 7000,
+            });
+          }
+        } catch (err) {
+          console.error("Error analyzing content for LaTeX:", err);
+          toast({
+            variant: "destructive",
+            title: "Content Analysis Failed",
+            description: "Could not determine if content is suitable for calculative questions.",
+          });
+          setCanGenerateCalculative(true); // Default to true if analysis fails
+        } finally {
+          setIsAnalyzingContent(false);
+        }
+      } else {
+        setCanGenerateCalculative(false);
+      }
+    } else {
+      setCanGenerateCalculative(null);
+    }
+  }, [apiKey, toast, incrementUsage]);
+
+  useEffect(() => {
+    performLatexAnalysis(processedFiles);
+  }, [processedFiles, performLatexAnalysis]);
+
 
   const processFile = useCallback(
     (file: File): Promise<{ content: string }> => {
@@ -168,7 +220,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
 
                     const ocrPromises = pagesToOcr.map(async (pageData, idx) => {
                         const page = pageData.page;
-                        const viewport = page.getViewport({ scale: 2.0 }); // Consider if 2.0 is always needed
+                        const viewport = page.getViewport({ scale: 2.0 });
                         const canvas = document.createElement('canvas');
                         const context = canvas.getContext('2d');
                         if (!context) return `[Canvas Error on page ${pageData.pageNum}]`;
@@ -184,9 +236,6 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
                         }
                         
                         try {
-                           // Update progress message before starting OCR for this page
-                           // Note: current count for setParseProgress might be tricky here due to parallel execution.
-                           // We'll update based on completion.
                            const { text } = await ocrImageWithFallback(canvas.toDataURL(), apiKey, incrementUsage);
                            setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `AI OCR for page ${pageData.pageNum} complete.` }));
                            return text;
@@ -258,7 +307,6 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     setParseProgress({ current: 0, total: files.length, message: "Preparing to process files..." });
     
     const fileList = Array.from(files);
-    // Prevent adding duplicates to the list
     const newFiles = fileList.filter(f => !processedFiles.some(pf => pf.name === f.name));
     if(newFiles.length !== fileList.length) {
         toast({ title: "Duplicate files skipped."});
@@ -270,7 +318,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
         return;
     }
     
-    let allProcessedFiles = [...processedFiles];
+    let currentProcessedFiles = [...processedFiles];
 
     try {
       for (let i = 0; i < newFiles.length; i++) {
@@ -283,14 +331,13 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
         
         if (controller.signal.aborted) throw new Error("Cancelled");
 
-        allProcessedFiles.push({ name: file.name, content });
+        currentProcessedFiles.push({ name: file.name, content });
       }
-      
-      setProcessedFiles(allProcessedFiles);
+      setProcessedFiles(currentProcessedFiles); // This will trigger the useEffect for LaTeX analysis
 
     } catch (error) {
         if ((error as Error).message === "Cancelled") {
-            // Don't change the file list if cancelled, just stop
+            // No state change needed for files if cancelled during processing this batch
         } else {
             const message = String(error);
             setFileError(message);
@@ -300,9 +347,9 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
       setIsParsing(false);
       setParsingController(null);
       setParseProgress({ current: 0, total: 0, message: "" });
-      if (event.target) event.target.value = ''; // Reset file input
+      if (event.target) event.target.value = '';
     }
-  }, [processFile, apiKey, toast, processedFiles]);
+  }, [processFile, apiKey, toast, processedFiles]); // `performLatexAnalysis` removed as it's in useEffect now
   
   const startQuiz = useCallback(async (values: any) => {
     if (!apiKey) {
@@ -335,14 +382,12 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     setGenerationProgress({ current: 0, total: totalQuestions, message: '' });
 
     try {
-      // Step 1: Extract Key Concepts in a single call, as per your directive.
       setGenerationProgress(prev => ({ ...prev, total: totalQuestions, message: "Synthesizing key concepts..." }));
       const keyConceptsContext = await extractKeyConcepts({ files: processedFiles, apiKey });
-      incrementUsage(); // Account for concept extraction call
+      incrementUsage();
 
       if (controller.signal.aborted) throw new Error("Cancelled");
 
-      // Step 2: Generate quiz from the extracted concepts.
       let allQuestions: Question[] = [];
       let existingQuestionTitles: string[] = [];
 
@@ -403,7 +448,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
 
     } catch (error) {
       if ((error as Error).message === 'Cancelled') {
-        return; // Handled by cancelGeneration
+        return;
       }
       console.error(error);
       const message = error instanceof Error ? error.message : "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again.";
@@ -430,6 +475,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     setFileError('');
     setIsParsing(false);
     setParseProgress({ current: 0, total: 0, message: '' });
+    setCanGenerateCalculative(null); // Reset LaTeX analysis state
   }, []);
 
   const restartQuiz = useCallback(() => {
@@ -450,15 +496,15 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
       const pastQuiz = await getPastQuizById(id);
       if (pastQuiz) {
         setQuiz(pastQuiz.quiz);
-        setTimer(0); // Timers aren't saved
-        setUserAnswers(pastQuiz.userAnswers || {}); // handle partial answers
-        
-        // Load the source content back into the session
-        setProcessedFiles([{ name: `Source for "${pastQuiz.title}"`, content: pastQuiz.sourceContent }]);
+        setTimer(0);
+        setUserAnswers(pastQuiz.userAnswers || {});
+
+        const loadedFiles = [{ name: `Source for "${pastQuiz.title}"`, content: pastQuiz.sourceContent }];
+        setProcessedFiles(loadedFiles); // This will trigger useEffect for LaTeX analysis
 
         if (mode === 'results') {
           setView('results');
-        } else { // 'retake' or 'resume'
+        } else {
           setView('quiz');
         }
       } else {
@@ -467,10 +513,14 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     } catch(e) {
       toast({ variant: "destructive", title: "Load Error", description: "Failed to load quiz from history." });
     }
-  }, [toast]);
+  }, [toast]); // performLatexAnalysis removed from deps, handled by useEffect on processedFiles
 
   const removeFile = useCallback(async (fileNameToRemove: string) => {
-    setProcessedFiles(prev => prev.filter(file => file.name !== fileNameToRemove));
+    setProcessedFiles(prev => {
+        const updatedFiles = prev.filter(file => file.name !== fileNameToRemove);
+        // No direct call to performLatexAnalysis here, useEffect will handle it.
+        return updatedFiles;
+    });
   }, []);
 
   const stopParsing = useCallback(() => {
@@ -496,13 +546,15 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     handleFileChange,
     removeFile,
     stopParsing,
+    isAnalyzingContent, // Added to context
+    canGenerateCalculative, // Added to context
     
     view,
     quiz,
     userAnswers,
     generationProgress,
     timer,
-    isGenerating: isGeneratingState || isParsing,
+    isGenerating: isGeneratingState || isParsing || isAnalyzingContent, // Include isAnalyzingContent in overall busy state
 
     startQuiz,
     submitQuiz,

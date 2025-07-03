@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useApiKey } from "@/hooks/use-api-key";
 import { PulsingCore } from "@/components/common/PulsingCore";
 import { PulsingCoreRed } from "../common/PulsingCoreRed";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // Added Tooltip
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuizSetup } from "@/hooks/use-quiz-setup";
@@ -68,6 +69,8 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     handleFileChange,
     removeFile,
     stopParsing,
+    isAnalyzingContent,     // Destructure new state
+    canGenerateCalculative, // Destructure new state
   } = useQuizSetup();
   
   useEffect(() => {
@@ -100,7 +103,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   }
 
   const isApiKeyMissing = !apiKey;
-  const isProcessing = isGenerating || isParsing;
+  const isProcessing = isGenerating || isParsing || isAnalyzingContent; // Include isAnalyzingContent
 
   if (!isClient) {
     return (
@@ -357,7 +360,35 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="multipleChoice">Multiple Choice</SelectItem>
-                                <SelectItem value="problemSolving">Problem Solving (Calculative)</SelectItem>
+                                <TooltipProvider delayDuration={100}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className={cn( (isAnalyzingContent || canGenerateCalculative === false) && "cursor-not-allowed")}>
+                                        <SelectItem
+                                          value="problemSolving"
+                                          disabled={isAnalyzingContent || canGenerateCalculative === false || isProcessing || isApiKeyMissing || apiKeyLoading}
+                                          onSelect={(e) => { // Prevent selection if disabled by logic, not just visual
+                                            if (isAnalyzingContent || canGenerateCalculative === false) {
+                                              e.preventDefault();
+                                            }
+                                          }}
+                                        >
+                                          Problem Solving (Calculative)
+                                          {isAnalyzingContent && <Loader2 className="h-4 w-4 animate-spin ml-2 inline-block" />}
+                                        </SelectItem>
+                                      </div>
+                                    </TooltipTrigger>
+                                    {(isAnalyzingContent || canGenerateCalculative === false) && (
+                                      <TooltipContent>
+                                        <p>
+                                          {isAnalyzingContent
+                                            ? "Analyzing content for calculative potential..."
+                                            : "Disabled: No mathematical formulas/expressions detected in your uploaded content suitable for calculative problems."}
+                                        </p>
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                </TooltipProvider>
                                 <SelectItem value="openEnded">Open-Ended (Conceptual)</SelectItem>
                                 <SelectItem value="mixed">Mixed</SelectItem>
                               </SelectContent>
@@ -409,6 +440,11 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Processing files...
+                  </>
+                ) : isAnalyzingContent ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Analyzing content...
                   </>
                 ) : (
                   <>
