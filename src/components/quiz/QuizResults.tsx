@@ -66,23 +66,36 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
       if (q.questionType === 'multipleChoice') {
         const isCorrect = userAnswer === q.answer;
         return { ...q, userAnswer, isCorrect, isValidating: false };
-      }
-      
-      // For 'openEnded' and 'problemSolving'
-      if (q.questionType === 'openEnded' || q.questionType === 'problemSolving') {
+      } else if (q.questionType === 'openEnded') {
         return {
           ...q,
           userAnswer,
-          isCorrect: null, // Validation will determine correctness
+          isCorrect: null,
           isValidating: userAnswerProvided,
           ...(!userAnswerProvided && {
             validation: { status: 'Incorrect', explanation: 'No answer was provided.' }
           })
         };
+      } else if (q.questionType === 'problemSolving') {
+        return {
+          ...q,
+          userAnswer,
+          isCorrect: null,
+          isValidating: userAnswerProvided,
+          ...(!userAnswerProvided && {
+            validation: { status: 'Incorrect', explanation: 'No answer was provided.' }
+          })
+        };
+      } else {
+        // This case should be impossible if Question union is exhaustive
+        // and q is always a Question.
+        // The following line will cause a TypeScript error if q is not 'never',
+        // helping to ensure all Question types are handled above.
+        const _exhaustiveCheck: never = q;
+        // Fallback for safety, though it should be unreachable:
+        console.error("Unhandled question type in QuizResults.tsx:", _exhaustiveCheck);
+        throw new Error(`Unhandled question type: ${JSON.stringify(q)}`);
       }
-
-      // Fallback for any unexpected question types, though this shouldn't happen with proper typing
-      return { ...q, userAnswer, isCorrect: null, isValidating: false, validation: { status: 'Incorrect', explanation: 'Unknown question type.'} } as Result;
     });
     setDetailedResults(initialResults);
   }, [quiz, answers]);
