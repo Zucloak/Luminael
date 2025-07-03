@@ -28,13 +28,19 @@ const MultipleChoiceQuestionSchema = z.object({
   answer: z.string().describe('The correct answer, which must be one of the provided options, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
-const OpenEndedQuestionSchema = z.object({
-  questionType: z.enum(['openEnded']).describe("The type of the question."),
-  question: z.string().describe('The problem-solving or open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  answer: z.string().describe('The detailed, correct solution to the problem, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+const ProblemSolvingQuestionSchema = z.object({
+  questionType: z.enum(['problemSolving']).describe("The type of the question: calculative, step-by-step, numeric or symbolic problem."),
+  question: z.string().describe('The problem statement, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The detailed, step-by-step solution, resulting in a numeric or symbolic answer (often boxed). Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
-const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionSchema]);
+const OpenEndedQuestionSchema = z.object({
+  questionType: z.enum(['openEnded']).describe("The type of the question: theoretical, opinion-based, or conceptual."),
+  question: z.string().describe('The open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The expected answer or key discussion points for the open-ended question. Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+});
+
+const QuestionSchema = z.union([MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, OpenEndedQuestionSchema]);
 
 
 const GenerateHellBoundQuizOutputSchema = z.object({
@@ -71,9 +77,14 @@ ${context}
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
 2.  **Obey the Language:** The entire quiz MUST be in the same language as the Key Concepts.
 3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested.
-4.  **Question Type Integrity:** If a question is inherently explanatory or requires a detailed answer (e.g., starts with "Explain...", "Describe...", "Why..."), you MUST classify it as 'openEnded'. Do not force an explanatory question into a multiple-choice structure.
-5.  **No Placeholders or Garbage:** All fields (question, options, answer) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer".
-6.  **Prioritize Synthesis:** Questions must force the user to synthesize information from multiple sections of the provided concepts.
+4.  **Question Type Generation:** Generate a mix of 'multipleChoice', 'problemSolving', and 'openEnded' questions. The mix should be challenging and varied.
+5.  **Question Type Integrity (CRITICAL):**
+    *   **'problemSolving'**: These questions MUST be procedural, computation-based problems requiring a step-by-step solution that results in a numeric or symbolic answer. The answer field MUST contain the detailed, step-by-step solution. These should be complex and multi-step if possible, derived from the content.
+    *   **'openEnded'**: These questions MUST be theoretical, conceptual, or require deep explanation or critical analysis. They should not be simple recall. The answer field MUST provide a comprehensive model answer or key discussion points.
+    *   **'multipleChoice'**: These questions must have one correct answer and three highly plausible, devious distractors that test for common misconceptions or subtle details from the text. The `answer` field must exactly match one of the `options`.
+    *   **DO NOT MISCLASSIFY QUESTION TYPES.** For example, a question asking to "Explain the theory of relativity" is 'openEnded'. A question asking to "Calculate the energy released in a nuclear reaction given specific inputs" is 'problemSolving'.
+6.  **No Placeholders or Garbage:** All fields (question, options, answer) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer".
+7.  **Prioritize Synthesis:** Questions must force the user to synthesize information from multiple sections of the provided concepts.
 7.  **Devious Distractors:** For multiple-choice questions, the incorrect options must be highly plausible and designed to trap common misconceptions based on the text. All four options must be distinct.
 8.  **Avoid Duplicates:** Do not repeat concepts or questions. Avoid asking about questions from this list: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.
 9.  **Impeccable LaTeX Formatting:** For any mathematical equations or symbols, you MUST use proper LaTeX formatting.

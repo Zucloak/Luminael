@@ -31,7 +31,7 @@ import { useQuizSetup } from "@/hooks/use-quiz-setup";
 const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must be at least 1 question.").max(100, "Maximum 100 questions."),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
-  questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
+  questionFormat: z.enum(["multipleChoice", "problemSolving", "openEnded", "mixed"]).default("multipleChoice"),
   timerEnabled: z.boolean().default(false),
   timerPerQuestion: z.preprocess(
     (val) => (val === "" ? undefined : val),
@@ -357,7 +357,8 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="multipleChoice">Multiple Choice</SelectItem>
-                                <SelectItem value="openEnded">Problem Solving</SelectItem>
+                                <SelectItem value="problemSolving">Problem Solving (Calculative)</SelectItem>
+                                <SelectItem value="openEnded">Open-Ended (Conceptual)</SelectItem>
                                 <SelectItem value="mixed">Mixed</SelectItem>
                               </SelectContent>
                             </Select>

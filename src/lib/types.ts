@@ -6,13 +6,19 @@ export type MultipleChoiceQuestion = {
   answer: string;
 };
 
-export type OpenEndedQuestion = {
-  questionType: 'openEnded';
-  question: string;
-  answer: string; // This is the solution
+export type ProblemSolvingQuestion = {
+  questionType: 'problemSolving';
+  question: string; // Calculative, step-by-step, numeric or symbolic
+  answer: string; // Detailed, step-by-step solution
 };
 
-export type Question = MultipleChoiceQuestion | OpenEndedQuestion;
+export type OpenEndedQuestion = {
+  questionType: 'openEnded';
+  question: string; // Theoretical, opinion-based, or conceptual
+  answer: string; // Expected answer/discussion points
+};
+
+export type Question = MultipleChoiceQuestion | ProblemSolvingQuestion | OpenEndedQuestion;
 
 
 export interface Quiz {

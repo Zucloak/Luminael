@@ -18,7 +18,7 @@ const GenerateQuizInputSchema = z.object({
   context: z.string().describe("A structured Markdown string containing key concepts from one or more documents."),
   numQuestions: z.number().describe('The number of questions to generate for this batch.'),
   difficulty: z.string().describe('The difficulty level of the quiz.'),
-  questionFormat: z.enum(['multipleChoice', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
+  questionFormat: z.enum(['multipleChoice', 'problemSolving', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
   existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
   apiKey: z.string().optional().describe('Optional Gemini API key.'),
 });
@@ -31,13 +31,19 @@ const MultipleChoiceQuestionSchema = z.object({
   answer: z.string().describe('The correct answer, which must be one of the provided options, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
-const OpenEndedQuestionSchema = z.object({
-  questionType: z.enum(['openEnded']).describe("The type of the question."),
-  question: z.string().describe('The problem-solving or open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
-  answer: z.string().describe('The detailed, correct solution to the problem, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+const ProblemSolvingQuestionSchema = z.object({
+  questionType: z.enum(['problemSolving']).describe("The type of the question: calculative, step-by-step, numeric or symbolic problem."),
+  question: z.string().describe('The problem statement, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The detailed, step-by-step solution, resulting in a numeric or symbolic answer (often boxed). Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
 });
 
-const QuestionSchema = z.union([MultipleChoiceQuestionSchema, OpenEndedQuestionSchema]);
+const OpenEndedQuestionSchema = z.object({
+  questionType: z.enum(['openEnded']).describe("The type of the question: theoretical, opinion-based, or conceptual."),
+  question: z.string().describe('The open-ended question, derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs for rendering.'),
+  answer: z.string().describe('The expected answer or key discussion points for the open-ended question. Derived ONLY from the provided material and in the same language. All mathematical notation MUST be properly formatted in LaTeX and enclosed in single ($...$) or double ($$...$$) dollar signs.'),
+});
+
+const QuestionSchema = z.union([MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, OpenEndedQuestionSchema]);
 
 const GenerateQuizOutputSchema = z.object({
   quiz: z.object({
@@ -76,8 +82,16 @@ ${context}
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
 2.  **Obey the Language:** The entire quiz MUST be in the same language as the Key Concepts.
 3.  **Generate Exactly ${numQuestions} Questions:** You are required to generate exactly the number of questions requested.
-4.  **Question Format:** Adhere to the requested format: '${questionFormat}'.
-5.  **Question Type Integrity:** If a question is inherently explanatory or requires a detailed answer (e.g., starts with "Explain...", "Describe...", "Why..."), you MUST classify it as 'openEnded', even if the requested format is 'multipleChoice'. Do not force an explanatory question into a multiple-choice structure.
+4.  **Question Format Adherence:**
+    *   If '${questionFormat}' is 'multipleChoice', generate multiple-choice questions.
+    *   If '${questionFormat}' is 'problemSolving', generate procedural, computation-based problems that require a step-by-step solution leading to a numeric or symbolic answer (which should be clearly boxed or indicated).
+    *   If '${questionFormat}' is 'openEnded', generate theoretical, opinion-based, or conceptual questions requiring free-form, textual answers.
+    *   If '${questionFormat}' is 'mixed', generate a blend of 'multipleChoice', 'problemSolving', and 'openEnded' questions.
+5.  **Question Type Integrity:**
+    *   **'problemSolving'**: Questions should be solvable with definite steps and result in a specific answer (e.g., "Calculate X", "Solve for Y", "What is the output of this code?"). The `answer` field must contain the detailed solution.
+    *   **'openEnded'**: Questions should explore understanding of concepts, theories, or opinions (e.g., "Explain the concept of...", "Discuss the implications of...", "What is your interpretation of...?"). The `answer` field should provide a model answer or key discussion points.
+    *   **'multipleChoice'**: Standard single-correct-answer format. The `answer` field must exactly match one of the `options`.
+    *   Do not misclassify question types. For example, a question asking "Explain gravity" is 'openEnded', not 'problemSolving'. A question asking "Calculate the force of gravity given mass and acceleration" is 'problemSolving'.
 6.  **No Placeholders or Garbage:** All fields (question, options, answer) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer". For multiple-choice questions, all four options must be distinct and plausible.
 7.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
 8.  **Avoid Duplicates:** Do not generate questions that are identical or too similar to these existing questions: ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}.

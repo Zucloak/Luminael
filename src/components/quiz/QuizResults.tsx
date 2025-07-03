@@ -61,23 +61,28 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
   useEffect(() => {
     const initialResults: Result[] = quiz.questions.map((q, index) => {
       const userAnswer = answers[index] || 'No answer';
+      const userAnswerProvided = typeof answers[index] === 'string' && answers[index].trim() !== '';
+
       if (q.questionType === 'multipleChoice') {
         const isCorrect = userAnswer === q.answer;
         return { ...q, userAnswer, isCorrect, isValidating: false };
       }
       
-      // Ensure hasUserAnswer is strictly boolean
-      const userAnswerProvided = typeof answers[index] === 'string' && answers[index].trim() !== '';
+      // For 'openEnded' and 'problemSolving'
+      if (q.questionType === 'openEnded' || q.questionType === 'problemSolving') {
+        return {
+          ...q,
+          userAnswer,
+          isCorrect: null, // Validation will determine correctness
+          isValidating: userAnswerProvided,
+          ...(!userAnswerProvided && {
+            validation: { status: 'Incorrect', explanation: 'No answer was provided.' }
+          })
+        };
+      }
 
-      return { 
-        ...q, 
-        userAnswer, 
-        isCorrect: null, 
-        isValidating: userAnswerProvided, // Use the corrected boolean variable
-        ...(!userAnswerProvided && { // Use the corrected boolean variable
-          validation: { status: 'Incorrect', explanation: 'No answer was provided.' } 
-        })
-      };
+      // Fallback for any unexpected question types, though this shouldn't happen with proper typing
+      return { ...q, userAnswer, isCorrect: null, isValidating: false, validation: { status: 'Incorrect', explanation: 'Unknown question type.'} } as Result;
     });
     setDetailedResults(initialResults);
   }, [quiz, answers]);
@@ -87,7 +92,7 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
       if (!apiKey) {
         setDetailedResults(prevResults =>
           prevResults.map(r =>
-            r.questionType === 'openEnded' && r.isValidating
+            (r.questionType === 'openEnded' || r.questionType === 'problemSolving') && r.isValidating
               ? { ...r, isValidating: false, validation: { status: 'Incorrect', explanation: 'An API key is required for AI validation.' } }
               : r
           )
@@ -96,14 +101,16 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
       }
       
       // Create a new array for modification to avoid issues with direct state mutation in loops
-      let newDetailedResults = [...detailedResults];
-      let madeChanges = false;
+      let newDetailedResults = [...detailedResults]; // This line was problematic, effectively cloning detailedResults which is already a state.
+                                                  // The actual update should happen via setDetailedResults with a functional update.
 
-      for (let index = 0; index < newDetailedResults.length; index++) {
-        const result = newDetailedResults[index];
-        if (result.questionType === 'openEnded' && result.isValidating) {
+      for (let index = 0; index < detailedResults.length; index++) { // Iterate over the current state `detailedResults`
+        const result = detailedResults[index]; // Get the result from the current state
+        if ((result.questionType === 'openEnded' || result.questionType === 'problemSolving') && result.isValidating) {
           try {
-            const res = await fetch('/api/validate-answer', {
+            // Ensure we are not re-fetching for already validated or currently fetching items if somehow triggered multiple times
+            if (!result.validation) {
+              const res = await fetch('/api/validate-answer', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -126,56 +133,73 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
             }
             const validationResult: ValidationResult = await res.json();
             
-            setDetailedResults(prevResults => {
-              const newResults = [...prevResults];
-              newResults[index] = {
-                ...newResults[index],
-                isValidating: false,
-                validation: validationResult,
-              };
-              return newResults;
-            });
+            setDetailedResults(prevResults =>
+                prevResults.map((prevResult, prevIndex) =>
+                    prevIndex === index
+                    ? { ...prevResult, isValidating: false, validation: validationResult }
+                    : prevResult
+                )
+            );
+            }
           } catch (error) {
             console.error("Validation error for question:", result.question, error);
             const message = error instanceof Error ? error.message : 'An error occurred during AI validation.';
-            setDetailedResults(prevResults => {
-              const newResults = [...prevResults];
-              newResults[index] = {
-                ...newResults[index],
-                isValidating: false,
-                validation: { status: 'Incorrect', explanation: message },
-              };
-              return newResults;
-            });
+            setDetailedResults(prevResults =>
+                prevResults.map((prevResult, prevIndex) =>
+                    prevIndex === index
+                    ? { ...prevResult, isValidating: false, validation: { status: 'Incorrect', explanation: message } }
+                    : prevResult
+                )
+            );
           }
         }
       }
     };
 
-    if (detailedResults.some(r => r.isValidating)) {
+    if (detailedResults.some(r => r.isValidating && !r.validation)) { // Only validate if isValidating and no validation object exists yet
       validateAnswers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detailedResults, apiKey]);
+  }, [detailedResults, apiKey, incrementUsage]); // Added incrementUsage to dependency array
 
 
-  const { score, total, percentage } = useMemo(() => {
-    let correctCount = 0;
+  const { score, total, percentage, openEndedReviewedCount, problemSolvingReviewedCount } = useMemo(() => {
+    let correctMCCount = 0;
+    let reviewedOECount = 0;
+    let reviewedPSCount = 0;
+
     const multipleChoiceQuestions = detailedResults.filter(q => q.questionType === 'multipleChoice');
+    const openEndedQuestions = detailedResults.filter(q => q.questionType === 'openEnded');
+    const problemSolvingQuestions = detailedResults.filter(q => q.questionType === 'problemSolving');
+
     const totalMultipleChoice = multipleChoiceQuestions.length;
 
     multipleChoiceQuestions.forEach(r => {
         if(r.isCorrect) {
-            correctCount++;
+            correctMCCount++;
         }
     });
+
+    openEndedQuestions.forEach(r => {
+      if (r.userAnswer !== 'No answer' && (r.validation || !r.isValidating)) { // Considered reviewed if answered and validation attempted/done
+        reviewedOECount++;
+      }
+    });
+
+    problemSolvingQuestions.forEach(r => {
+      if (r.userAnswer !== 'No answer' && (r.validation || !r.isValidating)) { // Considered reviewed if answered and validation attempted/done
+        reviewedPSCount++;
+      }
+    });
     
-    const calculatedPercentage = totalMultipleChoice > 0 ? Math.round((correctCount / totalMultipleChoice) * 100) : 0;
+    const calculatedPercentage = totalMultipleChoice > 0 ? Math.round((correctMCCount / totalMultipleChoice) * 100) : 0;
 
     return {
-      score: correctCount,
+      score: correctMCCount,
       total: totalMultipleChoice,
       percentage: calculatedPercentage,
+      openEndedReviewedCount: reviewedOECount,
+      problemSolvingReviewedCount: reviewedPSCount,
     };
   }, [detailedResults]);
 
@@ -220,14 +244,19 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
           <Award className="h-12 w-12 text-primary" />
         </div>
         <CardTitle className="font-headline text-3xl">{getResultMessage(percentage)}</CardTitle>
-        {total > 0 ? (
+        {total > 0 && (
           <>
             <p className="text-5xl font-bold text-foreground">{percentage}%</p>
             <CardDescription className="text-xl text-muted-foreground">You scored {score} out of {total} multiple choice questions correct.</CardDescription>
           </>
-        ) : (
-          <CardDescription className="text-xl text-muted-foreground">Your open-ended answers are ready for review below.</CardDescription>
         )}
+        {(openEndedReviewedCount > 0 || problemSolvingReviewedCount > 0) && total === 0 && (
+           <CardDescription className="text-xl text-muted-foreground">Your answers are ready for review below.</CardDescription>
+        )}
+        {total === 0 && openEndedReviewedCount === 0 && problemSolvingReviewedCount === 0 && (
+            <CardDescription className="text-xl text-muted-foreground">No scorable questions in this quiz. Review your answers below if applicable.</CardDescription>
+        )}
+
         {user && <p className="text-sm text-muted-foreground pt-2">Results for {user.name} (ID: {user.studentId})</p>}
       </CardHeader>
       <CardContent>
@@ -238,30 +267,31 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
               <AccordionTrigger className={cn(
                 "font-semibold text-left",
                 result.questionType === 'multipleChoice' && (result.isCorrect ? 'text-green-600' : 'text-destructive'),
-                result.questionType === 'openEnded' && !result.isValidating && result.validation && (
+                (result.questionType === 'openEnded' || result.questionType === 'problemSolving') && !result.isValidating && result.validation && (
                     result.validation.status === 'Correct' ? 'text-green-600' :
                     result.validation.status === 'Partially Correct' ? 'text-yellow-600' :
                     'text-destructive'
                 )
               )}>
                 <div className="flex items-start gap-3 text-left">
-                  {result.questionType === 'multipleChoice'
-                    ? (result.isCorrect ? <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" /> : <X className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />)
-                    : result.isValidating 
-                      ? <BrainCircuit className="h-5 w-5 text-primary flex-shrink-0 mt-1 animate-pulse" />
-                      : result.validation?.status === 'Correct'
-                        ? <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
-                        : result.validation?.status === 'Partially Correct'
-                          ? <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-1" />
-                          : result.validation?.status === 'Incorrect'
-                            ? <XCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />
-                            : <Pencil className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
-                  }
+                  {result.questionType === 'multipleChoice' ? (
+                    result.isCorrect ? <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" /> : <X className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />
+                  ) : result.isValidating ? (
+                    <BrainCircuit className="h-5 w-5 text-primary flex-shrink-0 mt-1 animate-pulse" />
+                  ) : result.validation?.status === 'Correct' ? (
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                  ) : result.validation?.status === 'Partially Correct' ? (
+                    <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-1" />
+                  ) : result.validation?.status === 'Incorrect' ? (
+                    <XCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />
+                  ) : (
+                    <Pencil className="h-5 w-5 text-primary flex-shrink-0 mt-1" /> // Default icon if no validation status (e.g. before validation)
+                  )}
                   <div className="flex-1">Question {index + 1}: <MarkdownRenderer>{result.question}</MarkdownRenderer></div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
-                {result.questionType === 'multipleChoice' ? (
+                {result.questionType === 'multipleChoice' && (
                   <div className="space-y-2">
                     {result.options.map((option, optionIndex) => {
                       const isUserAnswer = option === result.userAnswer;
@@ -284,45 +314,59 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                           {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-red-600 pl-6">Your answer</p>}
                           {isCorrectAnswer && <p className="text-xs text-green-600 pl-6">Correct answer</p>}
                         </div>
-                      )
+                      );
                     })}
                   </div>
-                ) : (
+                )}
+
+                {(result.questionType === 'openEnded' || result.questionType === 'problemSolving') && (
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-semibold mb-2 text-muted-foreground">Your Answer:</h4>
-                      <div className="p-3 rounded-md border bg-muted/50"><MarkdownRenderer>{result.userAnswer}</MarkdownRenderer></div>
+                      <div className="p-3 rounded-md border bg-muted/50">
+                        {result.userAnswer === 'No answer' ? <em>No answer provided.</em> : <MarkdownRenderer>{result.userAnswer}</MarkdownRenderer>}
+                      </div>
                     </div>
-                    <div>
-                        <h4 className="font-semibold mb-2 text-primary">AI Validation:</h4>
-                        {result.isValidating ? (
-                            <div className="p-3 rounded-md border border-dashed flex items-center gap-3 animate-pulse">
-                                <BrainCircuit className="h-5 w-5 text-primary" />
-                                <span className="text-muted-foreground font-medium">Validating your answer with AI...</span>
-                            </div>
-                        ) : result.validation ? (
-                            <div className={cn(
-                                "p-3 rounded-md border space-y-2",
-                                result.validation.status === 'Correct' && "bg-green-500/10 border-green-500/40",
-                                result.validation.status === 'Partially Correct' && "bg-yellow-500/10 border-yellow-500/40",
-                                result.validation.status === 'Incorrect' && "bg-destructive/10 border-destructive/40",
-                            )}>
-                                <div className="flex items-center gap-2 font-bold">
-                                    {result.validation.status === 'Correct' && <CheckCircle className="h-5 w-5 text-green-600" />}
-                                    {result.validation.status === 'Partially Correct' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
-                                    {result.validation.status === 'Incorrect' && <XCircle className="h-5 w-5 text-destructive" />}
-                                    <span className={cn(
-                                        result.validation.status === 'Correct' && "text-green-600",
-                                        result.validation.status === 'Partially Correct' && "text-yellow-600",
-                                        result.validation.status === 'Incorrect' && "text-destructive",
-                                    )}>{result.validation.status}</span>
+
+                    { (result.questionType === 'openEnded' || result.questionType === 'problemSolving') && (
+                        <div>
+                            <h4 className="font-semibold mb-2 text-primary">AI Validation:</h4>
+                            {result.isValidating ? (
+                                <div className="p-3 rounded-md border border-dashed flex items-center gap-3 animate-pulse">
+                                    <BrainCircuit className="h-5 w-5 text-primary" />
+                                    <span className="text-muted-foreground font-medium">Validating your answer with AI...</span>
                                 </div>
-                                <div className="text-sm text-foreground/90 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
-                            </div>
-                        ) : null}
-                    </div>
+                            ) : result.validation ? (
+                                <div className={cn(
+                                    "p-3 rounded-md border space-y-2",
+                                    result.validation.status === 'Correct' && "bg-green-500/10 border-green-500/40",
+                                    result.validation.status === 'Partially Correct' && "bg-yellow-500/10 border-yellow-500/40",
+                                    result.validation.status === 'Incorrect' && "bg-destructive/10 border-destructive/40",
+                                )}>
+                                    <div className="flex items-center gap-2 font-bold">
+                                        {result.validation.status === 'Correct' && <CheckCircle className="h-5 w-5 text-green-600" />}
+                                        {result.validation.status === 'Partially Correct' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
+                                        {result.validation.status === 'Incorrect' && <XCircle className="h-5 w-5 text-destructive" />}
+                                        <span className={cn(
+                                            result.validation.status === 'Correct' && "text-green-600",
+                                            result.validation.status === 'Partially Correct' && "text-yellow-600",
+                                            result.validation.status === 'Incorrect' && "text-destructive",
+                                        )}>{result.validation.status}</span>
+                                    </div>
+                                    <div className="text-sm text-foreground/90 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
+                                </div>
+                            ) : (
+                              <div className="p-3 rounded-md border bg-muted/20">
+                                <p className="text-sm text-muted-foreground">AI validation was not performed for this question (e.g. no API key, or no answer provided).</p>
+                              </div>
+                            )}
+                        </div>
+                    )}
+
                     <div>
-                      <h4 className="font-semibold mb-2 text-green-600">Suggested Solution:</h4>
+                      <h4 className="font-semibold mb-2 text-green-600">
+                        {result.questionType === 'problemSolving' ? 'Correct Solution:' : 'Suggested Answer:'}
+                      </h4>
                       <div className="p-3 rounded-md border border-green-600/50 bg-green-500/10"><MarkdownRenderer>{result.answer}</MarkdownRenderer></div>
                     </div>
                   </div>
