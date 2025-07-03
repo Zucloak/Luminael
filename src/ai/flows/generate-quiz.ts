@@ -157,7 +157,7 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const {output} = await runner.generate({
-            prompt: quizPrompt,
+            prompt: activePrompt, // Corrected variable name here
             output: {
                 format: 'json',
                 schema: GenerateQuizOutputSchema
