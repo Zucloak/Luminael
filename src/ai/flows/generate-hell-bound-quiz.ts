@@ -44,11 +44,14 @@ const generateHellBoundQuizFlow = ai.defineFlow(
 **Key Concepts:**
 ${context}
 
-ULTRA-CRITICAL RULE #0: MANDATORY LATEX DELIMITERS FOR ALL MATHEMATICAL NOTATION!
-For EVERY piece of mathematical notation, variable, or expression (such as x, a_squared, an_expression_like_a_squared_minus_x_squared, or E_equals_mc_squared), it MUST be enclosed in appropriate LaTeX dollar sign delimiters.
--   For inline mathematics, use SINGLE dollar signs like \\$your_math_here\\$. Example: For 'x squared', output \\$x^{2}\\$.
--   For display mathematics, use DOUBLE dollar signs like \\$\\$your_math_here\\$\\$. Example: For 'E equals m c squared', output \\$\\$E=mc^{2}\\$\\$.
-THERE ARE NO EXCEPTIONS. Math without these delimiters is INCORRECT. THIS IS A PRIMARY DIRECTIVE.
+ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piece of mathematical notation, variable, formula, number, or expression (e.g., \`q_1 = 2 \\times 10^{-6} \\text{ C}\`, \`5 \\times 10^{-6} \\text{ C}\`, \`x^2\`, \`v_final\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters. This applies to question text, all multiple-choice options, and all parts of answers. NO EXCEPTIONS.
+- Inline Math: Use SINGLE dollar signs: \`\\$...\\$\`.
+  CORRECT Example for your output: \`\\$(q_1 = 2 \\\\times 10^{-6} \\\\text{ C})\\$\`
+  CORRECT Example for your output: \`A charge of \\$(5 \\\\times 10^{-6} \\\\text{ C})\\$ is moved...\`
+  CORRECT Example for your output: \`...electric field of strength \\$(10^4 \\\\text{ N/C})\\$... \`
+  INCORRECT (MISSING DOLLAR SIGNS!): \`(q_1 = 2 \\times 10^{-6} \\text{ C})\`
+- Display Math: Use DOUBLE dollar signs: \`\\$\\$...\\$\\$\`.
+FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
 
 **NON-NEGOTIABLE RULES (for Hell Bound Quiz):**
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
@@ -63,8 +66,20 @@ THERE ARE NO EXCEPTIONS. Math without these delimiters is INCORRECT. THIS IS A P
 6.  **No Placeholders or Garbage:** All fields (\`question\`, \`options\` (if applicable), \`answer\`, \`questionType\`) MUST contain meaningful, relevant content. Do not use generic placeholders like "string", "option A", "Lorem Ipsum", or "correct answer".
 7.  **Prioritize Synthesis & Difficulty:** Questions must force the user to synthesize information from multiple sections of the provided concepts and be exceptionally difficult.
 8.  **Devious Distractors (for Multiple Choice):** Incorrect options must be highly plausible and designed to trap common misconceptions based on the text. All four options must be distinct.
-9.  **Global De-duplication:** The provided list of \`existingQuestions\` (if any): ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}. DO NOT generate any question that is identical or substantially similar to any question in this list.
-10. **LaTeX Formatting:** ALL mathematical content (variables like x, formulas like a^2+b^2=c^2, expressions with units like 25 m/s) MUST be enclosed in single dollar signs for inline math (example: \\$x\\$, \\$a^2+b^2=c^2\\$, \\$25 \\\\text{ m/s}\\$) or double dollar signs for display math. Use common LaTeX commands like \\\\frac, \\\\sqrt, \\\\sin, \\\\cos. Ensure scripts use braces: \\$x^{2}\\$. This rule applies to all question text, all multiple-choice options, and all parts of answers.
+9.  **CRITICAL GLOBAL DE-DUPLICATION:** The provided list of \`existingQuestions\` contains titles of ALL previously generated questions in this entire session, regardless of their type. You ABSOLUTELY MUST NOT generate any question (for any format) whose core concept, topic, or specific calculation is substantially similar to ANY question title found in this \`existingQuestions\` list. Ensure maximum diversity and rigorously avoid all forms of repetition. Identical or near-identical questions are unacceptable and a failure.
+10. **Impeccable and Robust LaTeX Formatting (RECALL CRITICAL RULE #0 ON WRAPPING ALL MATH IN DOLLAR SIGNS):**
+    *   MANDATORY DELIMITERS (Rule #0 REITERATED): ALL math expressions, variables, and symbols (e.g., \`x\`, \`a^2\`, \`(a^2-x^2)\`) MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display). This applies to the question text, AND for \`multipleChoice\` questions, it also applies to EACH of the options. For \`openEnded\` questions, this applies to the question text and the example answer/discussion points.
+    *   Using \`\\\\text\` for Units/Annotations: When using \`\\\\text{...}\` for units or text within a mathematical formula, the ENTIRE formula, including the \`\\\\text{...}\` portion, MUST be enclosed within a single pair of LaTeX dollar-sign delimiters (as shown in CRITICAL RULE #0 examples).
+    *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: For 'the value is x squared units', output: The value is \\$x^{2}\\$ units.
+    *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
+    *   CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS: ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\\$x^y\\$\`, \`\\$a_b\\$\`.
+    *   Standard Commands: Use standard LaTeX commands (e.g., \`\\\\sin\`, \`\\\\cos\`, \`\\\\frac{}{}\`, \`\\\\sqrt{}\`, \`\\\\sum_{i=0}^{n}\`, \`\\\\int_{a}^{b}\`, \`\\\\vec{F}\`, \`\\\\alpha\`, \`\\\\beta\`, \`\\\\Delta\`). For example, write \`\\$x = a \\\\sin \\theta\\$\` instead of \`x = a sin θ\`.
+    *   Escaping Special LaTeX Characters: If characters like \`#\`, \`_\`, \`^\`, \`{\`, \`}\` are needed as literal text *within* a math environment, they might need escaping (e.g., \`\\\\_\`, \`\\\\{\`). However, for math symbols, use LaTeX commands.
+    *   Clarity for Renderer: Ensure there are no ambiguous constructions. For instance, make sure fractions are clearly denoted \`\\\\frac{numerator}{denominator}\`. Ensure matrices or multi-line equations use appropriate LaTeX environments (e.g., \`pmatrix\`, \`align\`, \`cases\`).
+    *   DO NOT use Markdown for math. Only use LaTeX within dollar signs.
+    *   DO NOT use non-standard or custom LaTeX commands.
+    *   DO NOT use parentheses for math delimiters like \`\\(\` or \`\\)\`. Only use dollar signs.
+    *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
 
 **Output Mandate:**
 You MUST provide your response in the specified JSON format. Failure is not an option.`;
