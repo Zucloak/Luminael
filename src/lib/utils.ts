@@ -19,7 +19,7 @@ export function replaceLatexDelimiters(text: string): string {
   // Step 2: Normalize explicit escaped dollar signs from AI (e.g., \\$ -> $)
   // This simplifies patterns if AI tries to escape its own delimiters.
   // Must come after step 1, in case AI outputs something like \\$\\\[ ... \\]\\$
-  newResult = newResult.replace(/\\\\\$/g, '$');
+  newResult = newResult.replace(/\\\$/g, '$'); // Corrected: match literal \$
 
   // Step 3: Handle \boxed{...}. It should always be display style ($$).
   // To do this safely, first remove any existing $ or $$ immediately around a \boxed{} expression.
