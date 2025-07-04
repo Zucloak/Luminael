@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { HelpCircle } from "lucide-react";
@@ -26,7 +25,7 @@ const faqs = [
     },
     {
         question: "Who is SYNAPPSE?",
-        answer: "SYNAPPSE is the innovative digital creation company behind Luminael AI, founded and led by Mr. Ken Mosquera. I specialize in building intelligent applications and providing top-tier digital content and design services through SYNAPPSE. You can learn more at synappse.vercel.app."
+        answer: "SYNAPPSE is the innovative digital creation company behind Luminael AI, founded and led by Mr. Ken Mosquera, We specialize in building intelligent applications and providing top-tier digital content and design services. You can learn more at synappse.vercel.app."
     },
     {
         question: "How can I save my data or move it to another device/browser?",
