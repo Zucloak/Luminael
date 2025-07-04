@@ -6,7 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { aggregateAllUserData, restoreAllUserData } from "@/lib/userDataManager";
 import { getPastQuizzes } from "@/lib/indexed-db"; // For fetching quiz data
 import { calculateQuizAnalytics } from "@/lib/analyticsUtils"; // For calculating analytics
-import type { UserDeviceData, QuizAnalyticsData, PastQuiz } from "@/lib/types"; // Include new types
+// Ensure AverageScoreDataPoint is imported for the Tooltip formatter cast
+import type { UserDeviceData, QuizAnalyticsData, PastQuiz, AverageScoreDataPoint } from "@/lib/types";
 import { BrainCircuit, Sparkles, ShieldCheck, Mail, History, KeyRound, Save, FolderOpen, Loader2, HardDriveDownload, LineChart as LineChartIcon, BarChart2 } from 'lucide-react'; // Added LineChartIcon, BarChart2, removed HardDriveUpload
 import { patchNotes } from '@/lib/patch-notes';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
