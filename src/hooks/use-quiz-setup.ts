@@ -6,9 +6,9 @@ import mammoth from 'mammoth';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { ocrImageWithFallback, isCanvasBlank } from '@/lib/ocr';
-import type { Quiz, Question, GenerateQuizInput, GenerateHellBoundQuizInput } from '@/lib/types'; // Import types from types.ts
-import { generateQuiz } from '@/ai/flows/generate-quiz'; // Only import the function
-import { generateHellBoundQuiz } from '@/ai/flows/generate-hell-bound-quiz'; // Only import the function
+import type { Quiz, Question, GenerateQuizInput, GenerateHellBoundQuizInput } from '@/lib/types';
+import { generateQuiz } from '@/ai/flows/generate-quiz';
+import { generateHellBoundQuiz } from '@/ai/flows/generate-hell-bound-quiz';
 import { extractKeyConcepts } from '@/ai/flows/extract-key-concepts';
 import { useTheme } from '@/hooks/use-theme';
 import { getPastQuizById } from '@/lib/indexed-db';
@@ -41,6 +41,13 @@ interface QuizSetupContextType {
   isAnalyzingContent: boolean;
   canGenerateCalculative: boolean | null;
 
+  // Problem Image Specific State & Handlers
+  problemImageFile: File | null;
+  problemImageDataUrl: string | null;
+  isProcessingProblemImage: boolean;
+  handleProblemImageChange: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  removeProblemImage: () => void;
+
   // Quiz lifecycle state
   view: View;
   quiz: Quiz | null;
@@ -50,7 +57,7 @@ interface QuizSetupContextType {
   isGenerating: boolean;
 
   // Lifecycle functions
-  startQuiz: (values: any) => Promise<void>;
+  startQuiz: (values: any) => Promise<void>; // values type will be from QuizSetup form
   submitQuiz: (answers: Record<number, string>) => void;
   restartQuiz: () => void;
   retakeQuiz: () => void;
@@ -71,6 +78,10 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
   const [isAnalyzingContent, setIsAnalyzingContent] = useState<boolean>(false);
   const [canGenerateCalculative, setCanGenerateCalculative] = useState<boolean | null>(null);
 
+  // Problem Image Specific State
+  const [problemImageFile, setProblemImageFile] = useState<File | null>(null);
+  const [problemImageDataUrl, setProblemImageDataUrl] = useState<string | null>(null);
+  const [isProcessingProblemImage, setIsProcessingProblemImage] = useState<boolean>(false);
 
   // Quiz lifecycle state
   const [view, setView] = useState<View>('setup');
@@ -87,8 +98,6 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
 
   const performLatexAnalysis = useCallback(async (currentFiles: ProcessedFile[]) => {
     if (!apiKey) {
-      // If no API key, we can't perform AI analysis. Default to allowing calculative.
-      // Or, we could set it to false if we want to be stricter. For now, true.
       setCanGenerateCalculative(true);
       return;
     }
@@ -99,7 +108,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
         setCanGenerateCalculative(null);
         try {
           const analysisResult = await analyzeContentForLaTeX({ content: combinedContent, apiKey });
-          incrementUsage(); // Assuming this analysis also counts as usage
+          incrementUsage();
           setCanGenerateCalculative(analysisResult.hasLaTeXContent);
           if (!analysisResult.hasLaTeXContent) {
             toast({
@@ -115,7 +124,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
             title: "Content Analysis Failed",
             description: "Could not determine if content is suitable for calculative questions.",
           });
-          setCanGenerateCalculative(true); // Default to true if analysis fails
+          setCanGenerateCalculative(true);
         } finally {
           setIsAnalyzingContent(false);
         }
@@ -183,20 +192,14 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
             try {
                 const typedarray = new Uint8Array(arrayBuffer);
                 const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                
                 setParseProgress({ current: 0, total: pdf.numPages, message: "Analyzing PDF structure..." });
-                
                 const pagePromises = Array.from({ length: pdf.numPages }, (_, i) => pdf.getPage(i + 1));
                 const pages = await Promise.all(pagePromises);
-    
                 const analysisPromises = pages.map(async (page, i) => {
                   const textContent = await page.getTextContent();
                   const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ').trim();
-                  
                   const isLikelyImage = pageText.length < 100 || pageText.replace(/\s/g, '').length < 50;
-                  
                   setParseProgress(prev => ({ ...prev, current: i + 1, message: `Analyzing page ${i + 1}...` }));
-    
                   return {
                     pageNum: i + 1,
                     text: isLikelyImage ? null : pageText,
@@ -204,20 +207,16 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
                     page: page,
                   };
                 });
-                
                 const initialPageData = await Promise.all(analysisPromises);
                 setParseProgress({ current: pdf.numPages, total: pdf.numPages, message: "Analysis complete." });
-    
                 const pagesToOcr = initialPageData.filter(p => p.needsOcr);
                 const allPagesText = initialPageData.filter(p => !p.needsOcr).map(p => p.text as string);
-                
                 if (pagesToOcr.length > 0) {
                     setParseProgress({
                         current: 0,
                         total: pagesToOcr.length,
                         message: `Starting AI OCR for ${pagesToOcr.length} PDF pages...`
                     });
-
                     const ocrPromises = pagesToOcr.map(async (pageData, idx) => {
                         const page = pageData.page;
                         const viewport = page.getViewport({ scale: 2.0 });
@@ -226,15 +225,12 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
                         if (!context) return `[Canvas Error on page ${pageData.pageNum}]`;
                         canvas.height = viewport.height;
                         canvas.width = viewport.width;
-                        
                         const renderContext = { canvasContext: context, viewport: viewport };
                         await page.render(renderContext).promise;
-    
                         if (isCanvasBlank(canvas)) {
                             setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `Page ${pageData.pageNum} is blank, skipping OCR.` }));
                             return '';
                         }
-                        
                         try {
                            const { text } = await ocrImageWithFallback(canvas.toDataURL(), apiKey, incrementUsage);
                            setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `AI OCR for page ${pageData.pageNum} complete.` }));
@@ -246,18 +242,14 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
                            return `[OCR Error on page ${pageData.pageNum}: ${message.substring(0, 100)}...]`;
                         }
                     });
-
                     const ocrResults = await Promise.all(ocrPromises);
                     allPagesText.push(...ocrResults);
-
                     toast({
                       title: 'AI OCR Complete',
                       description: `Successfully processed ${pagesToOcr.length} image-based pages.`,
                     });
                 }
-                
                 return { content: allPagesText.join('\n\n---\n\n') };
-    
               } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 console.error("Error processing PDF:", error);
@@ -273,7 +265,6 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
               reader.readAsArrayBuffer(f);
             });
             if (!arrayBuffer) throw new Error(`Failed to read ${f.name}.`);
-
             try {
               const { value } = await mammoth.extractRawText({ arrayBuffer });
               return { content: value };
@@ -293,52 +284,38 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
   const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
-
     if (!apiKey) {
       setFileError("Please set your Gemini API key in the header before uploading files.");
       return;
     }
-
     const controller = new AbortController();
     setParsingController(controller);
-
     setFileError("");
     setIsParsing(true);
     setParseProgress({ current: 0, total: files.length, message: "Preparing to process files..." });
-    
     const fileList = Array.from(files);
     const newFiles = fileList.filter(f => !processedFiles.some(pf => pf.name === f.name));
     if(newFiles.length !== fileList.length) {
         toast({ title: "Duplicate files skipped."});
     }
-
     if (newFiles.length === 0) {
         setIsParsing(false);
         setParseProgress({ current: 0, total: 0, message: "" });
         return;
     }
-    
     let currentProcessedFiles = [...processedFiles];
-
     try {
       for (let i = 0; i < newFiles.length; i++) {
         if (controller.signal.aborted) throw new Error("Cancelled");
-        
         const file = newFiles[i];
         setParseProgress({ current: i + 1, total: newFiles.length, message: `Processing ${file.name}...` });
-        
         const { content } = await processFile(file);
-        
         if (controller.signal.aborted) throw new Error("Cancelled");
-
         currentProcessedFiles.push({ name: file.name, content });
       }
-      setProcessedFiles(currentProcessedFiles); // This will trigger the useEffect for LaTeX analysis
-
+      setProcessedFiles(currentProcessedFiles);
     } catch (error) {
-        if ((error as Error).message === "Cancelled") {
-            // No state change needed for files if cancelled during processing this batch
-        } else {
+        if ((error as Error).message === "Cancelled") { /* no state change */ } else {
             const message = String(error);
             setFileError(message);
             toast({ variant: "destructive", title: "File Processing Error", description: message });
@@ -349,24 +326,57 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
       setParseProgress({ current: 0, total: 0, message: "" });
       if (event.target) event.target.value = '';
     }
-  }, [processFile, apiKey, toast, processedFiles]); // `performLatexAnalysis` removed as it's in useEffect now
+  }, [processFile, apiKey, toast, processedFiles]);
   
-  const startQuiz = useCallback(async (values: any) => {
-    if (!apiKey) {
-      toast({
-        variant: "destructive",
-        title: "API Key Required",
-        description: "Please set your Gemini API key in the header before generating a quiz.",
-      });
+  const handleProblemImageChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setProblemImageFile(null);
+      setProblemImageDataUrl(null);
       return;
     }
-    
+
+    const validImageTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+    if (!validImageTypes.includes(file.type)) {
+      toast({ variant: "destructive", title: "Invalid File Type", description: "Please upload a valid image (PNG, JPG, WEBP, GIF)." });
+      setProblemImageFile(null);
+      setProblemImageDataUrl(null);
+      if (event.target) event.target.value = ''; // Reset file input
+      return;
+    }
+
+    setIsProcessingProblemImage(true);
+    setProblemImageFile(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProblemImageDataUrl(reader.result as string);
+      setIsProcessingProblemImage(false);
+    };
+    reader.onerror = () => {
+      toast({ variant: "destructive", title: "Image Read Error", description: "Could not read the image file." });
+      setProblemImageFile(null);
+      setProblemImageDataUrl(null);
+      setIsProcessingProblemImage(false);
+      if (event.target) event.target.value = ''; // Reset file input
+    };
+    reader.readAsDataURL(file);
+  }, [toast]);
+
+  const removeProblemImage = useCallback(() => {
+    setProblemImageFile(null);
+    setProblemImageDataUrl(null);
+    // Also reset the file input if we have a ref to it, but that's harder from the hook.
+    // The UI component will need to handle clearing its own input value if desired.
+  }, []);
+
+  const startQuiz = useCallback(async (values: any) => { // `values` comes from the react-hook-form
+    if (!apiKey) {
+      toast({ variant: "destructive", title: "API Key Required", description: "Please set your Gemini API key." });
+      return;
+    }
     if (processedFiles.length === 0) {
-        toast({
-            variant: "destructive",
-            title: "Content Missing",
-            description: "Please upload content before starting a quiz.",
-        });
+        toast({ variant: "destructive", title: "Content Missing", description: "Please upload content." });
         return;
     }
 
@@ -381,6 +391,17 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     setIsGeneratingState(true);
     setGenerationProgress({ current: 0, total: totalQuestions, message: '' });
 
+    let problemImagePayload: { problemImageBase64?: string; problemImageMimeType?: string } = {};
+    if (values.questionFormat === "problemSolving" && problemImageFile && problemImageDataUrl) {
+        const base64Data = problemImageDataUrl.split(',')[1];
+        if (base64Data) {
+            problemImagePayload = {
+                problemImageBase64: base64Data,
+                problemImageMimeType: problemImageFile.type
+            };
+        }
+    }
+
     try {
       setGenerationProgress(prev => ({ ...prev, total: totalQuestions, message: "Synthesizing key concepts..." }));
       const keyConceptsContext = await extractKeyConcepts({ files: processedFiles, apiKey });
@@ -393,13 +414,13 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
 
       for (let i = 0; i < totalQuestions; i += BATCH_SIZE) {
         if (controller.signal.aborted) throw new Error("Cancelled");
-
         const questionsInBatch = Math.min(BATCH_SIZE, totalQuestions - i);
         setGenerationProgress(prev => ({ ...prev, current: i, message: `Generating question batch ${Math.floor(i/BATCH_SIZE) + 1}...` }));
 
         const generatorFn = isHellBound ? generateHellBoundQuiz : generateQuiz;
         
-        let params: Omit<GenerateQuizInput, 'apiKey'> | Omit<GenerateHellBoundQuizInput, 'apiKey'>;
+        let params: Partial<GenerateQuizInput | GenerateHellBoundQuizInput> = {};
+
         if (isHellBound) {
           params = {
             context: keyConceptsContext,
@@ -413,13 +434,13 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
             difficulty: values.difficulty || 'Medium',
             questionFormat: values.questionFormat || 'multipleChoice',
             existingQuestions: existingQuestionTitles,
+            ...(values.questionFormat === "problemSolving" && problemImagePayload), // Spread image payload only if relevant
           };
         }
         
         const result = await (generatorFn as any)({...params, apiKey});
         incrementUsage();
 
-        // Log raw and final questions for debugging
         if (result && (result as any).rawAiOutputForDebugging) {
           console.log("RAW AI OUTPUT (Questions only, before filtering - from use-quiz-setup):", JSON.stringify((result as any).rawAiOutputForDebugging, null, 2));
         }
@@ -438,11 +459,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (controller.signal.aborted) throw new Error("Cancelled");
-
-      if (allQuestions.length === 0) {
-        throw new Error("The AI failed to generate any valid questions. Please check your content or settings and try again.");
-      }
-      
+      if (allQuestions.length === 0) throw new Error("The AI failed to generate any valid questions.");
       if (allQuestions.length < totalQuestions) {
         toast({
             title: "Quiz Adjusted",
@@ -455,23 +472,17 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
       setView('quiz');
 
     } catch (error) {
-      if ((error as Error).message === 'Cancelled') {
-        return;
-      }
+      if ((error as Error).message === 'Cancelled') return;
       console.error(error);
-      const message = error instanceof Error ? error.message : "Something went wrong. The AI might be busy, or the content was unsuitable. Please try again.";
-      toast({
-        variant: "destructive",
-        title: "Error Generating Quiz",
-        description: message,
-      });
+      const message = error instanceof Error ? error.message : "Quiz generation failed.";
+      toast({ variant: "destructive", title: "Error Generating Quiz", description: message });
       setView('setup');
     } finally {
       setIsGeneratingState(false);
       setGenerationController(null);
       setGenerationProgress({ current: 0, total: 0, message: '' });
     }
-  }, [apiKey, toast, processedFiles, isHellBound, incrementUsage]);
+  }, [apiKey, toast, processedFiles, isHellBound, incrementUsage, problemImageFile, problemImageDataUrl]);
 
   const submitQuiz = useCallback((answers: Record<number, string>) => {
     setUserAnswers(answers);
@@ -483,7 +494,10 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     setFileError('');
     setIsParsing(false);
     setParseProgress({ current: 0, total: 0, message: '' });
-    setCanGenerateCalculative(null); // Reset LaTeX analysis state
+    setCanGenerateCalculative(null);
+    setProblemImageFile(null); // Clear problem image
+    setProblemImageDataUrl(null); // Clear problem image preview
+    setIsProcessingProblemImage(false);
   }, []);
 
   const restartQuiz = useCallback(() => {
@@ -506,29 +520,22 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
         setQuiz(pastQuiz.quiz);
         setTimer(0);
         setUserAnswers(pastQuiz.userAnswers || {});
-
         const loadedFiles = [{ name: `Source for "${pastQuiz.title}"`, content: pastQuiz.sourceContent }];
-        setProcessedFiles(loadedFiles); // This will trigger useEffect for LaTeX analysis
-
-        if (mode === 'results') {
-          setView('results');
-        } else {
-          setView('quiz');
-        }
+        setProcessedFiles(loadedFiles);
+        setProblemImageFile(null); // Ensure problem image is cleared when loading from history
+        setProblemImageDataUrl(null);
+        if (mode === 'results') setView('results');
+        else setView('quiz');
       } else {
-        toast({ variant: "destructive", title: "History Not Found", description: "Could not find the specified quiz in your history." });
+        toast({ variant: "destructive", title: "History Not Found" });
       }
     } catch(e) {
-      toast({ variant: "destructive", title: "Load Error", description: "Failed to load quiz from history." });
+      toast({ variant: "destructive", title: "Load Error" });
     }
-  }, [toast]); // performLatexAnalysis removed from deps, handled by useEffect on processedFiles
+  }, [toast]);
 
   const removeFile = useCallback(async (fileNameToRemove: string) => {
-    setProcessedFiles(prev => {
-        const updatedFiles = prev.filter(file => file.name !== fileNameToRemove);
-        // No direct call to performLatexAnalysis here, useEffect will handle it.
-        return updatedFiles;
-    });
+    setProcessedFiles(prev => prev.filter(file => file.name !== fileNameToRemove));
   }, []);
 
   const stopParsing = useCallback(() => {
@@ -545,7 +552,6 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     toast({ title: "Quiz generation cancelled." });
   }, [generationController, toast]);
 
-
   const value = {
     processedFiles,
     fileError,
@@ -554,15 +560,21 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     handleFileChange,
     removeFile,
     stopParsing,
-    isAnalyzingContent, // Added to context
-    canGenerateCalculative, // Added to context
+    isAnalyzingContent,
+    canGenerateCalculative,
+
+    problemImageFile, // Added
+    problemImageDataUrl, // Added
+    isProcessingProblemImage, // Added
+    handleProblemImageChange, // Added
+    removeProblemImage, // Added
     
     view,
     quiz,
     userAnswers,
     generationProgress,
     timer,
-    isGenerating: isGeneratingState || isParsing || isAnalyzingContent, // Include isAnalyzingContent in overall busy state
+    isGenerating: isGeneratingState || isParsing || isAnalyzingContent || isProcessingProblemImage,
 
     startQuiz,
     submitQuiz,
