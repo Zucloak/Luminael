@@ -8,8 +8,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Check, X, Award, RotateCw, Pencil, Sparkles, BrainCircuit, CheckCircle, AlertCircle, XCircle, Save } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { Check, X, Award, RotateCw, Pencil, Sparkles, BrainCircuit, CheckCircle, AlertCircle, XCircle, Save, Loader2 } from 'lucide-react'; // Added Loader2
+import { useState, useEffect, useMemo, useCallback } from 'react'; // Added useCallback
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { useApiKey } from '@/hooks/use-api-key';
