@@ -14,11 +14,11 @@ const faqs = [
     },
     {
         question: "Is my API key secure?",
-        answer: "Absolutely. Your Google Gemini API key is stored exclusively in your browser's local storage. It is never sent to our servers or seen by us. It's used directly from your browser to make calls to Google's AI, ensuring your key remains private."
+        answer: "Absolutely. Your Google Gemini API key is stored exclusively in your browser's local storage. It is never sent to my servers (as Luminael operates without them for this purpose) or seen by me. It's used directly from your browser to make calls to Google's AI, ensuring your key remains private."
     },
     {
         question: "What file types are supported?",
-        answer: "You can upload text files (.txt), Markdown files (.md), Word documents (.docx), PDFs (.pdf), and common image files (.png, .jpg, .jpeg). For images and scanned PDFs, we use a combination of local and AI-powered text recognition (OCR) to extract the content."
+        answer: "You can upload text files (.txt), Markdown files (.md), Word documents (.docx), PDFs (.pdf), and common image files (.png, .jpg, .jpeg). For images and scanned PDFs, Luminael uses a combination of local and AI-powered text recognition (OCR) to extract the content."
     },
     {
         question: "What is Hell Bound Mode?",
@@ -26,7 +26,7 @@ const faqs = [
     },
     {
         question: "Who is SYNAPPSE?",
-        answer: "SYNAPPSE is the innovative digital creation company behind Luminael AI, founded and led by Mr. Ken Mosquera, We specialize in building intelligent applications and providing top-tier digital content and design services. You can learn more at synappse.vercel.app."
+        answer: "SYNAPPSE is the innovative digital creation company behind Luminael AI, founded and led by Mr. Ken Mosquera. I specialize in building intelligent applications and providing top-tier digital content and design services through SYNAPPSE. You can learn more at synappse.vercel.app."
     },
     {
         question: "How can I save my data or move it to another device/browser?",

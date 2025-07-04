@@ -182,7 +182,7 @@ export default function ProfilePage() {
             <CardHeader>
                 <CardTitle className="font-headline text-3xl">Welcome, Pioneer!</CardTitle>
                 <CardDescription>
-                You're at the forefront of AI-powered learning. Here's what's new and how we're building a smarter tool for you.
+                You're at the forefront of AI-powered learning. Here's what's new and how I'm building a smarter tool for you.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
@@ -297,14 +297,14 @@ export default function ProfilePage() {
                             <BrainCircuit className="h-5 w-5 mt-1 flex-shrink-0 text-muted-foreground" />
                             <div>
                                 <h4 className="font-semibold">Intelligent Content Processing</h4>
-                                <p className="text-sm text-muted-foreground">Luminael uses a hybrid approach to understand your files. We use powerful on-device processing first, only calling on advanced AI when necessary. This saves your Gemini API quota while delivering fast, accurate results.</p>
+                                <p className="text-sm text-muted-foreground">Luminael uses a hybrid approach to understand your files. It uses powerful on-device processing first, only calling on advanced AI when necessary. This saves your Gemini API quota while delivering fast, accurate results.</p>
                             </div>
                         </div>
                             <div className="flex items-start gap-3">
                             <ShieldCheck className="h-5 w-5 mt-1 flex-shrink-0 text-muted-foreground" />
                             <div>
                                 <h4 className="font-semibold">Your Privacy is Paramount</h4>
-                                <p className="text-sm text-muted-foreground">Your API key is stored exclusively in your browser—never on our servers. Uploaded study materials are processed for your quiz and then immediately discarded. Your data is yours alone.</p>
+                                <p className="text-sm text-muted-foreground">Your API key is stored exclusively in your browser—never on my servers (Luminael operates without them for this purpose). Uploaded study materials are processed for your quiz and then immediately discarded. Your data is yours alone.</p>
                             </div>
                         </div>
                     </div>

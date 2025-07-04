@@ -14,16 +14,29 @@ export default function PrivacyPolicyPage() {
 
       <section className="mb-8">
         <p>
-          Luminael AI (&quot;the Service,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is designed from the ground up to be a private, secure, client-side application. We believe you should own and control your data, always. This Privacy Policy explains our commitment to your privacy.
+          Luminael AI (&quot;the Service&quot;) is provided by me, Ken Mosquera (operating as SYNAPPSE). In this policy, references to &quot;I,&quot; &quot;me,&quot; and &quot;my&quot; refer to the provider of Luminael AI. I believe you should own and control your data, always. This Privacy Policy explains my commitment to your privacy.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">Scope of This Policy and Relation to SYNAPPSE</h2>
+        <p>
+          This Privacy Policy pertains specifically to your use of the Luminael AI application (&quot;the Service&quot;) and its data handling practices as described herein. Luminael AI is a product developed and maintained by Ken Mosquera (operating as SYNAPPSE).
+        </p>
+        <p>
+          While Luminael AI adheres to the principles of zero user data collection by its application servers (as detailed in this policy), please be aware that direct interactions with SYNAPPSE outside of the Luminael AI application—such as visiting the SYNAPPSE company website (synappse.vercel.app), contacting me for support via email, or other business communications—may be subject to different data handling practices. Any such practices would be covered by SYNAPPSE's own operational policies, separate from this Luminael AI product-specific policy.
+        </p>
+        <p>
+          For clarity: your use of the Luminael AI application remains governed by the strict privacy (no data collection by the application) principles outlined below.
         </p>
       </section>
 
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">The Luminael Privacy Guarantee</h2>
 
-        <h3 className="text-xl font-semibold mb-3 mt-5">We Do Not Collect Your Personal Data</h3>
+        <h3 className="text-xl font-semibold mb-3 mt-5">I Do Not Collect Your Personal Data</h3>
         <p>
-          Luminael operates without a traditional backend server or database for storing user-specific operational data related to your direct use of the core quiz generation features. This means we fundamentally cannot—and do not—collect, see, store, or repurpose any of your personal information or the content you process through the core functionalities. This includes:
+          Luminael operates without a traditional backend server or database for storing user-specific operational data related to your direct use of the core quiz generation features. This means I fundamentally cannot—and do not—collect, see, store, or repurpose any of your personal information or the content you process through the core functionalities. This includes:
         </p>
         <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
           <li>The content of your uploaded files (.txt, .pdf, .docx, images, etc.) used for quiz generation.</li>
@@ -39,7 +52,7 @@ export default function PrivacyPolicyPage() {
           You provide your own Google Gemini API key (or other compatible keys in the future) to power the AI features of the app. This key is stored <strong>exclusively in your browser&apos;s local storage (IndexedDB)</strong>.
         </p>
         <p>
-          It is <strong>never sent to our servers, and we have zero access to it.</strong> The API key is used directly by your browser to communicate with the Google API (or other third-party AI model providers you choose to use via their API key). This ensures complete confidentiality of your API key from Luminael.
+          It is <strong>never sent to my servers (Luminael AI operates without them for this purpose), and I have zero access to it.</strong> The API key is used directly by your browser to communicate with the Google API (or other third-party AI model providers you choose to use via their API key). This ensures complete confidentiality of your API key from Luminael.
         </p>
         <p>
           You are responsible for the security and management of your own API keys and for complying with the terms of service of the respective API providers (e.g., Google).
@@ -66,7 +79,7 @@ export default function PrivacyPolicyPage() {
           <li>Your saved quiz history (if you use the feature to save quizzes locally).</li>
         </ul>
         <p>
-          You have full control to review, delete, or clear this data at any time through your browser&apos;s developer tools and site settings. We believe in empowering you, and that starts with giving you complete ownership and control over information stored by the application on your own device.
+          You have full control to review, delete, or clear this data at any time through your browser&apos;s developer tools and site settings. I believe in empowering you, and that starts with giving you complete ownership and control over information stored by the application on your own device.
         </p>
       </section>
 
@@ -80,14 +93,14 @@ export default function PrivacyPolicyPage() {
       <section className="mb-8">
         <h3 className="text-xl font-semibold mb-3">Cookies and Analytics</h3>
         <p>
-          Luminael aims to minimize data collection. We may use essential cookies for basic website functionality. If we use any analytics services (e.g., for website traffic analysis), these services will be configured to respect user privacy, and we will not collect personally identifiable information through them. We do not use tracking cookies for advertising purposes.
+          Luminael aims to minimize data collection. I may use essential cookies for basic website functionality. If I use any analytics services (e.g., for website traffic analysis), these services will be configured to respect user privacy, and I will not collect personally identifiable information through them. I do not use tracking cookies for advertising purposes.
         </p>
       </section>
 
       <section className="mb-8">
         <h3 className="text-xl font-semibold mb-3">Changes to This Privacy Policy</h3>
         <p>
-          We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the &quot;Last Updated&quot; date. You are advised to review this Privacy Policy periodically for any changes.
+          I may update this Privacy Policy from time to time. Notification of any changes will be made by posting the new Privacy Policy on this page and updating the &quot;Last Updated&quot; date. You are advised to review this Privacy Policy periodically for any changes.
         </p>
       </section>
 
@@ -102,9 +115,9 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section className="mt-12 pt-6 border-t border-border">
-        <h2 className="text-2xl font-semibold mb-4 text-center font-headline">A Note to Our Friends at Google</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-center font-headline">A Note to My Friends at Google</h2>
         <p className="mb-3 text-center italic text-muted-foreground">
-          Luminael is an experiment in radical accessibility and educational empowerment. We believe everyone, everywhere, deserves the right to learn without barriers. By enabling users to leverage their own API keys, we are creating a decentralized, private, and powerful learning tool that respects user privacy and champions the universal right to education. We hope you see this project not as a circumvention, but as an innovation that aligns with the highest ideals of making information universally accessible and useful. Let&apos;s not hinder this journey; let&apos;s champion it together.
+          Luminael is an experiment in radical accessibility and educational empowerment. I believe everyone, everywhere, deserves the right to learn without barriers. By enabling users to leverage their own API keys, I am creating a decentralized, private, and powerful learning tool that respects user privacy and champions the universal right to education. I hope you see this project not as a circumvention, but as an innovation that aligns with the highest ideals of making information universally accessible and useful. Let&apos;s not hinder this journey; let&apos;s champion it together.
         </p>
       </section>
     </div>
