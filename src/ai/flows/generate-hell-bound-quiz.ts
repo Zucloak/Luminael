@@ -17,6 +17,7 @@ import {
   GenerateHellBoundQuizInput,
   GenerateHellBoundQuizOutputSchema, // This is an alias of GenerateQuizOutputSchema in types.ts
   GenerateHellBoundQuizOutput,
+  OpenEndedQuestion, // Added import for the OpenEndedQuestion type
   // QuestionSchema, // Individual question schemas are part of GenerateHellBoundQuizOutputSchema
   // MultipleChoiceQuestionSchema,
   // ProblemSolvingQuestionSchema,
@@ -119,37 +120,45 @@ You MUST provide your response in the specified JSON format. Failure is not an o
 
             // Handle misclassified MultipleChoice questions (e.g., with "string" or "No options provided" options)
             if (output.quiz && output.quiz.questions) {
-              output.quiz.questions.forEach(q => {
+              output.quiz.questions = output.quiz.questions.map(q => {
                 if (q.questionType === 'multipleChoice') {
+                  let isMisclassified = false;
                   if (q.options && q.options.length > 0) {
                     const allOptionsArePlaceholders = q.options.every(opt => {
                       const optText = (opt || "").trim().toLowerCase();
-                      // Check for common placeholder patterns
                       return optText === "string" ||
                              optText.startsWith("no options provided") ||
                              optText.startsWith("placeholder") ||
                              optText.includes("lorem ipsum");
                     });
-
                     if (allOptionsArePlaceholders) {
-                      q.questionType = 'openEnded'; // Reclassify
-                      delete (q as any).options;    // Remove faulty options array
-                      console.warn(`[generateHellBoundQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") converted to openEnded due to placeholder options.`);
+                      isMisclassified = true;
+                      console.warn(`[generateHellBoundQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") identified with placeholder options.`);
                     } else {
                       // Check for duplicate options within this specific question's options array
                       const uniqueOptions = new Set(q.options.map(opt => (opt || "").trim()));
                       if (uniqueOptions.size < q.options.length) {
                         console.warn(`[generateHellBoundQuizFlow] Question (title: "${q.question.substring(0, 30)}...") has duplicate options. The AI should provide distinct options.`);
-                        // Potentially filter this question or attempt to de-duplicate if critical
                       }
                     }
                   } else if (!q.options || q.options.length === 0) {
-                    // If MC question has no options array or empty options, also treat as misclassified openEnded
-                    q.questionType = 'openEnded';
-                    delete (q as any).options;
-                    console.warn(`[generateHellBoundQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") converted to openEnded due to missing/empty options.`);
+                    isMisclassified = true;
+                    console.warn(`[generateHellBoundQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") identified with missing/empty options.`);
+                  }
+
+                  if (isMisclassified) {
+                    // Create a new OpenEndedQuestion object
+                    // Ensure OpenEndedQuestion is imported from '@/lib/types'
+                    const { question, answer } = q; // Destructure relevant fields
+                    const newOpenEndedQuestion: OpenEndedQuestion = { // Explicitly type
+                      questionType: 'openEnded',
+                      question,
+                      answer,
+                    };
+                    return newOpenEndedQuestion;
                   }
                 }
+                return q; // Return original question if no transformation needed
               });
             }
 

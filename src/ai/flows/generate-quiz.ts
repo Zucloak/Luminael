@@ -19,6 +19,7 @@ import {
   GenerateQuizInput,
   GenerateQuizOutputSchema,
   GenerateQuizOutput,
+  OpenEndedQuestion, // Added import for the OpenEndedQuestion type
   // Individual question schemas are used by GenerateQuizOutputSchema which is imported
   // MultipleChoiceQuestionSchema,
   // ProblemSolvingQuestionSchema,
@@ -192,38 +193,45 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
 
             // Handle misclassified MultipleChoice questions (e.g., with "string" or "No options provided" options)
             if (output.quiz && output.quiz.questions) {
-              output.quiz.questions.forEach(q => {
+              output.quiz.questions = output.quiz.questions.map(q => {
                 if (q.questionType === 'multipleChoice') {
+                  let isMisclassified = false;
                   if (q.options && q.options.length > 0) {
                     const allOptionsArePlaceholders = q.options.every(opt => {
                       const optText = (opt || "").trim().toLowerCase();
-                      // Check for common placeholder patterns
                       return optText === "string" ||
                              optText.startsWith("no options provided") ||
                              optText.startsWith("placeholder") ||
                              optText.includes("lorem ipsum");
                     });
-
                     if (allOptionsArePlaceholders) {
-                      q.questionType = 'openEnded'; // Reclassify
-                      delete (q as any).options;    // Remove faulty options array
-                      console.warn(`[generateQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") converted to openEnded due to placeholder options.`);
+                      isMisclassified = true;
+                      console.warn(`[generateQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") identified with placeholder options.`);
                     } else {
                       // Check for duplicate options within this specific question's options array
                       const uniqueOptions = new Set(q.options.map(opt => (opt || "").trim()));
                       if (uniqueOptions.size < q.options.length) {
                         console.warn(`[generateQuizFlow] Question (title: "${q.question.substring(0, 30)}...") has duplicate options. The AI should provide distinct options.`);
-                        // Potentially filter this question or attempt to de-duplicate if critical
-                        // For now, logging and relying on AI prompt for distinctness.
                       }
                     }
                   } else if (!q.options || q.options.length === 0) {
-                    // If MC question has no options array or empty options, also treat as misclassified openEnded
-                    q.questionType = 'openEnded';
-                    delete (q as any).options;
-                    console.warn(`[generateQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") converted to openEnded due to missing/empty options.`);
+                    isMisclassified = true;
+                    console.warn(`[generateQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") identified with missing/empty options.`);
+                  }
+
+                  if (isMisclassified) {
+                    // Create a new OpenEndedQuestion object
+                    // Ensure OpenEndedQuestion is imported from '@/lib/types' if not already
+                    const { question, answer } = q; // Destructure relevant fields from original `q`
+                    const newOpenEndedQuestion: OpenEndedQuestion = {
+                      questionType: 'openEnded',
+                      question,
+                      answer, // Assuming the original 'answer' field contains the open-ended answer
+                    };
+                    return newOpenEndedQuestion; // Replace the old question with the new one
                   }
                 }
+                return q; // Return original question if no transformation needed
               });
             }
 
