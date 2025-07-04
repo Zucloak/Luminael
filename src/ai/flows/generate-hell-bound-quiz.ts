@@ -164,7 +164,8 @@ You MUST provide your response in the specified JSON format. Failure is not an o
 
             // Correction for "Option A" style answers BEFORE delimiter replacement
             if (output.quiz && output.quiz.questions) {
-              output.quiz.questions.forEach(q => {
+              // Note: output.quiz.questions might have been re-assigned by the .map() above
+              output.quiz.questions.forEach(q => { // .forEach is fine here
                 if (q.questionType === 'multipleChoice' && q.options && q.options.length > 0 && q.answer) {
                   const answerText = q.answer.trim().toLowerCase();
                   let correctedAnswer = q.answer;
@@ -179,11 +180,24 @@ You MUST provide your response in the specified JSON format. Failure is not an o
                   }
                   q.answer = correctedAnswer;
                 }
+
+                // Additional check: After "Option A/B/C/D" correction, does the answer match an option?
+                if (q.questionType === 'multipleChoice') {
+                    const currentAnswer = typeof q.answer === 'string' ? q.answer : '';
+                    // Ensure q.options is an array of strings. It might have been deleted if question was reclassified.
+                    const currentOptions = (Array.isArray((q as any).options) ? (q as any).options.filter((opt: any) => typeof opt === 'string') : []) as string[];
+
+                    if (currentOptions.length > 0 && !currentOptions.includes(currentAnswer)) {
+                        console.warn(`[generateHellBoundQuizFlow] AI Adherence Warning for question (title: "${q.question.substring(0, 30)}..."): The AI's answer "${currentAnswer}" does not exactly match any of the options: ${JSON.stringify(currentOptions)}. The AI is expected to provide an answer that is an exact textual match to one of the options.`);
+                        // No programmatic change to q.answer here.
+                    }
+                }
               });
             }
 
             // Apply delimiter replacement to all relevant fields
             if (output.quiz && output.quiz.questions) {
+               // Note: output.quiz.questions might have been re-assigned by the .map()
               output.quiz.questions.forEach(q => {
                 if (q.question) q.question = replaceLatexDelimiters(q.question);
                 if (q.answer) q.answer = replaceLatexDelimiters(q.answer);
