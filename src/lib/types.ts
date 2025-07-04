@@ -140,3 +140,12 @@ export const GenerateHellBoundQuizOutputSchema = GenerateQuizOutputSchema; //Thi
 // The flow will import GenerateQuizOutputSchema and use it.
 // We need to export GenerateHellBoundQuizOutput type for the function signature.
 export type GenerateHellBoundQuizOutput = GenerateQuizOutput; // Use existing GenerateQuizOutput type
+
+// Data structure for local device data export/import
+export const USER_DEVICE_DATA_VERSION = 1;
+
+export interface UserDeviceData {
+  dataVersion: typeof USER_DEVICE_DATA_VERSION;
+  userProfile: UserProfile | null;
+  pastQuizzes: PastQuiz[];
+}

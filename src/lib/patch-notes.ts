@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { ShieldCheck, Zap, Rocket, Bug, Gem, Settings2, ImageUp, ListChecks } from 'lucide-react'; // Added Settings2, ImageUp, ListChecks
+import { ShieldCheck, Zap, Rocket, Bug, Gem, Settings2, ImageUp, ListChecks, HardDriveDownload } from 'lucide-react'; // Added Settings2, ImageUp, ListChecks, HardDriveDownload
 
 export interface PatchNote {
     icon: LucideIcon;
@@ -15,6 +15,25 @@ export interface PatchVersion {
 }
 
 export const patchNotes: PatchVersion[] = [
+    {
+      version: '1.2.3', // Assuming next version
+      title: 'Local Data Management & Continued Refinements',
+      date: 'August 2024', // Placeholder, update with actual release month/year
+      notes: [
+        {
+          icon: HardDriveDownload,
+          category: 'Feature',
+          text: "Introducing Local Data Management! Save your profile and quiz history to your device and load it back anytime. Find this feature on your Profile page."
+        },
+        // Add other notes for 1.2.3 if any, or this could be a focused release
+        // For example, if other minor fixes went in:
+        // {
+        //   icon: Bug,
+        //   category: 'Fix',
+        //   text: 'Minor UI adjustments on the quiz interface.'
+        // },
+      ]
+    },
     {
       version: '1.2.2',
       title: 'Eco Mode & Enhanced Interactivity',
