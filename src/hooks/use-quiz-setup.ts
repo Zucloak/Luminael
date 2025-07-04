@@ -419,6 +419,14 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
         const result = await (generatorFn as any)({...params, apiKey});
         incrementUsage();
 
+        // Log raw and final questions for debugging
+        if (result && (result as any).rawAiOutputForDebugging) {
+          console.log("RAW AI OUTPUT (Questions only, before filtering - from use-quiz-setup):", JSON.stringify((result as any).rawAiOutputForDebugging, null, 2));
+        }
+        if (result && result.quiz && result.quiz.questions) {
+          console.log("FINAL Quiz Questions (After potential filtering - from use-quiz-setup):", JSON.stringify(result.quiz.questions, null, 2));
+        }
+
         if (result && result.quiz && Array.isArray(result.quiz.questions)) {
           const newQuestions = result.quiz.questions.filter((q: Question) => q && q.question && q.question.trim() !== '');
           allQuestions = [...allQuestions, ...newQuestions];

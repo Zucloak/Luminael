@@ -166,6 +166,9 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                 throw new Error("The AI failed to generate a quiz. It returned an empty or invalid response.");
             }
 
+            // Capture raw questions for debugging BEFORE filtering
+            const rawQuestionsForDebug = JSON.parse(JSON.stringify(output.quiz?.questions || []));
+
             // Post-generation filtering for 'problemSolving' mode as a safeguard
             if (questionFormat === 'problemSolving' && output.quiz && output.quiz.questions) {
                 const originalCount = output.quiz.questions.length;
@@ -200,6 +203,9 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                 }
             }
             // For 'mixed' mode, no filtering is applied by default as it's expected to have various types.
+
+            // Add the raw (pre-filtering) questions to the output for debugging
+            (output as any).rawAiOutputForDebugging = rawQuestionsForDebug;
 
             return output; // Success
         } catch (error) {

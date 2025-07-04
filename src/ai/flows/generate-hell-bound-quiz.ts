@@ -101,6 +101,11 @@ You MUST provide your response in the specified JSON format. Failure is not an o
             if (!output) {
               throw new Error("The AI failed to generate the Hell Bound quiz. It returned an empty or invalid response.");
             }
+
+            // Capture raw questions for debugging
+            const rawQuestionsForDebug = JSON.parse(JSON.stringify(output.quiz?.questions || []));
+            (output as any).rawAiOutputForDebugging = rawQuestionsForDebug;
+
             return output; // Success
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
