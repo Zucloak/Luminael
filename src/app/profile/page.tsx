@@ -218,7 +218,21 @@ export default function ProfilePage() {
                                                 <CartesianGrid strokeDasharray="3 3" opacity={0.5}/>
                                                 <XAxis dataKey="date" fontSize={10} />
                                                 <YAxis domain={[0, 100]} fontSize={10}/>
-                                                <Tooltip contentStyle={{ fontSize: '12px', padding: '2px 8px' }} formatter={(value: number | null, name: string, props: any) => [`${value}% on ${props.payload.quizCountWithScores} quiz(zes)`, "Avg Score"]} />
+                                                <Tooltip
+                                                    contentStyle={{ fontSize: '12px', padding: '2px 8px' }}
+                                                    formatter={(value: any, name: any, entry: any) => {
+                                                        if (name === "Avg Score") {
+                                                            const payload = entry.payload as AverageScoreDataPoint;
+                                                            if (payload && typeof payload.averageScore === 'number') {
+                                                                return [`${payload.averageScore}% on ${payload.quizCountWithScores} quiz(zes)`, name];
+                                                            } else if (payload && payload.averageScore === null) {
+                                                                return [`N/A (${payload.quizCountWithScores} quiz(zes) with no score)`, name];
+                                                            }
+                                                            return ["N/A", name];
+                                                        }
+                                                        return [value, name];
+                                                    }}
+                                                />
                                                 <Line type="monotone" dataKey="averageScore" name="Avg Score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
                                             </LineChart>
                                         </ResponsiveContainer>
