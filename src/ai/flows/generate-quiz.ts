@@ -100,7 +100,7 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
 `;
     } else {
       // Existing comprehensive prompt for multipleChoice, openEnded, mixed
-      activePrompt = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
+      activePromptText = `You are an expert AI educator. Your task is to generate a quiz based on the **Key Concepts** provided below.
 
 **Key Concepts:**
 ${context}
