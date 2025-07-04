@@ -57,13 +57,14 @@ const generateQuizFlow = ai.defineFlow(
 ${context}
 
 ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piece of mathematical notation, variable, formula, number, or expression (e.g., \`q_1 = 2 \\times 10^{-6} \\text{ C}\`, \`5 \\times 10^{-6} \\text{ C}\`, \`x^2\`, \`v_final\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters. This applies to question text, all multiple-choice options, and all parts of answers. NO EXCEPTIONS.
-- Inline Math: Use SINGLE dollar signs: \`\\$...\\$\`.
-  CORRECT Example for your output: \`\\$(q_1 = 2 \\\\times 10^{-6} \\\\text{ C})\\$\`
-  CORRECT Example for your output: \`A charge of \\$(5 \\\\times 10^{-6} \\\\text{ C})\\$ is moved...\`
-  CORRECT Example for your output: \`...electric field of strength \\$(10^4 \\\\text{ N/C})\\$... \`
+- Use ONLY Dollar Sign Delimiters: For INLINE MATH, you MUST use \`\\$...\\$\`. For DISPLAY MATH, you MUST use \`\\$\\$...\\$\\$\`.
+- ABSOLUTELY DO NOT use \`\\\\(...\\\\)\` or \`\\\\[...\\\\]\` as math delimiters. Using parenthesis-based delimiters is a FAILURE.
+  CORRECT Example for your output: \`\\$q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\$\`
+  CORRECT Example for your output: \`A charge of \\$5 \\\\times 10^{-6} \\\\text{ C}\\$ is moved...\`
+  CORRECT Example for your output: \`...electric field of strength \\$10^4 \\\\text{ N/C}\\$... \`
   INCORRECT (MISSING DOLLAR SIGNS!): \`(q_1 = 2 \\times 10^{-6} \\text{ C})\`
-- Display Math: Use DOUBLE dollar signs: \`\\$\\$...\\$\\$\`.
-FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
+  INCORRECT (WRONG DELIMITERS!): \`\\\\(q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\\\)\`
+FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
 
 **ABSOLUTE NON-NEGOTIABLE RULES FOR THIS TASK (Problem Solving Questions ONLY):**
 1.  **ONLY 'problemSolving' Questions**: Every single question you generate MUST be a procedural, computation-based problem that requires a step-by-step derivation to reach a numeric or symbolic answer. Each question's \`questionType\` field MUST be set to exactly \`problemSolving\`.
@@ -99,13 +100,14 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
 ${context}
 
 ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piece of mathematical notation, variable, formula, number, or expression (e.g., \`q_1 = 2 \\times 10^{-6} \\text{ C}\`, \`5 \\times 10^{-6} \\text{ C}\`, \`x^2\`, \`v_final\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters. This applies to question text, all multiple-choice options, and all parts of answers. NO EXCEPTIONS.
-- Inline Math: Use SINGLE dollar signs: \`\\$...\\$\`.
-  CORRECT Example for your output: \`\\$(q_1 = 2 \\\\times 10^{-6} \\\\text{ C})\\$\`
-  CORRECT Example for your output: \`A charge of \\$(5 \\\\times 10^{-6} \\\\text{ C})\\$ is moved...\`
-  CORRECT Example for your output: \`...electric field of strength \\$(10^4 \\\\text{ N/C})\\$... \`
+- Use ONLY Dollar Sign Delimiters: For INLINE MATH, you MUST use \`\\$...\\$\`. For DISPLAY MATH, you MUST use \`\\$\\$...\\$\\$\`.
+- ABSOLUTELY DO NOT use \`\\\\(...\\\\)\` or \`\\\\[...\\\\]\` as math delimiters. Using parenthesis-based delimiters is a FAILURE.
+  CORRECT Example for your output: \`\\$q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\$\`
+  CORRECT Example for your output: \`A charge of \\$5 \\\\times 10^{-6} \\\\text{ C}\\$ is moved...\`
+  CORRECT Example for your output: \`...electric field of strength \\$10^4 \\\\text{ N/C}\\$... \`
   INCORRECT (MISSING DOLLAR SIGNS!): \`(q_1 = 2 \\times 10^{-6} \\text{ C})\`
-- Display Math: Use DOUBLE dollar signs: \`\\$\\$...\\$\\$\`.
-FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
+  INCORRECT (WRONG DELIMITERS!): \`\\\\(q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\\\)\`
+FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
 
 **NON-NEGOTIABLE RULES (for 'multipleChoice', 'openEnded', 'mixed' formats):**
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
