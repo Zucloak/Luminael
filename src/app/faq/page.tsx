@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { HelpCircle } from "lucide-react";
@@ -14,11 +13,11 @@ const faqs = [
     },
     {
         question: "Is my API key secure?",
-        answer: "Absolutely. Your Google Gemini API key is stored exclusively in your browser's local storage. It is never sent to our servers or seen by us. It's used directly from your browser to make calls to Google's AI, ensuring your key remains private."
+        answer: "Absolutely. Your Google Gemini API key is stored exclusively in your browser's local storage. It is never sent to my servers (as Luminael operates without them for this purpose) or seen by me. It's used directly from your browser to make calls to Google's AI, ensuring your key remains private."
     },
     {
         question: "What file types are supported?",
-        answer: "You can upload text files (.txt), Markdown files (.md), Word documents (.docx), PDFs (.pdf), and common image files (.png, .jpg, .jpeg). For images and scanned PDFs, we use a combination of local and AI-powered text recognition (OCR) to extract the content."
+        answer: "You can upload text files (.txt), Markdown files (.md), Word documents (.docx), PDFs (.pdf), and common image files (.png, .jpg, .jpeg). For images and scanned PDFs, Luminael uses a combination of local and AI-powered text recognition (OCR) to extract the content."
     },
     {
         question: "What is Hell Bound Mode?",
@@ -42,7 +41,7 @@ export default function FaqPage() {
                 <HelpCircle className="h-10 w-10 text-primary" />
                 <CardTitle className="font-headline text-3xl mt-4">Frequently Asked Questions</CardTitle>
                 <CardDescription>
-                    Have questions? We've got answers.
+                    Have questions? I've got answers.
                 </CardDescription>
             </CardHeader>
             <CardContent>
