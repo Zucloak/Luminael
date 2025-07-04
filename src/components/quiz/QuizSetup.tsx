@@ -72,6 +72,8 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     stopParsing,
     isAnalyzingContent,
     canGenerateCalculative,
+    isEcoModeActive, // Added isEcoModeActive
+    toggleEcoMode,   // Added toggleEcoMode
     // Problem Image specific states and handlers are removed from destructuring
   } = useQuizSetup();
   
