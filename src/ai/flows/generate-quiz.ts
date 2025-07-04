@@ -85,9 +85,11 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, WILL RESULT
     *   Standard Commands: Use standard LaTeX commands (e.g., \`\\\\sin\`, \`\\\\cos\`, \`\\\\frac{}{}\`, \`\\\\sqrt{}\`, \`\\\\sum_{i=0}^{n}\`, \`\\\\int_{a}^{b}\`, \`\\\\vec{F}\`, \`\\\\alpha\`, \`\\\\beta\`, \`\\\\Delta\`). For example, write \`\\$x = a \\\\sin \\theta\\$\` instead of \`x = a sin θ\`.
     *   Escaping Special LaTeX Characters: If characters like \`#\`, \`_\`, \`^\`, \`{\`, \`}\` are needed as literal text *within* a math environment, they might need escaping (e.g., \`\\\\_\`, \`\\\\{\`). However, for math symbols, use LaTeX commands.
     *   Clarity for Renderer: Ensure there are no ambiguous constructions. For instance, make sure fractions are clearly denoted \`\\\\frac{numerator}{denominator}\`. Ensure matrices or multi-line equations use appropriate LaTeX environments (e.g., \`pmatrix\`, \`align\`, \`cases\`).
+    *   VALIDATE CHARACTER ENCODING: Ensure all output uses standard character encodings (like UTF-8). Avoid non-standard Unicode characters, invisible characters, or control characters within or immediately adjacent to LaTeX code, as these can silently break rendering. Stick to standard keyboard characters and defined LaTeX commands.
+    *   When using \`\\\\text{...}\`, the content inside should be simple text. If special characters are needed inside \`\\\\text{}\`, ensure they are compatible with LaTeX text mode or consider alternative phrasings.
     *   DO NOT use Markdown for math. Only use LaTeX within dollar signs.
     *   DO NOT use non-standard or custom LaTeX commands.
-    *   DO NOT use parentheses for math delimiters like \`\\(\` or \`\\)\`. Only use dollar signs.
+    *   DO NOT use parentheses for math delimiters like \`\\\\(\` or \`\\\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
 
 **Output Format Mandate:**
