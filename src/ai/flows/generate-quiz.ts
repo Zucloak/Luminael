@@ -92,6 +92,11 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EX
     *   DO NOT use non-standard or custom LaTeX commands.
     *   DO NOT use parentheses for math delimiters like \`\\\\(\` or \`\\\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
+    *   BOXED ANSWERS: When using the \`\\\\boxed{...}\` command for final answers in problem-solving solutions, ensure this command and its argument are themselves enclosed within display math delimiters, like so: \`\\$\\$\\\\boxed{your final answer}\\$\\$\`.
+
+**LISTS AND STEPS: IMPORTANT FORMATTING:**
+For any step-by-step explanations, derivations, or itemized lists in your answers, YOU MUST use standard Markdown numbered lists (e.g., \`1. First step.\\n2. Second step with math \\$x=y\\$.\`).
+DO NOT use LaTeX environments like \`\\\\begin{enumerate}\`, \`\\\\end{enumerate}\`, \`\\\\begin{itemize}\`, or \`\\\\item\`. Use Markdown numbering. Any LaTeX math *within* a Markdown list item must still be correctly delimited with dollar signs.
 
 **Output Format Mandate:**
 You MUST provide your response as a JSON object that strictly conforms to the GenerateQuizOutputSchema, containing a 'quiz' object, which in turn contains a 'questions' array. EACH question object in this array MUST be a ProblemSolvingQuestionSchema object.
@@ -150,6 +155,11 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EX
     *   DO NOT use non-standard or custom LaTeX commands.
     *   DO NOT use parentheses for math delimiters like \`\\(\` or \`\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
+    *   BOXED ANSWERS: When using the \`\\\\boxed{...}\` command for final answers in problem-solving solutions, ensure this command and its argument are themselves enclosed within display math delimiters, like so: \`\\$\\$\\\\boxed{your final answer}\\$\\$\`.
+
+**LISTS AND STEPS: IMPORTANT FORMATTING:**
+For any step-by-step explanations, derivations, or itemized lists in your answers, YOU MUST use standard Markdown numbered lists (e.g., \`1. First step.\\n2. Second step with math \\$x=y\\$.\`).
+DO NOT use LaTeX environments like \`\\\\begin{enumerate}\`, \`\\\\end{enumerate}\`, \`\\\\begin{itemize}\`, or \`\\\\item\`. Use Markdown numbering. Any LaTeX math *within* a Markdown list item must still be correctly delimited with dollar signs.
 
 **Output Format Mandate:**
 You MUST provide your response as a JSON object that strictly conforms to the GenerateQuizOutputSchema.
