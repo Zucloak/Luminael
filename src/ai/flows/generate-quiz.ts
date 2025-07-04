@@ -40,7 +40,7 @@ const generateQuizFlow = ai.defineFlow(
     inputSchema: GenerateQuizInputSchema, // Use imported schema
     outputSchema: GenerateQuizOutputSchema, // Use imported schema
   },
-  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey, problemImageBase64, problemImageMimeType }: GenerateQuizInput): Promise<GenerateQuizOutput> => {
+  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey, problemSpecificOcrText, problemImageBase64, problemImageMimeType }: GenerateQuizInput): Promise<GenerateQuizOutput> => {
     if (!apiKey || apiKey.trim() === '') {
       throw new Error("A valid API Key is required for generateQuizFlow but was not provided or was empty.");
     }
@@ -55,10 +55,16 @@ const generateQuizFlow = ai.defineFlow(
     if (questionFormat === 'problemSolving') {
       activePromptText = `You are an AI assistant laser-focused on generating calculative problems. Your SOLE task is to generate exactly ${numQuestions} procedural, computation-based problems based on the **Key Concepts** provided below.
 
-**Key Concepts:**
+**SOURCE MATERIAL FOR PROBLEM:**
+
+**SOURCE MATERIAL FOR PROBLEM:**
+
+**General Key Concepts (from documents):**
 ${context}
 
-IMAGE CONTEXT (If Provided): An image may accompany the Key Concepts. If an image is part of the input, you MUST use the visual information (diagrams, graphs, schematics, data presented visually, etc.) in conjunction with the textual Key Concepts to formulate your calculative problem and its detailed step-by-step solution. Explicitly reference or describe relevant parts of the image if it helps in understanding or solving the problem.
+${problemSpecificOcrText ? `**Additional Problem-Specific Text (from user-uploaded image - THIS IS HIGH PRIORITY for the problem's direct details):**\n${problemSpecificOcrText}\n` : '**No additional problem-specific image text was provided.**'}
+
+Use ALL provided source material above to formulate your calculative problem. If 'Problem-Specific Text' is available, it often contains the direct data or scenario for the problem and should be heavily prioritized.
 
 ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piece of mathematical notation, variable, formula, number, or expression (e.g., \`q_1 = 2 \\times 10^{-6} \\text{ C}\`, \`5 \\times 10^{-6} \\text{ C}\`, \`x^2\`, \`v_final\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters. This applies to question text, all multiple-choice options, and all parts of answers. NO EXCEPTIONS.
 - Use ONLY Dollar Sign Delimiters: For INLINE MATH, you MUST use \`\\$...\\$\`. For DISPLAY MATH, you MUST use \`\\$\\$...\\$\\$\`.
@@ -158,11 +164,8 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
     }
 
     // Construct the final prompt payload for Genkit
-    if (questionFormat === 'problemSolving' && problemImageBase64 && problemImageMimeType) {
-      finalPromptPayload = [{ text: activePromptText }, { inlineData: { mimeType: problemImageMimeType, data: problemImageBase64 } }];
-    } else {
-      finalPromptPayload = activePromptText;
-    }
+    // No longer multi-modal for this flow based on new requirements; image is OCR'd to text first.
+    finalPromptPayload = activePromptText;
         
     const maxRetries = 3;
     const initialDelay = 2000;
@@ -204,6 +207,10 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                 const filteredCount = output.quiz.questions.length;
                 if (filteredCount < originalCount) {
                     console.warn(`[generateQuizFlow] Filtered out ${originalCount - filteredCount} non-problemSolving questions for 'problemSolving' mode.`);
+                }
+                // If problem-specific OCR text was provided for problem solving, flag the questions
+                if (problemSpecificOcrText && problemSpecificOcrText.trim() !== "") {
+                    output.quiz.questions.forEach(q => ((q as any).hadProblemSpecificOcrText = true));
                 }
             }
             // Post-generation filtering for 'multipleChoice' mode
