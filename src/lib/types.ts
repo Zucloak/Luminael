@@ -149,3 +149,21 @@ export interface UserDeviceData {
   userProfile: UserProfile | null;
   pastQuizzes: PastQuiz[];
 }
+
+// Data structures for analytics
+export interface QuizCountDataPoint {
+  date: string; // e.g., "YYYY-Www" for year-week or "YYYY-MM" for year-month
+  count: number;
+}
+
+export interface AverageScoreDataPoint {
+  date: string; // e.g., "YYYY-Www" for year-week or "YYYY-MM" for year-month
+  averageScore: number | null; // Null if no quizzes with scores in this period
+  quizCountWithScores: number; // Number of quizzes that contributed to this average
+}
+
+export interface QuizAnalyticsData {
+  quizCountsPerWeek: QuizCountDataPoint[];
+  averageScoresPerWeek: AverageScoreDataPoint[];
+  // We can extend this with monthly data or other aggregations later if needed
+}

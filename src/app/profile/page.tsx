@@ -4,11 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { aggregateAllUserData, restoreAllUserData } from "@/lib/userDataManager";
-import type { UserDeviceData } from "@/lib/types";
-import { BrainCircuit, Sparkles, ShieldCheck, Mail, History, KeyRound, Save, FolderOpen, Loader2, HardDriveDownload, HardDriveUpload } from 'lucide-react';
+import { getPastQuizzes } from "@/lib/indexed-db"; // For fetching quiz data
+import { calculateQuizAnalytics } from "@/lib/analyticsUtils"; // For calculating analytics
+import type { UserDeviceData, QuizAnalyticsData, PastQuiz } from "@/lib/types"; // Include new types
+import { BrainCircuit, Sparkles, ShieldCheck, Mail, History, KeyRound, Save, FolderOpen, Loader2, HardDriveDownload, LineChart as LineChartIcon, BarChart2 } from 'lucide-react'; // Added LineChartIcon, BarChart2, removed HardDriveUpload
 import { patchNotes } from '@/lib/patch-notes';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'; // Recharts components
 import { cn } from "@/lib/utils";
 import React, { useState, useRef, useEffect } from 'react';
 
@@ -22,23 +25,38 @@ export default function ProfilePage() {
   const [directoryHandle, setDirectoryHandle] = useState<DirectoryHandle | null>(null);
   const [directoryName, setDirectoryName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [analyticsData, setAnalyticsData] = useState<QuizAnalyticsData | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
 
-  // Persist and load directory handle - this is a simplified example.
-  // For robust persistence, IndexedDB is recommended for directory handles.
+  // Effect for loading directory name (from local data management)
   useEffect(() => {
-    const storedHandle = localStorage.getItem("luminaelDirectoryHandle"); // This was a conceptual check, actual handle isn't stored here.
     const storedName = localStorage.getItem("luminaelDirectoryName");
-    // Check for API support using 'in' operator to avoid TypeScript build errors
     if (storedName && ('showDirectoryPicker' in window)) {
-        // This is a placeholder. True restoration of a serialized handle is complex
-        // and often not possible directly from localStorage for security reasons.
-        // A real implementation would need to re-request permission or use IndexedDB.
-        // For now, we just store the name as an indicator.
-        // setDirectoryHandle(JSON.parse(storedHandle)); // This wouldn't work directly
         setDirectoryName(storedName);
-        // Consider prompting to re-verify permission if handle is "loaded"
     }
   }, []);
+
+  // Effect for loading and calculating quiz analytics
+  useEffect(() => {
+    async function loadAndProcessAnalytics() {
+      setIsLoadingAnalytics(true);
+      try {
+        const pastQuizzes = await getPastQuizzes();
+        if (pastQuizzes && pastQuizzes.length > 0) {
+          const calculatedData = calculateQuizAnalytics(pastQuizzes);
+          setAnalyticsData(calculatedData);
+        } else {
+          setAnalyticsData({ quizCountsPerWeek: [], averageScoresPerWeek: [] }); // Empty data
+        }
+      } catch (error) {
+        console.error("Failed to load or calculate analytics:", error);
+        toast({ title: "Analytics Error", description: "Could not load quiz analytics.", variant: "destructive" });
+        setAnalyticsData(null); // Error state
+      }
+      setIsLoadingAnalytics(false);
+    }
+    loadAndProcessAnalytics();
+  }, [toast]);
 
 
   const handleSaveData = async () => {
@@ -168,6 +186,56 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="space-y-8">
 
+                {/* Quiz Analytics Section */}
+                <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                        <LineChartIcon className="h-5 w-5 text-primary" /> Your Progress
+                    </h3>
+                    <div className="p-4 rounded-md border bg-muted/30">
+                        {isLoadingAnalytics && <p className="text-sm text-muted-foreground">Loading analytics...</p>}
+                        {!isLoadingAnalytics && analyticsData && (analyticsData.quizCountsPerWeek.length > 0 || analyticsData.averageScoresPerWeek.length > 0) ? (
+                            <>
+                                <p className="text-xs text-muted-foreground/80 mb-4">
+                                    Analytics are based on your saved quiz history. Charts show weekly trends.
+                                </p>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <h4 className="font-medium text-center text-sm">Quizzes Taken Per Week</h4>
+                                        <ResponsiveContainer width="100%" height={200}>
+                                            <BarChart data={analyticsData.quizCountsPerWeek} margin={{ top: 5, right: 0, left: -25, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" opacity={0.5}/>
+                                                <XAxis dataKey="date" fontSize={10} />
+                                                <YAxis allowDecimals={false} fontSize={10}/>
+                                                <Tooltip contentStyle={{ fontSize: '12px', padding: '2px 8px' }} />
+                                                <Bar dataKey="count" name="Quizzes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="font-medium text-center text-sm">Average Score Per Week (%)</h4>
+                                        <ResponsiveContainer width="100%" height={200}>
+                                            <LineChart data={analyticsData.averageScoresPerWeek} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" opacity={0.5}/>
+                                                <XAxis dataKey="date" fontSize={10} />
+                                                <YAxis domain={[0, 100]} fontSize={10}/>
+                                                <Tooltip contentStyle={{ fontSize: '12px', padding: '2px 8px' }} formatter={(value: number | null, name: string, props: any) => [`${value}% on ${props.payload.quizCountWithScores} quiz(zes)`, "Avg Score"]} />
+                                                <Line type="monotone" dataKey="averageScore" name="Avg Score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            !isLoadingAnalytics && <p className="text-sm text-muted-foreground">No quiz history yet to show analytics. Take some quizzes and save them to see your progress!</p>
+                        )}
+                         {!isLoadingAnalytics && !analyticsData && (
+                            <p className="text-sm text-destructive">Could not load analytics data.</p>
+                        )}
+                    </div>
+                </div>
+                {/* End Quiz Analytics Section */}
+
+
                 {/* Local Data Management Section */}
                 <div className="space-y-4">
                     <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -183,11 +251,11 @@ export default function ProfilePage() {
                             </p>
                         )}
                         <div className="flex flex-col sm:flex-row gap-3">
-                            <Button onClick={handleSaveData} disabled={isLoadingSave || isLoadingLoad} className="flex-1">
+                            <Button onClick={handleSaveData} disabled={isLoadingSave || isLoadingLoad || isLoadingAnalytics} className="flex-1">
                                 {isLoadingSave ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                 Save Data to Device
                             </Button>
-                            <Button onClick={handleLoadData} disabled={isLoadingLoad || isLoadingSave} variant="outline" className="flex-1">
+                            <Button onClick={handleLoadData} disabled={isLoadingLoad || isLoadingSave || isLoadingAnalytics} variant="outline" className="flex-1">
                                 {isLoadingLoad ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FolderOpen className="mr-2 h-4 w-4" />}
                                 Load Data from Device
                             </Button>
