@@ -72,8 +72,6 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
           ...q,
           userAnswer,
           isCorrect: null,
-          // If Eco mode is ON, don't set isValidating to true initially.
-          // Set a deferred status instead.
           isValidating: isEcoModeActive ? false : userAnswerProvided,
           validation: isEcoModeActive && userAnswerProvided
             ? { status: 'Deferred', explanation: 'AI validation deferred. Click to validate.'}
@@ -90,23 +88,17 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
             : (!userAnswerProvided ? { status: 'Incorrect', explanation: 'No answer was provided.' } : undefined)
         };
       } else {
-        // This case should be impossible if Question union is exhaustive
-        // and q is always a Question.
-        // The following line will cause a TypeScript error if q is not 'never',
-        // helping to ensure all Question types are handled above.
         const _exhaustiveCheck: never = q;
-        // Fallback for safety, though it should be unreachable:
         console.error("Unhandled question type in QuizResults.tsx:", _exhaustiveCheck);
         throw new Error(`Unhandled question type: ${JSON.stringify(q)}`);
       }
     });
     setDetailedResults(initialResults);
-  }, [quiz, answers]);
+  }, [quiz, answers, isEcoModeActive]); // Added isEcoModeActive to dependency array for initial setup
 
   const validateSingleAnswer = useCallback(async (questionIndex: number) => {
     if (!apiKey) {
       toast({ variant: "destructive", title: "API Key Missing", description: "Cannot validate answer without an API key." });
-      // Update specific question to show API key error
       setDetailedResults(prevResults =>
         prevResults.map((r, idx) =>
           idx === questionIndex
@@ -119,10 +111,9 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
 
     const resultToValidate = detailedResults[questionIndex];
     if (!resultToValidate || !(resultToValidate.questionType === 'openEnded' || resultToValidate.questionType === 'problemSolving') || resultToValidate.userAnswer === 'No answer') {
-      return; // Should not happen if button is shown correctly
+      return;
     }
 
-    // Set specific question to validating state
     setDetailedResults(prevResults =>
       prevResults.map((r, idx) =>
         idx === questionIndex ? { ...r, isValidating: true, validation: undefined } : r
@@ -170,103 +161,112 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
         )
       );
     }
-  }, [apiKey, detailedResults, incrementUsage, toast]);
+  }, [apiKey, detailedResults, incrementUsage, toast]); // toast added to dependency array
 
   useEffect(() => {
-    // Auto-validate only if NOT in Eco Mode
-    if (isEcoModeActive) {
-      return;
-    }
-
     const validateAllPendingAnswers = async () => {
+      if (isEcoModeActive) {
+        // If EcoMode became active *after* initial setup, ensure pending items are marked Deferred.
+        // The initial useEffect for setting detailedResults already handles the initial 'Deferred' state.
+        // This ensures that if isEcoModeActive changes, we correctly update any items that were `isValidating:true`.
+        const needsDeferredUpdate = detailedResults.some(r => r.isValidating && (!r.validation || r.validation.status !== 'Deferred'));
+        if (needsDeferredUpdate) {
+            setDetailedResults(prevResults =>
+              prevResults.map(r => {
+                if ((r.questionType === 'openEnded' || r.questionType === 'problemSolving') &&
+                    r.isValidating &&
+                    (!r.validation || r.validation.status !== 'Deferred')) {
+                  return {
+                    ...r,
+                    isValidating: false,
+                    validation: { status: 'Deferred', explanation: 'AI validation deferred. Click to validate.' }
+                  };
+                }
+                return r;
+              })
+            );
+        }
+        return;
+      }
+
       if (!apiKey) {
-        setDetailedResults(prevResults =>
-          prevResults.map(r =>
-            (r.questionType === 'openEnded' || r.questionType === 'problemSolving') && r.isValidating && !r.validation
-              ? { ...r, isValidating: false, validation: { status: 'Incorrect', explanation: 'An API key is required for AI validation.' } }
-              : r
-          )
+         setDetailedResults(prevResults =>
+          prevResults.map(r => {
+            if ((r.questionType === 'openEnded' || r.questionType === 'problemSolving') && r.isValidating && !r.validation) {
+              return {
+                ...r,
+                isValidating: false,
+                validation: { status: 'Incorrect', explanation: 'An API key is required for AI validation.' }
+              };
+            }
+            return r;
+          })
         );
         return;
       }
-      
-      const questionsToValidateIndexes = detailedResults
-        .map((r, index) => ((r.questionType === 'openEnded' || r.questionType === 'problemSolving') && r.isValidating && !r.validation ? index : -1))
-        .filter(index => index !== -1);
 
-      if (questionsToValidateIndexes.length === 0) return;
-
-      // This loop will run validations one by one. For parallel, Promise.all would be used.
-      // Given current structure of validateSingleAnswer, sequential is fine.
-      for (const index of questionsToValidateIndexes) {
-        // We check isValidating flag inside validateSingleAnswer effectively
-        // No need to re-check here before calling
-        // The `isValidating` flag on `detailedResults[index]` is the key.
-        // The `validateSingleAnswer` function itself will set `isValidating: true` for the specific item during its run.
-        // The initial `isValidating` is set true in the first `useEffect` if not in Eco Mode and answer provided.
-        // So, this effect only triggers if there are items with `isValidating: true` and no `validation` object yet.
-
-        // Call the validation logic which is now encapsulated
-        // We can directly call validateSingleAnswer for each item that is marked as `isValidating`
-        // This will update the state correctly for each.
-        // However, `validateSingleAnswer` is designed for one-off calls.
-        // For auto-validation, we can adapt the original loop logic slightly.
-
-        const result = detailedResults[index];
-         // This check is important to ensure we only process items that are truly pending
+      const questionsToValidate = detailedResults.reduce((acc, result, index) => {
         if ((result.questionType === 'openEnded' || result.questionType === 'problemSolving') && result.isValidating && !result.validation) {
-          try {
-            const res = await fetch('/api/validate-answer', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                question: result.question,
-                userAnswer: result.userAnswer,
-                correctAnswer: result.answer,
-                apiKey,
-              }),
-            });
-            incrementUsage();
+          acc.push({ ...result, originalIndex: index });
+        }
+        return acc;
+      }, [] as (Result & { originalIndex: number })[]);
 
-            if (!res.ok) {
-              const errorText = await res.text();
-              try {
-                const errorData = JSON.parse(errorText);
-                throw new Error(errorData.details || errorData.error || `Validation failed with status ${res.status}`);
-              } catch (jsonError) {
-                throw new Error(`Validation failed: The server returned an unexpected response. Status: ${res.status}`);
-              }
+      if (questionsToValidate.length === 0) return;
+
+      for (const resultToValidate of questionsToValidate) {
+        try {
+          const res = await fetch('/api/validate-answer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: resultToValidate.question,
+              userAnswer: resultToValidate.userAnswer,
+              correctAnswer: resultToValidate.answer,
+              apiKey,
+            }),
+          });
+          incrementUsage();
+
+          let validationResultData: ValidationResult;
+          if (!res.ok) {
+            const errorText = await res.text();
+            try {
+              const errorData = JSON.parse(errorText);
+              validationResultData = { status: 'Incorrect', explanation: errorData.details || errorData.error || `Validation failed: ${res.status}` };
+            } catch (jsonError) {
+              validationResultData = { status: 'Incorrect', explanation: `Validation failed: Server returned non-JSON error. Status: ${res.status}` };
             }
-            const validationResult: ValidationResult = await res.json();
-            
-            setDetailedResults(prevResults =>
-                prevResults.map((prevResult, prevIndex) =>
-                    prevIndex === index
-                    ? { ...prevResult, isValidating: false, validation: validationResult }
-                    : prevResult
-                )
-            );
-            }
-          } catch (error) {
-            console.error("Validation error for question:", result.question, error);
-            const message = error instanceof Error ? error.message : 'An error occurred during AI validation.';
-            setDetailedResults(prevResults =>
-                prevResults.map((prevResult, prevIndex) =>
-                    prevIndex === index
-                    ? { ...prevResult, isValidating: false, validation: { status: 'Incorrect', explanation: message } }
-                    : prevResult
-                )
-            );
+          } else {
+            validationResultData = await res.json();
           }
+
+          setDetailedResults(prevResults =>
+            prevResults.map((r, idx) =>
+              idx === resultToValidate.originalIndex
+                ? { ...r, isValidating: false, validation: validationResultData }
+                : r
+            )
+          );
+        } catch (error) {
+          console.error("Validation error for question:", resultToValidate.question, error);
+          const message = error instanceof Error ? error.message : 'An error occurred during AI validation.';
+          setDetailedResults(prevResults =>
+            prevResults.map((r, idx) =>
+              idx === resultToValidate.originalIndex
+                ? { ...r, isValidating: false, validation: { status: 'Incorrect', explanation: message } }
+                : r
+            )
+          );
         }
       }
     };
 
-    if (detailedResults.some(r => r.isValidating && !r.validation)) { // Only validate if isValidating and no validation object exists yet
-      validateAnswers();
+    if (!isEcoModeActive && detailedResults.some(r => r.isValidating && !r.validation)) {
+      validateAllPendingAnswers();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detailedResults, apiKey, incrementUsage]); // Added incrementUsage to dependency array
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailedResults, apiKey, incrementUsage, isEcoModeActive]);
 
 
   const { score, total, percentage, openEndedReviewedCount, problemSolvingReviewedCount } = useMemo(() => {
