@@ -11,8 +11,9 @@ export function replaceLatexDelimiters(text: string): string {
   // Need to be careful with greedy matching if there are nested versions,
   // but for typical AI output this should be okay.
   // The (.*?) makes the star non-greedy.
-  let result = text.replace(/\\\((.*?)\\\)/g, '\\$$1\\$');
+  // $$ in replacement string means a literal $
+  let result = text.replace(/\\\((.*?)\\\)/g, '$$$$1$$'); // Replaces \(content\) with $content$
   // Replace \[...\] with $$...$$
-  result = result.replace(/\\\[(.*?)\\\]/g, '\\$\\$$1\\$\\$');
+  result = result.replace(/\\\[(.*?)\\\]/g, '$$$$$$1$$$$'); // Replaces \[content\] with $$content$$
   return result;
 }
