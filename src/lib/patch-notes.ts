@@ -18,7 +18,7 @@ export const patchNotes: PatchVersion[] = [
     {
       version: '1.2.3', // Assuming next version
       title: 'Local Data Management & Continued Refinements',
-      date: 'August 2024', // Placeholder, update with actual release month/year
+      date: 'July 2025', // Placeholder, update with actual release month/year
       notes: [
         {
           icon: HardDriveDownload,
@@ -37,7 +37,7 @@ export const patchNotes: PatchVersion[] = [
     {
       version: '1.2.2',
       title: 'Eco Mode & Enhanced Interactivity',
-      date: 'July 2024', // Placeholder, update with actual release month/year
+      date: 'July 2025', // Placeholder, update with actual release month/year
       notes: [
         {
           icon: Settings2, // Icon for settings/mode
@@ -74,7 +74,7 @@ export const patchNotes: PatchVersion[] = [
     {
       version: '1.2.1',
       title: 'API Key & Quiz Polish',
-      date: 'July 2024', // Placeholder
+      date: 'July 2025', // Placeholder
       notes: [
         {
           icon: ShieldCheck,
@@ -116,7 +116,7 @@ export const patchNotes: PatchVersion[] = [
     {
         version: '1.2.0',
         title: 'Stability & Control Boost',
-        date: 'June 2024',
+        date: 'June 2025',
         notes: [
             {
                 icon: Zap,
@@ -158,7 +158,7 @@ export const patchNotes: PatchVersion[] = [
     {
         version: '1.1.0',
         title: 'Core Fixes & Enhancements',
-        date: 'June 2024',
+        date: 'June 2025',
         notes: [
             {
                 icon: Zap, // Good for new feature announcement
