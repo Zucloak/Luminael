@@ -1,137 +1,51 @@
 import { Metadata } from 'next';
+import fs from 'fs';
+import path from 'path';
+import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { FileText } from 'lucide-react'; // Icon for whitepaper
 
 export const metadata: Metadata = {
   title: 'Whitepaper - Luminael AI',
   description: 'Luminael Protocol Whitepaper: Decentralized, AI-Powered Universal Learning.',
 };
 
-export default function WhitepaperPage() {
+async function getWhitepaperContent(): Promise<string> {
+  const filePath = path.join(process.cwd(), 'public', 'WHITEPAPER.md');
+  try {
+    const fileContent = await fs.promises.readFile(filePath, 'utf8');
+    return fileContent;
+  } catch (error) {
+    console.error("Failed to read whitepaper content:", error);
+    return "# Error\nCould not load whitepaper content. Please try again later."; // Return Markdown error
+  }
+}
+
+export default async function WhitepaperPage() {
+  const markdownContent = await getWhitepaperContent();
+
+  // Extract H1 from markdown to use as title, or use a default
+  // This is a simplified way; a more robust Markdown parser might be better for complex cases.
+  let pageTitle = "Luminael Whitepaper"; // Default title
+  const titleMatch = markdownContent.match(/^#\s+(.*)/m);
+  if (titleMatch && titleMatch[1]) {
+    pageTitle = titleMatch[1];
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl prose dark:prose-invert lg:prose-xl">
-      <h1 className="text-3xl font-bold mb-6 font-headline text-center">
-        The Luminael Protocol: A White Paper on Decentralized, AI-Powered Universal Learning
-      </h1>
-      <p className="mb-6 text-center text-muted-foreground">
-        Last Updated: {new Date().toLocaleDateString()}
-      </p>
-
-      <section className="mb-8">
-        <p>
-          The global landscape of education is fraught with barriers: prohibitive costs, unequal access, and centralized platforms that compromise user privacy. <strong>Luminael presents a new paradigm.</strong>
-          It is a free, decentralized, universal, multi-lingual, and multi-subject learning application designed to return power and control to the individual learner. Its architecture is its philosophy: by operating fully client-side with a zero-database, zero-backend model, Luminael ensures that user data is never collected, stored, or monetized.
-          The platform&apos;s novel <strong>Bring-Your-Own-API-Key (BYO-API)</strong> model is the cornerstone of this approach, empowering users to leverage the power of large language models for personalized education while maintaining absolute control over their data and API usage.
-        </p>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">1. Introduction: The Global Education Challenge</h2>
-        <p>
-          For centuries, access to high-quality education has been a privilege, not a right. Traditional educational models, and even their modern digital counterparts, are often defined by gatekeepers. These limitations manifest as:
-        </p>
-        <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
-          <li><strong>Cost Barriers:</strong> Tuition, subscriptions, and platform fees create a stark divide between those who can afford to learn and those who cannot.</li>
-          <li><strong>Educational Inequality:</strong> Geographic location, socioeconomic status, and local censorship can severely restrict access to diverse subjects and unbiased information.</li>
-          <li><strong>Lack of Personalization:</strong> One-size-fits-all curricula fail to cater to individual learning styles, paces, and interests, leading to disengagement and inefficient knowledge acquisition.</li>
-          <li><strong>Centralized Control & Data Exploitation:</strong> Most online platforms operate on a centralized model, requiring users to surrender their personal data, learning habits, and content in exchange for access. This data is then stored, analyzed, and often monetized, creating significant privacy risks.</li>
-        </ul>
-        <blockquote>
-          <p>
-            Luminael was conceived as a direct and radical response to these challenges.<br />
-            <em>Our Mission: To dismantle the barriers to knowledge by providing a free, secure, and infinitely adaptable learning tool that empowers every individual on Earth to pursue education without compromise.</em>
-          </p>
-        </blockquote>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">2. The Solution: A Novel Paradigm for Learning</h2>
-        <p>
-          Luminael is not merely an application; it is a protocol for learning. It redefines the relationship between the user, their data, and the educational tools they employ. This is achieved through a unique combination of core philosophies and advanced AI capabilities.
-        </p>
-
-        <h3 className="text-xl font-semibold mb-3 mt-5">2.1. Core Philosophy</h3>
-        <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
-          <li><strong>Free & Universal Access:</strong> Luminael is, and always will be, free to use. Our commitment is to ensure that the only requirement for learning is curiosity.</li>
-          <li><strong>Decentralization by Design:</strong> The platform&apos;s fully client-side, zero-backend architecture means there is no central server to mediate, monitor, or censor user activity. Luminael runs entirely within the user&apos;s browser, making it resilient, private, and truly decentralized.</li>
-          <li><strong>User Empowerment through BYO-API:</strong> The Bring-Your-Own-API-Key model is the cornerstone of the Luminael philosophy. Instead of routing requests through our own servers and keys, we empower users to connect their personal AI API key (initially Google Gemini, with plans for expansion). This has profound benefits:
-            <ul className="list-disc list-inside mb-2 pl-6">
-              <li><strong>Control:</strong> The user has full control over their access to powerful AI.</li>
-              <li><strong>Cost-Efficiency:</strong> Users can leverage the generous free tiers offered by AI providers, making powerful learning tools accessible at no cost.</li>
-              <li><strong>Privacy:</strong> The user&apos;s API key is stored locally on their device and is used to communicate directly with the AI provider, bypassing our infrastructure entirely.</li>
-            </ul>
-          </li>
-        </ul>
-
-        <h3 className="text-xl font-semibold mb-3 mt-5">2.2. Key Features and Functionality</h3>
-        <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
-          <li><strong>AI-Driven Personalization:</strong> By leveraging the user&apos;s API key, Luminael can generate deeply personalized content. It features multi-subject comprehension to tackle anything from quantum physics to Renaissance poetry. Its high-volume generation capability can produce up to 100 quiz questions from multi-format inputs (including .txt, .pdf, .docx, and images), transforming any set of study materials into an interactive learning experience.</li>
-          <li><strong>Multi-Lingual Capabilities:</strong> The platform is built on a multi-lingual prompt engine. This allows users to learn, generate quizzes, and receive explanations in a vast array of languages, making it a truly global tool.</li>
-          <li><strong>Privacy & Security by Design:</strong> This cannot be overstated. Because Luminael is fully client-side with zero database and zero backend, it offers a level of security that is architecturally guaranteed. All processing is secure, transparent, and local-only. Your study materials, your generated quizzes, and your interactions are never transmitted to, or stored on, any server operated by us. Your data never leaves your device.</li>
-          <li><strong>Efficiency and Sustainability:</strong> All interactions with the AI are designed to be token-optimized. We craft our prompts to be as efficient as possible, ensuring that users get the maximum educational value from every API call, extending the life of their free-tier usage.</li>
-        </ul>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">3. Technology and Architecture</h2>
-        <p>
-          Luminael&apos;s architecture is its most revolutionary feature. It functions less like a traditional website and more like a standalone desktop application that runs within the security of the modern web browser.
-        </p>
-        <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
-          <li><strong>High-Level Overview:</strong> The entire application—interface, logic, and AI interaction—is downloaded to the user&apos;s browser on the initial visit. From that point on, it operates as a self-contained environment.</li>
-          <li><strong>BYO-API Integration:</strong> When a user provides their API key, it is stored exclusively in the browser&apos;s localStorage. When an AI-powered action is required (e.g., generating a quiz), the application constructs a request and sends it directly from the user&apos;s browser to the AI provider&apos;s endpoint (e.g., the Google Gemini API). Luminael&apos;s servers are never part of this transaction.</li>
-        </ul>
-        <p>
-          <strong>Why this Architecture?</strong> The benefits of this zero-database, zero-backend, local-only approach are transformative:
-        </p>
-        <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
-          <li><strong>Ultimate Privacy:</strong> There is no data to leak because no data is stored.</li>
-          <li><strong>Infinite Scalability:</strong> With no centralized backend to maintain, the platform can serve millions of users as easily as it serves one.</li>
-          <li><strong>Cost-Efficiency:</strong> Operational costs are virtually zero, allowing the platform to remain free forever.</li>
-          <li><strong>Resilience:</strong> The platform is not subject to single points of failure or server downtime.</li>
-        </ul>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">4. Impact and Benefits</h2>
-        <h3 className="text-xl font-semibold mb-3 mt-5">4.1. For Learners</h3>
-        <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
-          <li><strong>Unrestricted Access:</strong> Learn any subject, in any language, at any time, for free.</li>
-          <li><strong>Personalized Experience:</strong> Transform personal notes, textbooks, and articles into custom learning tools.</li>
-          <li><strong>Unparalleled Data Privacy:</strong> Engage with AI without fear of your learning data being tracked or sold.</li>
-          <li><strong>Empowerment:</strong> Gain direct control over your personal AI usage and digital intellectual footprint.</li>
-        </ul>
-        <h3 className="text-xl font-semibold mb-3 mt-5">4.2. Societal Impact</h3>
-        <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
-          <li><strong>Reducing Educational Inequality:</strong> Provides a powerful, free tool for learners in underserved communities worldwide.</li>
-          <li><strong>Fostering Global Knowledge:</strong> Breaks down language and cost barriers to education.</li>
-          <li><strong>Promoting Digital Literacy:</strong> Encourages users to understand and manage their own access to foundational AI technologies.</li>
-        </ul>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">5. Roadmap and Future Development</h2>
-        <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
-          <li><strong>Immediate Plans (MVP):</strong> The current version provides the core functionality of quiz generation from multiple file formats using the Google Gemini API.</li>
-          <li><strong>Short-Term Goals:</strong> Our primary goal is to expand API compatibilities to include other major providers like Anthropic (Claude) and OpenAI (GPT), giving users even more choice and control.</li>
-          <li><strong>Long-Term Vision:</strong> We envision a future where Luminael becomes a fully open-source, community-driven platform, with features and improvements contributed by educators and developers from around the globe.</li>
-        </ul>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-center font-headline">6. A Note to Our Friends at Google</h2>
-        <p className="mb-3 text-center italic text-muted-foreground">
-          Luminael is an experiment in radical accessibility and educational empowerment. We believe everyone, everywhere, deserves the right to learn without barriers. By enabling users to leverage their own API keys, we are creating a decentralized, private, and powerful learning tool that respects user privacy and champions the universal right to education. We hope you see this project not as a circumvention, but as an innovation that aligns with the highest ideals of making information universally accessible and useful. Let&apos;s not hinder this journey; let&apos;s champion it together.
-        </p>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">7. Conclusion</h2>
-        <p>
-          Luminael represents a fundamental shift in how we approach digital education. By moving away from centralized, data-hungry models and towards a decentralized, user-empowered architecture, we have created more than just a learning app—we have created a tool for intellectual freedom. It is a testament to the idea that the most powerful technologies can, and should, be placed directly in the hands of the people they are meant to serve.
-        </p>
-        <p>
-          We invite you to experience this new paradigm of learning. We invite you to take control of your education. We invite you to build a future where knowledge is truly universal.
-        </p>
-      </section>
+    <div className="relative w-full max-w-3xl mx-auto py-8">
+        <Card className="w-full relative shadow-lg">
+            <CardHeader className="text-center items-center">
+                <FileText className="h-10 w-10 text-primary" />
+                <CardTitle className="font-headline text-3xl mt-4">{pageTitle}</CardTitle>
+                {/* Optional: <CardDescription>A deep dive into the Luminael Protocol.</CardDescription> */}
+            </CardHeader>
+            <CardContent>
+                <MarkdownRenderer className="prose dark:prose-invert lg:prose-xl max-w-none pt-2">
+                    {markdownContent}
+                </MarkdownRenderer>
+            </CardContent>
+        </Card>
     </div>
   );
 }
