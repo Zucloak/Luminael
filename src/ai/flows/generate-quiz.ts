@@ -74,7 +74,9 @@ THERE ARE NO EXCEPTIONS TO THIS RULE. Plain text that resembles math (e.g., \`a^
 7.  **Global De-duplication:** The provided list of \`existingQuestions\` (if any): ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}. DO NOT generate any question that is identical or substantially similar to any question in this list.
 8.  **Difficulty**: Calibrate questions to a '${difficulty}' level.
 9.  **Impeccable and Robust LaTeX Formatting (RECALL CRITICAL RULE #0 ON DELIMITERS):**
-    *   **MANDATORY DELIMITERS (Rule #0 REITERATED):** ALL math expressions, variables, and symbols (e.g., \`x\`, \`a^2\`, \`(a^2-x^2)\`) MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display).
+    *   **MANDATORY DELIMITERS (Rule #0 REITERATED):** ALL math expressions, variables, and symbols (e.g., \`x\`, \`a^2\`, \`(a^2-x^2)\`) MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display). This applies to the question text, and for multipleChoice questions, it also applies to EACH of the options.
+        *   Example (simple inline): If a concept is "x > 2", it MUST be written as \`\\$x > 2\\$\`. Incorrect: `x > 2`.
+        *   Example (variable): If referring to variable \`v\`, write \`\\$v\\$\`.
     *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: \`The value is \\$x^{2}\\$ units.\`
     *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
     *   **CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS:** ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\\$x^y\\$\`, \`\\$a_b\\$\`.
@@ -84,7 +86,7 @@ THERE ARE NO EXCEPTIONS TO THIS RULE. Plain text that resembles math (e.g., \`a^
     *   **DO NOT** use Markdown for math. Only use LaTeX within dollar signs.
     *   **DO NOT** use non-standard or custom LaTeX commands unless you are certain they are supported by MathJax or KaTeX.
     *   **DO NOT** use parentheses for math delimiters like \`\\(\` or \`\\)\`. Only use dollar signs.
-    *   **Test your LaTeX output mentally:** If it looks like it might be ambiguous or break a renderer, simplify or clarify. For example, ensure all environments are correctly opened and closed.
+    *   **Test your LaTeX output mentally:** If it looks like it might be ambiguous or break a renderer, simplify or clarify. For example, ensure all environments are correctly opened and closed. Ensure every mathematical element is correctly delimited.
 
 **Output Format Mandate:**
 You MUST provide your response as a JSON object that strictly conforms to the GenerateQuizOutputSchema, containing a 'quiz' object, which in turn contains a 'questions' array. EACH question object in this array MUST be a ProblemSolvingQuestionSchema object.
@@ -113,10 +115,11 @@ THERE ARE NO EXCEPTIONS TO THIS RULE. Plain text that resembles math (e.g., \`a^
         *   Generate **ONLY** multiple-choice questions. Each question MUST have its \`questionType\` field set to exactly \`multipleChoice\`.
         *   Provide 4 distinct options. The \`answer\` field must exactly match one of the \`options\`.
         *   Output JSON for these questions MUST conform to the MultipleChoiceQuestionSchema.
+        *   **ABSOLUTE CRITICAL DIRECTIVE for 'multipleChoice' format**: Under NO CIRCUMSTANCES are you to generate any \`problemSolving\` questions or any \`openEnded\` (conceptual, theoretical, discussion-based) questions when '${questionFormat}' is 'multipleChoice'. Your output MUST NOT contain detailed step-by-step solutions for calculations (which belong to \`problemSolving\`) or ask for explanations/opinions (which belong to \`openEnded\`). Failure to adhere to this strict exclusivity for 'multipleChoice' format questions will render the output unusable. You must focus entirely and exclusively on multiple-choice questions that fit the MultipleChoiceQuestionSchema.
     *   **If '${questionFormat}' is 'openEnded'**:
         *   Generate **ONLY** theoretical, opinion-based, or conceptual questions. Each question MUST have its \`questionType\` field set to exactly \`openEnded\`.
         *   These questions require free-form, textual answers. The \`answer\` field should provide a model answer or key discussion points.
-        *   **CRITICAL FOR 'openEnded'**: DO NOT generate \`multipleChoice\` or \`problemSolving\` (calculative) questions when \`openEnded\` is requested. Output JSON for these questions MUST conform to the OpenEndedQuestionSchema.
+        *   **ABSOLUTE CRITICAL DIRECTIVE for 'openEnded' format**: Under NO CIRCUMSTANCES are you to generate any \`multipleChoice\` questions or any \`problemSolving\` (calculative) questions when '${questionFormat}' is 'openEnded'. Your output MUST NOT contain \`options\` fields (which belong to \`multipleChoice\`) or present problems that require a definitive numeric/symbolic calculative answer (which belong to \`problemSolving\`). Failure to adhere to this strict exclusivity for 'openEnded' format questions will render the output unusable. Focus exclusively on conceptual, theoretical, or opinion-based questions requiring textual, explanatory answers. Output JSON for these questions MUST conform to the OpenEndedQuestionSchema.
     *   **If '${questionFormat}' is 'mixed'**:
         *   Generate a balanced blend of \`multipleChoice\`, \`problemSolving\` (calculative, as defined below), and \`openEnded\` (conceptual, as defined above) questions.
         *   Ensure each question generated correctly sets its \`questionType\` field and conforms to its respective schema (MultipleChoiceQuestionSchema, ProblemSolvingQuestionSchema, or OpenEndedQuestionSchema).
@@ -127,7 +130,9 @@ THERE ARE NO EXCEPTIONS TO THIS RULE. Plain text that resembles math (e.g., \`a^
 6.  **Difficulty:** Calibrate the questions to a '${difficulty}' level.
 7.  **Global De-duplication:** The provided list of \`existingQuestions\` (if any) may contain questions of various types previously generated in this session. DO NOT generate any question (regardless of its type for the current batch) that is identical or substantially similar to any question found in this \`existingQuestions\` list. The goal is to ensure maximum variety and avoid all repetition across the entire quiz session.
 8.  **Impeccable and Robust LaTeX Formatting (RECALL CRITICAL RULE #0 ON DELIMITERS):**
-    *   **MANDATORY DELIMITERS (Rule #0 REITERATED):** ALL math expressions, variables, and symbols (e.g., \`x\`, \`a^2\`, \`(a^2-x^2)\`) MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display).
+    *   **MANDATORY DELIMITERS (Rule #0 REITERATED):** ALL math expressions, variables, and symbols (e.g., \`x\`, \`a^2\`, \`(a^2-x^2)\`) MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display). This applies to the question text, AND for \`multipleChoice\` questions, it also applies to EACH of the options. For \`openEnded\` questions, this applies to the question text and the example answer/discussion points.
+        *   Example (simple inline): If a concept is "x > 2", it MUST be written as \`\\$x > 2\\$\`. Incorrect: `x > 2`.
+        *   Example (variable): If referring to variable \`v\`, write \`\\$v\\$\`.
     *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: \`The value is \\$x^{2}\\$ units.\`
     *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
     *   **CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS:** ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\\$x^y\\$\`, \`\\$a_b\\$\`.
@@ -170,10 +175,31 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                 const filteredCount = output.quiz.questions.length;
                 if (filteredCount < originalCount) {
                     console.warn(`[generateQuizFlow] Filtered out ${originalCount - filteredCount} non-problemSolving questions for 'problemSolving' mode.`);
-                    // Optionally, decide here if you need to make another AI call to get more questions
-                    // For now, we'll return the filtered list, which might be less than numQuestions.
                 }
             }
+            // Post-generation filtering for 'multipleChoice' mode
+            else if (questionFormat === 'multipleChoice' && output.quiz && output.quiz.questions) {
+                const originalCount = output.quiz.questions.length;
+                output.quiz.questions = output.quiz.questions.filter(
+                    q => q.questionType === 'multipleChoice'
+                );
+                const filteredCount = output.quiz.questions.length;
+                if (filteredCount < originalCount) {
+                    console.warn(`[generateQuizFlow] Filtered out ${originalCount - filteredCount} non-multipleChoice questions for 'multipleChoice' mode.`);
+                }
+            }
+            // Post-generation filtering for 'openEnded' mode
+            else if (questionFormat === 'openEnded' && output.quiz && output.quiz.questions) {
+                const originalCount = output.quiz.questions.length;
+                output.quiz.questions = output.quiz.questions.filter(
+                    q => q.questionType === 'openEnded'
+                );
+                const filteredCount = output.quiz.questions.length;
+                if (filteredCount < originalCount) {
+                    console.warn(`[generateQuizFlow] Filtered out ${originalCount - filteredCount} non-openEnded questions for 'openEnded' mode.`);
+                }
+            }
+            // For 'mixed' mode, no filtering is applied by default as it's expected to have various types.
 
             return output; // Success
         } catch (error) {
