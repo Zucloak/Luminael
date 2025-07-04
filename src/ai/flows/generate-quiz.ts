@@ -25,6 +25,7 @@ import {
   // OpenEndedQuestionSchema,
   // QuestionSchema
 } from '@/lib/types'; // Import schemas and types
+import { replaceLatexDelimiters } from '@/lib/utils'; // Import the new utility function
 
 export async function generateQuiz(input: GenerateQuizInput): Promise<GenerateQuizOutput> {
   return generateQuizFlow(input);
@@ -168,8 +169,19 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                 throw new Error("The AI failed to generate a quiz. It returned an empty or invalid response.");
             }
 
-            // Capture raw questions for debugging BEFORE filtering
+            // Capture raw questions for debugging BEFORE ANY modification (including delimiter replacement)
             const rawQuestionsForDebug = JSON.parse(JSON.stringify(output.quiz?.questions || []));
+
+            // Apply delimiter replacement to all relevant fields
+            if (output.quiz && output.quiz.questions) {
+              output.quiz.questions.forEach(q => {
+                if (q.question) q.question = replaceLatexDelimiters(q.question);
+                if (q.answer) q.answer = replaceLatexDelimiters(q.answer);
+                if (q.questionType === 'multipleChoice' && q.options) {
+                  q.options = q.options.map(opt => replaceLatexDelimiters(opt));
+                }
+              });
+            }
 
             // Post-generation filtering for 'problemSolving' mode as a safeguard
             if (questionFormat === 'problemSolving' && output.quiz && output.quiz.questions) {

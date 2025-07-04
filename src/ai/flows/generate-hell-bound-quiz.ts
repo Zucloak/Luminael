@@ -22,6 +22,7 @@ import {
   // ProblemSolvingQuestionSchema,
   // OpenEndedQuestionSchema,
 } from '@/lib/types';
+import { replaceLatexDelimiters } from '@/lib/utils'; // Import the new utility function
 
 export async function generateHellBoundQuiz(input: GenerateHellBoundQuizInput): Promise<GenerateHellBoundQuizOutput> {
   return generateHellBoundQuizFlow(input);
@@ -103,9 +104,22 @@ You MUST provide your response in the specified JSON format. Failure is not an o
               throw new Error("The AI failed to generate the Hell Bound quiz. It returned an empty or invalid response.");
             }
 
-            // Capture raw questions for debugging
+            // Capture raw questions for debugging BEFORE ANY modification
             const rawQuestionsForDebug = JSON.parse(JSON.stringify(output.quiz?.questions || []));
-            (output as any).rawAiOutputForDebugging = rawQuestionsForDebug;
+
+            // Apply delimiter replacement to all relevant fields
+            if (output.quiz && output.quiz.questions) {
+              output.quiz.questions.forEach(q => {
+                if (q.question) q.question = replaceLatexDelimiters(q.question);
+                if (q.answer) q.answer = replaceLatexDelimiters(q.answer);
+                // Ensure q has 'options' and it's an array before mapping
+                if (q.questionType === 'multipleChoice' && q.options && Array.isArray(q.options)) {
+                  q.options = q.options.map(opt => typeof opt === 'string' ? replaceLatexDelimiters(opt) : opt);
+                }
+              });
+            }
+
+            (output as any).rawAiOutputForDebugging = rawQuestionsForDebug; // Attach the original raw questions
 
             return output; // Success
         } catch (error) {
