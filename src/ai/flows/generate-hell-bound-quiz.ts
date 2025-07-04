@@ -64,26 +64,7 @@ THERE ARE NO EXCEPTIONS. Math without these delimiters is INCORRECT. THIS IS A P
 7.  **Prioritize Synthesis & Difficulty:** Questions must force the user to synthesize information from multiple sections of the provided concepts and be exceptionally difficult.
 8.  **Devious Distractors (for Multiple Choice):** Incorrect options must be highly plausible and designed to trap common misconceptions based on the text. All four options must be distinct.
 9.  **Global De-duplication:** The provided list of \`existingQuestions\` (if any): ${existingQuestions && existingQuestions.length > 0 ? JSON.stringify(existingQuestions) : 'None'}. DO NOT generate any question that is identical or substantially similar to any question in this list.
-10. **Impeccable and Robust LaTeX Formatting (RECALL CRITICAL RULE #0 ON DELIMITERS):**
-    *   REMINDER: ALL math expressions, variables, and symbols MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display). This applies to the question text, AND for \`multipleChoice\` questions, it also applies to EACH of the options. For \`openEnded\` questions, this applies to the question text and the example answer/discussion points.
-    *   **Using \`\\\\text\` for Units/Annotations:** When using \`\\\\text{...}\` for units or text within a mathematical formula, the ENTIRE formula, including the \`\\\\text{...}\` portion, MUST be enclosed within a single pair of LaTeX dollar-sign delimiters (\`\\$...\\$\` or \`\\$\\$...\\$\\$\`).
-        Example - CORRECT: \`\\$E = mc^{2} \\\\text{ (Energy-mass equivalence)}\\$\`
-        Example - CORRECT: \`\\$v = 25 \\\\text{ m/s}\\$\`
-        Example - CORRECT: \`\\$(q_1 = 2 \\\\times 10^{-6} \\\\text{ C})\\$\` (Assuming the parentheses are part of the intended mathematical grouping)
-        Example - INCORRECT (missing outer delimiters): \`E = mc^{2} \\\\text{ (Energy-mass equivalence)}\`
-        Example - INCORRECT (delimiters don't enclose \`\\\\text\`): \`\\$E = mc^{2}\\$ \\\\text{ (Energy-mass equivalence)}\`
-        Example - INCORRECT (delimiters don't enclose \`\\\\text\`): \`\\$(q_1 = 2 \\\\times 10^{-6})\\$ \\\\text{ C}\`
-        Ensure any text inside \`\\\\text{}\` is plain text and does not contain unescaped special LaTeX characters.
-    *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: For 'the value is x squared units', output: The value is \\$x^{2}\\$ units.
-    *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
-    *   **CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS:** ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\\$x^y\\$\`, \`\\$a_b\\$\`.
-    *   **Standard Commands:** Use standard LaTeX commands (e.g., \`\\\\sin\`, \`\\\\cos\`, \`\\\\frac{}{}\`, \`\\\\sqrt{}\`, \`\\\\sum_{i=0}^{n}\`, \`\\\\int_{a}^{b}\`, \`\\\\vec{F}\`, \`\\\\alpha\`, \`\\\\beta\`, \`\\\\Delta\`). For example, write \`\\$x = a \\\\sin \\theta\\$\` instead of \`x = a sin θ\`.
-    *   **Escaping Special LaTeX Characters:** If characters like \`#\`, \`_\`, \`^\`, \`{\`, \`}\` are needed as literal text *within* a math environment, they might need escaping (e.g., \`\\\\_\`, \`\\\\{\`). However, for math symbols, use LaTeX commands.
-    *   **Clarity for Renderer:** Ensure there are no ambiguous constructions. For instance, make sure fractions are clearly denoted \`\\\\frac{numerator}{denominator}\`. Ensure matrices or multi-line equations use appropriate LaTeX environments (e.g., \`pmatrix\`, \`align\`, \`cases\`).
-    *   **DO NOT** use Markdown for math. Only use LaTeX within dollar signs.
-    *   **DO NOT** use non-standard or custom LaTeX commands unless you are certain they are supported by MathJax or KaTeX.
-    *   **DO NOT** use parentheses for math delimiters like \`\\(\` or \`\\)\`. Only use dollar signs.
-    *   **Test your LaTeX output mentally:** If it looks like it might be ambiguous or break a renderer, simplify or clarify. For example, ensure all environments are correctly opened and closed. Ensure every mathematical element is correctly delimited.
+10. **LaTeX Formatting:** ALL mathematical content (variables like x, formulas like a^2+b^2=c^2, expressions with units like 25 m/s) MUST be enclosed in single dollar signs for inline math (example: \\$x\\$, \\$a^2+b^2=c^2\\$, \\$25 \\\\text{ m/s}\\$) or double dollar signs for display math. Use common LaTeX commands like \\\\frac, \\\\sqrt, \\\\sin, \\\\cos. Ensure scripts use braces: \\$x^{2}\\$. This rule applies to all question text, all multiple-choice options, and all parts of answers.
 
 **Output Mandate:**
 You MUST provide your response in the specified JSON format. Failure is not an option.`;
