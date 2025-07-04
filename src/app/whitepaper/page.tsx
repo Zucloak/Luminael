@@ -2,8 +2,7 @@ import { Metadata } from 'next';
 import fs from 'fs';
 import path from 'path';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FileText } from 'lucide-react'; // Icon for whitepaper
+// Card components and FileText icon are removed as per new layout direction for this page
 
 export const metadata: Metadata = {
   title: 'Whitepaper - Luminael AI',
@@ -26,26 +25,28 @@ export default async function WhitepaperPage() {
 
   // Extract H1 from markdown to use as title, or use a default
   // This is a simplified way; a more robust Markdown parser might be better for complex cases.
-  let pageTitle = "Luminael Whitepaper"; // Default title
+  let pageTitle = "The Luminael Protocol Whitepaper"; // Default title
   const titleMatch = markdownContent.match(/^#\s+(.*)/m);
   if (titleMatch && titleMatch[1]) {
-    pageTitle = titleMatch[1];
+    // pageTitle = titleMatch[1]; // Use the extracted title from Markdown if preferred
+    // For now, let's use a fixed page title for the H1, Markdown will have its own H1.
   }
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto py-8">
-        <Card className="w-full relative shadow-lg">
-            <CardHeader className="text-center items-center">
-                <FileText className="h-10 w-10 text-primary" />
-                <CardTitle className="font-headline text-3xl mt-4">{pageTitle}</CardTitle>
-                {/* Optional: <CardDescription>A deep dive into the Luminael Protocol.</CardDescription> */}
-            </CardHeader>
-            <CardContent>
-                <MarkdownRenderer className="prose dark:prose-invert lg:prose-xl max-w-none pt-2">
-                    {markdownContent}
-                </MarkdownRenderer>
-            </CardContent>
-        </Card>
+    <div className="container mx-auto px-4 py-8 max-w-3xl prose dark:prose-invert lg:prose-xl">
+      <h1 className="text-3xl font-bold mb-6 font-headline text-center">
+        {pageTitle}
+      </h1>
+      {/*
+        A "Last Updated" date might be less relevant for a whitepaper if its content is fairly static,
+        or could be hardcoded if there's a specific publication date.
+        For now, omitting it unless the Markdown itself contains it or it's requested.
+        <p className="mb-6 text-center text-muted-foreground">Last Updated: {new Date().toLocaleDateString()}</p>
+      */}
+      <MarkdownRenderer>
+        {/* Removed prose classes from here as parent has them */}
+        {markdownContent}
+      </MarkdownRenderer>
     </div>
   );
 }

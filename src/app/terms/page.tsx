@@ -1,44 +1,77 @@
 import { Metadata } from 'next';
-import fs from 'fs';
-import path from 'path';
-import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ScrollText } from 'lucide-react'; // Icon for Terms
 
 export const metadata: Metadata = {
   title: 'Terms of Service - Luminael AI',
   description: 'Luminael AI Terms of Service.',
 };
 
-async function getTermsContent(): Promise<string> {
-  const filePath = path.join(process.cwd(), 'public', 'TERMS.md');
-  try {
-    const fileContent = await fs.promises.readFile(filePath, 'utf8');
-    return fileContent;
-  } catch (error) {
-    console.error("Failed to read terms of service content:", error);
-    return "# Error\nCould not load terms of service content. Please try again later.";
-  }
-}
-
-export default async function TermsOfServicePage() {
-  const markdownContent = await getTermsContent();
-
+export default function TermsOfServicePage() {
   return (
-    <div className="relative w-full max-w-3xl mx-auto py-8">
-        <Card className="w-full relative shadow-lg">
-            <CardHeader className="text-center items-center">
-                <ScrollText className="h-10 w-10 text-primary" />
-                <CardTitle className="font-headline text-3xl mt-4">Terms of Service</CardTitle>
-                {/* <CardDescription>Please read these terms carefully.</CardDescription> */}
-                <p className="text-sm text-muted-foreground pt-2">Last Updated: {new Date().toLocaleDateString()}</p>
-            </CardHeader>
-            <CardContent>
-                <MarkdownRenderer className="prose dark:prose-invert lg:prose-xl max-w-none pt-2">
-                    {markdownContent}
-                </MarkdownRenderer>
-            </CardContent>
-        </Card>
+    <div className="container mx-auto px-4 py-8 max-w-3xl prose dark:prose-invert lg:prose-xl">
+      <h1 className="text-3xl font-bold mb-6 font-headline text-center">Terms of Service</h1>
+      <p className="mb-6 text-center text-muted-foreground">Last Updated: {new Date().toLocaleDateString()}</p>
+
+      <section className="mb-6">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">1. My Philosophy and Service</h2>
+        <p>
+          Luminael AI (&quot;the Service&quot;) is a free, client-side tool provided by me, Ken Mosquera (operating as SYNAPPSE). My mission with Luminael AI is to empower everyone to learn, educate themselves, and grow. The Service is provided &quot;as is&quot; with no fees, no user accounts, and no data collection by Luminael AI&apos;s (non-existent for user data) servers regarding your content or API keys. It is a tool for you to use for your own educational purposes.
+        </p>
+      </section>
+
+      <section className="mb-6">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">2. Your Responsibilities</h2>
+        <p>As a user of Luminael, you agree to the following:</p>
+        <ul className="list-disc list-inside space-y-2 pl-4 my-4">
+          <li>
+            <strong>Bring Your Own API Key:</strong> You are responsible for obtaining and using your own Google Gemini API key (or other compatible third-party AI model API keys as the Service may support in the future). All API calls made through the Service to such third-party AI models are made using your key, initiated from your browser. You are solely responsible for complying with the respective AI provider&apos;s (e.g., Google&apos;s) API terms of service, usage policies, and any costs you may incur with them. Luminael AI does not have access to, nor does it store, your API key on any server it operates. The key is stored locally in your browser&apos;s storage (IndexedDB) for your convenience.
+          </li>
+          <li>
+            <strong>Content Ownership:</strong> You represent and warrant that you have all necessary rights to any content (text, images, documents) you upload or input into the Service for processing. You retain all ownership of your content and the quizzes or other materials generated from it by the AI models. Luminael AI claims no ownership over your content or the AI-generated output derived from your content and API key.
+          </li>
+          <li>
+            <strong>Acceptable Use:</strong> You agree not to use the Service for any unlawful, harmful, or prohibited purpose. This includes, but is not limited to, generating content that is defamatory, obscene, infringing on intellectual property rights, or violating any applicable laws or regulations. You are responsible for the nature of the content you process and generate using the Service.
+          </li>
+        </ul>
+      </section>
+
+      <section className="mb-6">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">3. Disclaimer and Limitation of Liability</h2>
+        <p>I provide this tool with the best intentions, but it&apos;s important to understand its limitations:</p>
+        <ul className="list-disc list-inside space-y-2 pl-4 my-4">
+          <li>
+            <strong>No Guarantees:</strong> The Service is provided &quot;as is&quot; and &quot;as available,&quot; without warranty of any kind, express or implied. I do not guarantee the accuracy, completeness, reliability, availability, or timeliness of any information, content, or quizzes generated by the third-party AI models accessed through the Service. AI-generated content can contain inaccuracies or errors; always verify critical information.
+          </li>
+          <li>
+            <strong>No Liability:</strong> To the fullest extent permitted by applicable law, I (Ken Mosquera, operating as SYNAPPSE), as the provider of Luminael AI, will not be liable for any direct, indirect, incidental, special, consequential, or punitive damages or losses arising from your use of, or inability to use, the Service. This includes, but is not limited to, any costs associated with your API key usage with third-party providers, data loss (as data is stored client-side), or reliance on information generated by the Service. Your use of the Service is solely at your own risk.
+          </li>
+          <li>
+            <strong>Intellectual Property:</strong> You own your content and the output generated using your content and your API key. I (Ken Mosquera, operating as SYNAPPSE) own the code, design, branding, and overall look and feel of the Luminael AI application. You may not copy, modify, distribute, sell, or lease any part of my Service or its underlying software, nor may you reverse engineer or attempt to extract the source code of that software, except to the extent that laws prohibit these restrictions or you have my written permission.
+          </li>
+        </ul>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">A Shared Vision</h2>
+        <p className="mb-3">
+          By using Luminael, you join me in a vision for a world where education is free and accessible to all. I provide the tool; you provide the curiosity. Together, we can create a brighter, more knowledgeable future.
+        </p>
+      </section>
+
+      <section className="mt-12 pt-6 border-t border-border">
+        <h2 className="text-2xl font-semibold mb-4 text-center font-headline">A Note to My Friends at Google (and other AI Providers)</h2>
+        <p className="mb-3 text-center italic text-muted-foreground">
+          Luminael is an experiment in radical accessibility and educational empowerment. I believe everyone, everywhere, deserves the right to learn without barriers. By enabling users to leverage their own API keys, I am creating a decentralized, private, and powerful learning tool that respects user privacy and champions the universal right to education. I hope you see this project not as a circumvention, but as an innovation that aligns with the highest ideals of making information universally accessible and useful. Let&apos;s not hinder this journey; let&apos;s champion it together.
+        </p>
+      </section>
+
+      <section className="mt-8">
+         <p className="text-center text-sm text-muted-foreground">
+           If you have any questions about these Terms of Service, please contact me:<br />
+          <strong>Email:</strong> <a href="mailto:synpps@gmail.com">synpps@gmail.com</a><br />
+          <strong>Personal Email:</strong> <a href="mailto:mosqueraken16@gmail.com">mosqueraken16@gmail.com</a><br />
+          <strong>Website:</strong> <a href="https://synappse.vercel.app" target="_blank" rel="noopener noreferrer">synappse.vercel.app</a>
+         </p>
+      </section>
     </div>
   );
 }
