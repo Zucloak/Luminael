@@ -38,7 +38,10 @@ const generateHellBoundQuizFlow = ai.defineFlow(
     if (!apiKey || apiKey.trim() === '') {
       throw new Error("A valid API Key is required for generateHellBoundQuizFlow but was not provided or was empty.");
     }
-    const runner = genkit({ plugins: [googleAI({apiKey})] });
+    const runner = genkit({
+      plugins: [googleAI({apiKey})],
+      model: 'googleai/gemini-1.5-flash-latest' // C1: Model specified in runner
+    });
 
     const quizPrompt = `You are an expert AI educator specializing in creating deeply challenging assessments. Your task is to use the provided **Key Concepts** to generate a quiz that tests for true mastery, not just surface-level recall. The questions must be exceptionally difficult and require a high level of critical thinking.
 
@@ -55,6 +58,10 @@ ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piec
   INCORRECT (MISSING DOLLAR SIGNS!): \`(q_1 = 2 \\times 10^{-6} \\text{ C})\`
   INCORRECT (WRONG DELIMITERS!): \`\\\\(q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\\\)\`
 FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EXTRA/MISPLACED DELIMITERS, WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
+
+**LISTS AND STEPS: IMPORTANT FORMATTING:**
+For any step-by-step explanations, derivations, or itemized lists in your answers, YOU MUST use standard Markdown numbered lists (e.g., \`1. First step.\\n2. Second step with math \\$x=y\\$.\`).
+DO NOT use LaTeX environments like \`\\\\begin{enumerate}\`, \`\\\\end{enumerate}\`, \`\\\\begin{itemize}\`, or \`\\\\item\`. Use Markdown numbering. Any LaTeX math *within* a Markdown list item must still be correctly delimited with dollar signs.
 
 **NON-NEGOTIABLE RULES (for Hell Bound Quiz):**
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
@@ -84,6 +91,7 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EX
     *   DO NOT use non-standard or custom LaTeX commands.
     *   DO NOT use parentheses for math delimiters like \`\\\\(\` or \`\\\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
+    *   BOXED ANSWERS: When using the \`\\\\boxed{...}\` command for final answers in problem-solving solutions, ensure this command and its argument are themselves enclosed within display math delimiters, like so: \`\\$\\$\\\\boxed{your final answer}\\$\\$\`.
 
 **Output Mandate:**
 You MUST provide your response in the specified JSON format. Failure is not an option.`;
