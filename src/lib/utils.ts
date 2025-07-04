@@ -6,59 +6,49 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function replaceLatexDelimiters(text: string): string {
-  if (!text) return "";
-  // Replace \(...\) with $...$
-  // Need to be careful with greedy matching if there are nested versions,
-  // but for typical AI output this should be okay.
-  // The (.*?) makes the star non-greedy.
-  // Use a replacer function for clarity and robustness with special characters.
-  // Added 's' flag for dotall mode, so '.' matches newline characters.
-  let result = text.replace(/\\\((.*?)\\\)/gs, (match, capturedContent) => `\$${capturedContent}\$`);
-  result = result.replace(/\\\[(.*?)\\\]/gs, (match, capturedContent) => `\$\$${capturedContent}\$\$`);
+  if (!text || typeof text !== 'string') return "";
 
-  // Handle \boxed{...} specifically to ensure it becomes $$ \boxed{...} $$
-  // Step 1: Temporarily protect already correctly double-dollared \boxed commands
-  const correctlyDelimitedBoxedPlaceholder = "CORRECTLY_DELIMITED_BOXED_TEMP_PLACEHOLDER";
-  const tempResultArray: string[] = [];
-  let lastIndex = 0;
+  let newResult = text;
 
-  result.replace(/\$\$\\s*(\\boxed\{.*?\})\s*\$\$/gs, (match, boxedContent, offset) => {
-    tempResultArray.push(result.substring(lastIndex, offset));
-    tempResultArray.push(correctlyDelimitedBoxedPlaceholder + tempResultArray.length); // Unique placeholder
-    lastIndex = offset + match.length;
-    return match; // Doesn't matter what's returned here, we're rebuilding
-  });
-  tempResultArray.push(result.substring(lastIndex));
-  result = tempResultArray.join('');
+  // Step 1: Convert standard LaTeX command delimiters \(...\) and \[...\] to $...$ and $$...$$
+  // These are unlikely if AI follows prompt, but good for robustness.
+  // Ensure non-greedy match for content within delimiters (.*?)
+  newResult = newResult.replace(/\\\((.*?)\\\)/gs, '$$$1$');
+  newResult = newResult.replace(/\\\[(.*?)\\\]/gs, '$$$$$1$$');
 
-  const protectedBoxedContents: string[] = [];
-  result = result.replace(new RegExp(correctlyDelimitedBoxedPlaceholder + "(\\d+)", "g"), (match, id) => {
-      // This part is tricky, we need to store the actual content that was replaced by placeholder
-      // The initial replacement of $$ \boxed $$ should have just put a placeholder for the $$ \boxed $$ part.
-      // Let's rethink the protection strategy.
-      // Simpler: First, ensure all \boxed are wrapped in $$. Then clean up.
-      return match; // This protection strategy is getting too complex.
-  });
+  // Step 2: Normalize explicit escaped dollar signs from AI (e.g., \\$ -> $)
+  // This simplifies patterns if AI tries to escape its own delimiters.
+  // Must come after step 1, in case AI outputs something like \\$\\\[ ... \\]\\$
+  newResult = newResult.replace(/\\\\\$/g, '$');
 
+  // Step 3: Handle \boxed{...}. It should always be display style ($$).
+  // To do this safely, first remove any existing $ or $$ immediately around a \boxed{} expression.
+  // This regex matches \boxed{...} that might be optionally wrapped by $ or $$.
+  // It captures the \boxed{...} part itself into $1.
+  newResult = newResult.replace(/\$\$?\s*(\\boxed\{[^}]*?\})\s*\$\$?/g, '$1');
+  // Then, (re-)wrap all \boxed{...} expressions with $$...$$ to ensure display style.
+  newResult = newResult.replace(/(\\boxed\{[^}]*?\})/g, '$$$$$1$$');
 
-  // Simpler strategy for \boxed:
-  // 1. Ensure any \boxed{...} is wrapped by \$\$...\$\$ (this might create \$\$\$\boxed{}\$\$\$ or \$\$\boxed{}\$\$)
-  result = result.replace(/(\\boxed\{.*?\})/g, (match) => `\$\$${match}\$\$`);
+  // Step 4: Clean up repeated/redundant dollar signs.
+  // Reduce sequences of 3 or more dollar signs to 2 (e.g., $$$ -> $$).
+  newResult = newResult.replace(/\${3,}/g, '$$');
 
-  // 2. Clean up multiple dollar signs around \boxed or other content.
-  //    Reduce $$$$ ... $$$$ to $$ ... $$
-  result = result.replace(/\$\$\$\$\s*(.*?)\s*\$\$\$\$/gs, `\$\$ $1 \$\$`);
-  //    Reduce $$$ ... $$$ to $$ ... $$
-  result = result.replace(/\$\$\$\s*(.*?)\s*\$\$\$/gs, `\$\$ $1 \$\$`);
-  //    Reduce $$ $ ... $ $$ to $$ ... $$ (handles if AI did $ \boxed{} $ and we wrapped it)
-  result = result.replace(/\$\$(\s*\$.*?\$\s*)\$\$/gs, `\$\$ $1 \$\$`);
-  //    Reduce $ $$ ... $$ $ to $$ ... $$ (handles if AI did $ \boxed{} $ and we wrapped it another way)
-  result = result.replace(/\$\s*\$\$(.*?)\$\$\s*\$/gs, `\$\$ $1 \$\$`);
+  // Correct patterns like $ $$...$$ $ to $$...$$
+  newResult = newResult.replace(/\$\s*\$\$(.*?)\$\$\s*\$/gs, '$$$$$1$$');
+  // Correct patterns like $$ $...$ $$ to $$...$$
+  // This one is a bit more complex: if $...$ is valid inline math inside display math, it's okay.
+  // However, if it's an artifact of incorrect processing, it should be cleaned.
+  // E.g. if AI produced $$ $variable$ = value $$, it should be $$ variable = value $$.
+  // A simple replace might be too aggressive. For now, let's assume the AI prompt
+  // (which asks for $ or $$ for *every* math piece) and the \${3,} cleanup handle most cases.
+  // A common error is `$$ text $math$ text $$` which is valid.
+  // An error like `$$ $math$ $$` (where $math$ is the *only* content) should be `$$math$$` or `$math$`.
+  // The current logic doesn't simplify `$$ $x$ $$` to `$$x$$` if x was meant to be part of display.
+  // This is a minor issue compared to the main delimiter corruption.
 
+  // Remove spaces immediately inside delimiters, e.g., $ content $ -> $content$
+  newResult = newResult.replace(/\$\s+(.*?)\s+\$/gs, '$$$1$');
+  newResult = newResult.replace(/\$\$\s+(.*?)\s+\$\$/gs, '$$$$$1$$');
 
-  // Final check: ensure any remaining single $ around a \boxed is promoted to $$
-  result = result.replace(/\$\s*(\\boxed\{.*?\})\s*\$/gs, `\$\$ $1 \$\$`);
-
-
-  return result;
+  return newResult;
 }

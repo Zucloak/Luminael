@@ -190,13 +190,73 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
             // Capture raw questions for debugging BEFORE ANY modification (including delimiter replacement)
             const rawQuestionsForDebug = JSON.parse(JSON.stringify(output.quiz?.questions || []));
 
+            // Handle misclassified MultipleChoice questions (e.g., with "string" or "No options provided" options)
+            if (output.quiz && output.quiz.questions) {
+              output.quiz.questions.forEach(q => {
+                if (q.questionType === 'multipleChoice') {
+                  if (q.options && q.options.length > 0) {
+                    const allOptionsArePlaceholders = q.options.every(opt => {
+                      const optText = (opt || "").trim().toLowerCase();
+                      // Check for common placeholder patterns
+                      return optText === "string" ||
+                             optText.startsWith("no options provided") ||
+                             optText.startsWith("placeholder") ||
+                             optText.includes("lorem ipsum");
+                    });
+
+                    if (allOptionsArePlaceholders) {
+                      q.questionType = 'openEnded'; // Reclassify
+                      delete (q as any).options;    // Remove faulty options array
+                      console.warn(`[generateQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") converted to openEnded due to placeholder options.`);
+                    } else {
+                      // Check for duplicate options within this specific question's options array
+                      const uniqueOptions = new Set(q.options.map(opt => (opt || "").trim()));
+                      if (uniqueOptions.size < q.options.length) {
+                        console.warn(`[generateQuizFlow] Question (title: "${q.question.substring(0, 30)}...") has duplicate options. The AI should provide distinct options.`);
+                        // Potentially filter this question or attempt to de-duplicate if critical
+                        // For now, logging and relying on AI prompt for distinctness.
+                      }
+                    }
+                  } else if (!q.options || q.options.length === 0) {
+                    // If MC question has no options array or empty options, also treat as misclassified openEnded
+                    q.questionType = 'openEnded';
+                    delete (q as any).options;
+                    console.warn(`[generateQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") converted to openEnded due to missing/empty options.`);
+                  }
+                }
+              });
+            }
+
+            // Correction for "Option A" style answers BEFORE delimiter replacement
+            if (output.quiz && output.quiz.questions) {
+              output.quiz.questions.forEach(q => {
+                if (q.questionType === 'multipleChoice' && q.options && q.options.length > 0 && q.answer) {
+                  const answerText = q.answer.trim().toLowerCase();
+                  let correctedAnswer = q.answer;
+                  if (answerText === 'option a' && q.options[0] !== undefined) {
+                    correctedAnswer = q.options[0];
+                  } else if (answerText === 'option b' && q.options[1] !== undefined) {
+                    correctedAnswer = q.options[1];
+                  } else if (answerText === 'option c' && q.options[2] !== undefined) {
+                    correctedAnswer = q.options[2];
+                  } else if (answerText === 'option d' && q.options[3] !== undefined) {
+                    correctedAnswer = q.options[3];
+                  }
+                  q.answer = correctedAnswer;
+                }
+              });
+            }
+
             // Apply delimiter replacement to all relevant fields
             if (output.quiz && output.quiz.questions) {
               output.quiz.questions.forEach(q => {
                 if (q.question) q.question = replaceLatexDelimiters(q.question);
                 if (q.answer) q.answer = replaceLatexDelimiters(q.answer);
                 if (q.questionType === 'multipleChoice' && q.options) {
-                  q.options = q.options.map(opt => replaceLatexDelimiters(opt));
+                  // Ensure options is an array of strings before mapping
+                  if (Array.isArray(q.options)) {
+                    q.options = q.options.map(opt => typeof opt === 'string' ? replaceLatexDelimiters(opt) : opt);
+                  }
                 }
               });
             }
