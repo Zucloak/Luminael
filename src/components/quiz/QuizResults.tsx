@@ -442,38 +442,46 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                                     <BrainCircuit className="h-5 w-5 text-primary" />
                                     <span className="text-muted-foreground font-medium">Validating your answer with AI...</span>
                                 </div>
-                            ) : result.validation ? (
-                                <div className={cn(
-                                    "p-3 rounded-md border space-y-2",
-                                    result.validation.status === 'Correct' && "bg-green-500/10 border-green-500/40",
-                                    result.validation.status === 'Partially Correct' && "bg-yellow-500/10 border-yellow-500/40",
-                                    result.validation.status === 'Incorrect' && "bg-destructive/10 border-destructive/40",
-                                )}>
-                                    <div className="flex items-center gap-2 font-bold">
-                                        {result.validation.status === 'Correct' && <CheckCircle className="h-5 w-5 text-green-600" />}
-                                        {result.validation.status === 'Partially Correct' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
-                                        {result.validation.status === 'Incorrect' && <XCircle className="h-5 w-5 text-destructive" />}
-                                        <span className={cn(
-                                            result.validation.status === 'Correct' && "text-green-600",
-                                            result.validation.status === 'Partially Correct' && "text-yellow-600",
-                                            result.validation.status === 'Incorrect' && "text-destructive",
-                                        )}>{result.validation.status}</span>
+                            ) : result.validation ? ( // If result.validation object exists
+                                result.validation.status === 'Deferred' ? (
+                                    // UI for Deferred status
+                                    <div className="p-3 rounded-md border border-dashed bg-muted/20 space-y-2">
+                                        <p className="text-sm text-muted-foreground italic">{result.validation.explanation}</p>
+                                        <Button size="sm" onClick={() => validateSingleAnswer(index)} disabled={!apiKey || result.isValidating}>
+                                            {result.isValidating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                                            Validate with AI
+                                        </Button>
+                                        {!apiKey && <p className="text-xs text-destructive">API key required to validate.</p>}
                                     </div>
-                                    <div className="text-sm text-foreground/90 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
-                                </div>
-                            ) : result.validation?.status === 'Deferred' ? (
-                                <div className="p-3 rounded-md border border-dashed bg-muted/20 space-y-2">
-                                    <p className="text-sm text-muted-foreground italic">{result.validation.explanation}</p>
-                                    <Button size="sm" onClick={() => validateSingleAnswer(index)} disabled={!apiKey || result.isValidating}>
-                                        {result.isValidating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                                        Validate with AI
-                                    </Button>
-                                    {!apiKey && <p className="text-xs text-destructive">API key required to validate.</p>}
-                                </div>
+                                ) : (
+                                    // UI for other statuses (Correct, Incorrect, Partially Correct)
+                                    <div className={cn(
+                                        "p-3 rounded-md border space-y-2",
+                                        result.validation.status === 'Correct' && "bg-green-500/10 border-green-500/40",
+                                        result.validation.status === 'Partially Correct' && "bg-yellow-500/10 border-yellow-500/40",
+                                        result.validation.status === 'Incorrect' && "bg-destructive/10 border-destructive/40"
+                                        // No specific style for 'Deferred' here as it's handled above
+                                    )}>
+                                        <div className="flex items-center gap-2 font-bold">
+                                            {result.validation.status === 'Correct' && <CheckCircle className="h-5 w-5 text-green-600" />}
+                                            {result.validation.status === 'Partially Correct' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
+                                            {result.validation.status === 'Incorrect' && <XCircle className="h-5 w-5 text-destructive" />}
+                                            {/* Icon for Deferred is handled with the button */}
+                                            <span className={cn(
+                                                result.validation.status === 'Correct' && "text-green-600",
+                                                result.validation.status === 'Partially Correct' && "text-yellow-600",
+                                                result.validation.status === 'Incorrect' && "text-destructive"
+                                                // Deferred text style handled by its own block
+                                            )}>{result.validation.status}</span>
+                                        </div>
+                                        <div className="text-sm text-foreground/90 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
+                                    </div>
+                                )
                             ) : (
-                              <div className="p-3 rounded-md border bg-muted/20">
-                                <p className="text-sm text-muted-foreground">AI validation was not performed for this question (e.g. no API key, or no answer provided, or not applicable).</p>
-                              </div>
+                                // result.validation is undefined (and not currently validating)
+                                <div className="p-3 rounded-md border bg-muted/20">
+                                    <p className="text-sm text-muted-foreground">AI validation not yet performed or not applicable (e.g., no answer provided).</p>
+                                </div>
                             )}
                         </div>
                     )}
