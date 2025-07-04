@@ -136,15 +136,22 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
   }, [processedFiles, performLatexAnalysis]);
 
 
+interface ProcessFileResult {
+  content: string;
+  confidence?: number;
+  source?: 'local' | 'ai';
+}
+
+//...
   const processFile = useCallback(
-    (file: File): Promise<{ content: string }> => {
+    (file: File): Promise<ProcessFileResult> => { // Update return type here
       return new Promise(async (resolve, reject) => {
         const doProcess = (
-          processor: (file: File) => Promise<{ content: string }>
+          processor: (file: File) => Promise<ProcessFileResult> // Update processor return type
         ) => {
           processor(file)
-            .then(async ({ content }) => {
-              resolve({ content });
+            .then(async (result) => { // result can contain content, confidence, source
+              resolve(result);
             })
             .catch(reject);
         };
