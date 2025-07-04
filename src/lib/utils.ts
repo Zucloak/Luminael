@@ -13,8 +13,8 @@ export function replaceLatexDelimiters(text: string): string {
   // Step 1: Convert standard LaTeX command delimiters \(...\) and \[...\] to $...$ and $$...$$
   // These are unlikely if AI follows prompt, but good for robustness.
   // Ensure non-greedy match for content within delimiters (.*?)
-  newResult = newResult.replace(/\\\((.*?)\\\)/gs, '$$$1$');
-  newResult = newResult.replace(/\\\[(.*?)\\\]/gs, '$$$$$1$$');
+  newResult = newResult.replace(/\\\((.*?)\\\)/gs, (match, content) => `$${content}$`);
+  newResult = newResult.replace(/\\\[(.*?)\\\]/gs, (match, content) => `$$${content}$$`);
 
   // Step 2: Normalize explicit escaped dollar signs from AI (e.g., \\$ -> $)
   // This simplifies patterns if AI tries to escape its own delimiters.
