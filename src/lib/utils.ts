@@ -12,8 +12,9 @@ export function replaceLatexDelimiters(text: string): string {
   // but for typical AI output this should be okay.
   // The (.*?) makes the star non-greedy.
   // Use a replacer function for clarity and robustness with special characters.
-  let result = text.replace(/\\\((.*?)\\\)/g, (match, capturedContent) => `\$${capturedContent}\$`);
+  // Added 's' flag for dotall mode, so '.' matches newline characters.
+  let result = text.replace(/\\\((.*?)\\\)/gs, (match, capturedContent) => `\$${capturedContent}\$`);
   // Replace \[...\] with $$...$$
-  result = result.replace(/\\\[(.*?)\\\]/g, (match, capturedContent) => `\$\$${capturedContent}\$\$`);
+  result = result.replace(/\\\[(.*?)\\\]/gs, (match, capturedContent) => `\$\$${capturedContent}\$\$`);
   return result;
 }
