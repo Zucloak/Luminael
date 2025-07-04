@@ -14,7 +14,7 @@ For centuries, access to high-quality education has been a privilege, not a righ
 - **Centralized Control & Data Exploitation:** Most online platforms operate on a centralized model, requiring users to surrender their personal data, learning habits, and content in exchange for access. This data is then stored, analyzed, and often monetized, creating significant privacy risks.
 
 **Luminael was conceived as a direct and radical response to these challenges.**  
-*Our Mission: To dismantle the barriers to knowledge by providing a free, secure, and infinitely adaptable learning tool that empowers every individual on Earth to pursue education without compromise.*
+*My Mission: To dismantle the barriers to knowledge by providing a free, secure, and infinitely adaptable learning tool that empowers every individual on Earth to pursue education without compromise.*
 
 ---
 
@@ -24,19 +24,19 @@ Luminael is not merely an application; it is a protocol for learning. It redefin
 
 ### 2.1. Core Philosophy
 
-- **Free & Universal Access:** Luminael is, and always will be, free to use. Our commitment is to ensure that the only requirement for learning is curiosity.
+- **Free & Universal Access:** Luminael is, and always will be, free to use. My commitment is to ensure that the only requirement for learning is curiosity.
 - **Decentralization by Design:** The platform's fully client-side, zero-backend architecture means there is no central server to mediate, monitor, or censor user activity. Luminael runs entirely within the user's browser, making it resilient, private, and truly decentralized.
-- **User Empowerment through BYO-API:** The Bring-Your-Own-API-Key model is the cornerstone of the Luminael philosophy. Instead of routing requests through our own servers and keys, we empower users to connect their personal AI API key (initially Google Gemini, with plans for expansion). This has profound benefits:
+- **User Empowerment through BYO-API:** The Bring-Your-Own-API-Key model is the cornerstone of the Luminael philosophy. Instead of routing requests through my own servers and keys, I empower users to connect their personal AI API key (initially Google Gemini, with plans for expansion). This has profound benefits:
     - **Control:** The user has full control over their access to powerful AI.
     - **Cost-Efficiency:** Users can leverage the generous free tiers offered by AI providers, making powerful learning tools accessible at no cost.
-    - **Privacy:** The user's API key is stored locally on their device and is used to communicate directly with the AI provider, bypassing our infrastructure entirely.
+    - **Privacy:** The user's API key is stored locally on their device and is used to communicate directly with the AI provider, bypassing my infrastructure entirely.
 
 ### 2.2. Key Features and Functionality
 
 - **AI-Driven Personalization:** By leveraging the user's API key, Luminael can generate deeply personalized content. It features multi-subject comprehension to tackle anything from quantum physics to Renaissance poetry. Its high-volume generation capability can produce up to 100 quiz questions from multi-format inputs (including .txt, .pdf, .docx, and images), transforming any set of study materials into an interactive learning experience.
 - **Multi-Lingual Capabilities:** The platform is built on a multi-lingual prompt engine. This allows users to learn, generate quizzes, and receive explanations in a vast array of languages, making it a truly global tool.
-- **Privacy & Security by Design:** This cannot be overstated. Because Luminael is fully client-side with zero database and zero backend, it offers a level of security that is architecturally guaranteed. All processing is secure, transparent, and local-only. Your study materials, your generated quizzes, and your interactions are never transmitted to, or stored on, any server operated by us. Your data never leaves your device.
-- **Efficiency and Sustainability:** All interactions with the AI are designed to be token-optimized. We craft our prompts to be as efficient as possible, ensuring that users get the maximum educational value from every API call, extending the life of their free-tier usage.
+- **Privacy & Security by Design:** This cannot be overstated. Because Luminael is fully client-side with zero database and zero backend, it offers a level of security that is architecturally guaranteed. All processing is secure, transparent, and local-only. Your study materials, your generated quizzes, and your interactions are never transmitted to, or stored on, any server operated by me. Your data never leaves your device.
+- **Efficiency and Sustainability:** All interactions with the AI are designed to be token-optimized. I craft my prompts to be as efficient as possible, ensuring that users get the maximum educational value from every API call, extending the life of their free-tier usage.
 
 ---
 
@@ -79,19 +79,19 @@ The benefits of this zero-database, zero-backend, local-only approach are transf
 Luminael is a living project, driven by a vision of continuous improvement.
 
 - **Immediate Plans (MVP):** The current version provides the core functionality of quiz generation from multiple file formats using the Google Gemini API.
-- **Short-Term Goals:** Our primary goal is to expand API compatibilities to include other major providers like Anthropic (Claude) and OpenAI (GPT), giving users even more choice and control.
-- **Long-Term Vision:** We envision a future where Luminael becomes a fully open-source, community-driven platform, with features and improvements contributed by educators and developers from around the globe.
+- **Short-Term Goals:** My primary goal is to expand API compatibilities to include other major providers like Anthropic (Claude) and OpenAI (GPT), giving users even more choice and control.
+- **Long-Term Vision:** I envision a future where Luminael becomes a fully open-source, community-driven platform, with features and improvements contributed by educators and developers from around the globe.
 
 ---
 
-## 6. A Note to Our Friends at Google
+## 6. A Note to My Friends at Google
 
-Luminael is an experiment in radical accessibility and educational empowerment. We believe everyone, everywhere, deserves the right to learn without barriers. By enabling users to leverage their own API keys, we are creating a decentralized, private, and powerful learning tool that respects user privacy and champions the universal right to education. We hope you see this project not as a circumvention, but as an innovation that aligns with the highest ideals of making information universally accessible and useful. Let's not hinder this journey; let's champion it together.
+Luminael is an experiment in radical accessibility and educational empowerment. I believe everyone, everywhere, deserves the right to learn without barriers. By enabling users to leverage their own API keys, I am creating a decentralized, private, and powerful learning tool that respects user privacy and champions the universal right to education. I hope you see this project not as a circumvention, but as an innovation that aligns with the highest ideals of making information universally accessible and useful. Let's not hinder this journey; let's champion it together.
 
 ---
 
 ## 7. Conclusion
 
-Luminael represents a fundamental shift in how we approach digital education. By moving away from centralized, data-hungry models and towards a decentralized, user-empowered architecture, we have created more than just a learning app—we have created a tool for intellectual freedom. It is a testament to the idea that the most powerful technologies can, and should, be placed directly in the hands of the people they are meant to serve.
+Luminael represents a fundamental shift in how we approach digital education. By moving away from centralized, data-hungry models and towards a decentralized, user-empowered architecture, I have created more than just a learning app—I have created a tool for intellectual freedom. It is a testament to the idea that the most powerful technologies can, and should, be placed directly in the hands of the people they are meant to serve.
 
-We invite you to experience this new paradigm of learning. We invite you to take control of your education. We invite you to build a future where knowledge is truly universal.
+I invite you to experience this new paradigm of learning. I invite you to take control of your education. I invite you to build a future where knowledge is truly universal.
