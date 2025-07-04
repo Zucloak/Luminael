@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuizSetup } from "@/hooks/use-quiz-setup";
+import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 
 const quizSetupSchema = z.object({
@@ -62,6 +63,7 @@ interface QuizSetupProps {
 export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundToggle }: QuizSetupProps) {
   const [isClient, setIsClient] = useState(false);
   const { apiKey, loading: apiKeyLoading } = useApiKey();
+  const { toast } = useToast(); // Initialize toast
   const { 
     processedFiles,
     fileError,
