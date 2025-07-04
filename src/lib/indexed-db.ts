@@ -73,6 +73,26 @@ export async function addPastQuiz(quizData: PastQuiz): Promise<void> {
     }
 }
 
+export async function clearAllPastQuizzes(): Promise<void> {
+    try {
+        const db = await openDB();
+        const transaction = db.transaction(QUIZ_STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(QUIZ_STORE_NAME);
+        store.clear(); // Clears all data from the object store
+
+        return new Promise((resolve, reject) => {
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => {
+                console.error('Clear all transaction error:', transaction.error);
+                reject(transaction.error);
+            };
+        });
+    } catch (error) {
+        console.error("Could not clear past quizzes from IndexedDB:", error);
+        throw error;
+    }
+}
+
 export async function getPastQuizzes(): Promise<PastQuiz[]> {
     try {
         const db = await openDB();

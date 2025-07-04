@@ -38,6 +38,7 @@ export default function Home() {
     cancelGeneration,
     loadQuizFromHistory,
     processedFiles,
+    isEcoModeActive, // Destructure isEcoModeActive
   } = useQuizSetup();
 
   const searchParams = useSearchParams();
@@ -185,7 +186,15 @@ export default function Home() {
       case 'quiz':
         return quiz && <QuizInterface quiz={quiz} timer={timer} onSubmit={submitQuiz} onExit={restartQuiz} isHellBound={isHellBound} sourceContent={combinedContent} />;
       case 'results':
-        return quiz && <QuizResults quiz={quiz} answers={userAnswers} onRestart={restartQuiz} onRetake={retakeQuiz} user={user} sourceContent={combinedContent} />;
+        return quiz && <QuizResults
+                         quiz={quiz}
+                         answers={userAnswers}
+                         onRestart={restartQuiz}
+                         onRetake={retakeQuiz}
+                         user={user}
+                         sourceContent={combinedContent}
+                         isEcoModeActive={isEcoModeActive} // Pass isEcoModeActive
+                       />;
       case 'setup':
       default:
         return <QuizSetup onQuizStart={startQuiz} isGenerating={isGenerating} isHellBound={isHellBound} onHellBoundToggle={setIsHellBound} />;

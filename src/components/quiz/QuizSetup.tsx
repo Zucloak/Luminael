@@ -23,15 +23,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useApiKey } from "@/hooks/use-api-key";
 import { PulsingCore } from "@/components/common/PulsingCore";
 import { PulsingCoreRed } from "../common/PulsingCoreRed";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+// ImageIcon and Trash2Icon are no longer needed here as the specific image upload UI is removed
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuizSetup } from "@/hooks/use-quiz-setup";
+import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 
 const quizSetupSchema = z.object({
   numQuestions: z.coerce.number().min(1, "Must be at least 1 question.").max(100, "Maximum 100 questions."),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
-  questionFormat: z.enum(["multipleChoice", "openEnded", "mixed"]).default("multipleChoice"),
+  questionFormat: z.enum(["multipleChoice", "problemSolving", "openEnded", "mixed"]).default("multipleChoice"),
   timerEnabled: z.boolean().default(false),
   timerPerQuestion: z.preprocess(
     (val) => (val === "" ? undefined : val),
@@ -60,6 +63,7 @@ interface QuizSetupProps {
 export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundToggle }: QuizSetupProps) {
   const [isClient, setIsClient] = useState(false);
   const { apiKey, loading: apiKeyLoading } = useApiKey();
+  const { toast } = useToast(); // Initialize toast
   const { 
     processedFiles,
     fileError,
@@ -68,6 +72,11 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     handleFileChange,
     removeFile,
     stopParsing,
+    isAnalyzingContent,
+    canGenerateCalculative,
+    isEcoModeActive, // Added isEcoModeActive
+    toggleEcoMode,   // Added toggleEcoMode
+    // Problem Image specific states and handlers are removed from destructuring
   } = useQuizSetup();
   
   useEffect(() => {
@@ -100,7 +109,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
   }
 
   const isApiKeyMissing = !apiKey;
-  const isProcessing = isGenerating || isParsing;
+  const isProcessing = isGenerating || isParsing || isAnalyzingContent; // Include isAnalyzingContent
 
   if (!isClient) {
     return (
@@ -174,6 +183,44 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             <CardContent className="space-y-8 pt-6">
               <div className="space-y-2">
                 <Label className="text-lg font-semibold">1. Upload Content</Label>
+                <div className="flex items-center space-x-2 mt-2 mb-3 justify-end">
+                  <Switch
+                    id="eco-mode-toggle"
+                    checked={isEcoModeActive}
+                    onCheckedChange={toggleEcoMode}
+                    disabled={isProcessing || apiKeyLoading}
+                  />
+                  <Label htmlFor="eco-mode-toggle" className="text-sm font-medium">
+                    ECO MODE
+                  </Label>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AlertTriangle className={cn("h-4 w-4 cursor-help", isEcoModeActive ? "text-green-500" : "text-muted-foreground/50")} />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="font-semibold mb-1">ECO MODE {isEcoModeActive ? 'Active' : 'Inactive'}</p>
+                        {isEcoModeActive ? (
+                          <>
+                            <p className="text-xs text-muted-foreground">AI resource usage is minimized.</p>
+                            <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5 mt-1">
+                              <li>File OCR will use local processing only.</li>
+                              <li>AI answer validation in results will be manual.</li>
+                            </ul>
+                          </>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Standard AI processing enabled (AI-powered OCR, auto-validation).</p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                {isEcoModeActive && (
+                  <div className="p-2.5 mb-3 rounded-md bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-xs font-medium flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-px" />
+                    <span>Eco Mode Active – AI minimized. Manual validation available in results. Local OCR will be used for images/PDFs.</span>
+                  </div>
+                )}
                 {isApiKeyMissing && (
                   <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
@@ -211,6 +258,33 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                 )}
                 {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
                  {form.formState.errors.root && <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>}
+
+                {isEcoModeActive && processedFiles.length > 0 && !isParsing && (
+                  <div className="mt-4 p-3 border border-dashed rounded-md bg-muted/30">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Files were processed using local OCR in Eco Mode. For potentially higher accuracy or advanced analysis (like LaTeX extraction from complex images), you can switch off Eco Mode and re-upload/reprocess.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        toggleEcoMode(); // This will turn Eco Mode OFF
+                        toast({
+                          title: "Eco Mode Deactivated",
+                          description: "Please re-upload your files if you want them processed with AI OCR and analysis.",
+                          duration: 7000,
+                        });
+                        // Note: We don't automatically reprocess here to avoid unexpected AI calls.
+                        // User should re-initiate file upload if they want AI processing.
+                        // Or, a more advanced implementation could clear processedFiles and prompt re-upload.
+                        // For now, this informs the user.
+                      }}
+                    >
+                      Switch to Full AI Mode & Guide Reprocessing
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -349,7 +423,11 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Question Format</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isProcessing || isApiKeyMissing || apiKeyLoading}>
+                            <Select
+                              onValueChange={field.onChange} // Simplified: removeProblemImage call removed
+                              defaultValue={field.value}
+                              disabled={isProcessing || isApiKeyMissing || apiKeyLoading}
+                            >
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select a format" />
@@ -357,7 +435,38 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="multipleChoice">Multiple Choice</SelectItem>
-                                <SelectItem value="openEnded">Problem Solving</SelectItem>
+                                <TooltipProvider delayDuration={100}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className={cn( (isAnalyzingContent || canGenerateCalculative === false) && "cursor-not-allowed")}>
+                                        <SelectItem
+                                          value="problemSolving"
+                                          disabled={isAnalyzingContent || canGenerateCalculative === false || isProcessing || isApiKeyMissing || apiKeyLoading}
+                                          onSelect={(e) => {
+                                            if (isAnalyzingContent || canGenerateCalculative === false) {
+                                              e.preventDefault();
+                                            } else {
+                                              field.onChange("problemSolving");
+                                            }
+                                          }}
+                                        >
+                                          Problem Solving (Calculative)
+                                          {isAnalyzingContent && <Loader2 className="h-4 w-4 animate-spin ml-2 inline-block" />}
+                                        </SelectItem>
+                                      </div>
+                                    </TooltipTrigger>
+                                    {(isAnalyzingContent || canGenerateCalculative === false) && (
+                                      <TooltipContent>
+                                        <p>
+                                          {isAnalyzingContent
+                                            ? "Analyzing content for calculative potential..."
+                                            : "Disabled: No mathematical formulas/expressions detected in your uploaded content suitable for calculative problems."}
+                                        </p>
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <SelectItem value="openEnded">Open-Ended (Conceptual)</SelectItem>
                                 <SelectItem value="mixed">Mixed</SelectItem>
                               </SelectContent>
                             </Select>
@@ -365,6 +474,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                           </FormItem>
                         )}
                       />
+                      {/* Conditional UI for Problem Image Upload has been REMOVED */}
                       <FormField
                         control={form.control}
                         name="difficulty"
@@ -408,6 +518,11 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Processing files...
+                  </>
+                ) : isAnalyzingContent ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Analyzing content...
                   </>
                 ) : (
                   <>

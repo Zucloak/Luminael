@@ -27,6 +27,10 @@ const faqs = [
     {
         question: "Who is SYNAPPSE?",
         answer: "SYNAPPSE is the innovative digital creation company behind Luminael AI, founded and led by Mr. Ken Mosquera, We specialize in building intelligent applications and providing top-tier digital content and design services. You can learn more at synappse.vercel.app."
+    },
+    {
+        question: "How can I save my data or move it to another device/browser?",
+        answer: "You can use the 'Local Data Management' feature on your Profile page. 'Save Data to Device' allows you to save your user profile and entire quiz history as a single JSON file. If your browser supports it, you can select a specific folder for saving. Otherwise, the file will be downloaded. You can then use 'Load Data from Device' to select this JSON file and restore your data in any browser where you're using Luminael. This is useful for backups or transferring your progress."
     }
 ];
 

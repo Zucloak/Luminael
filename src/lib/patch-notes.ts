@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { ShieldCheck, Zap, Rocket, Bug, Gem } from 'lucide-react';
+import { ShieldCheck, Zap, Rocket, Bug, Gem, Settings2, ImageUp, ListChecks, HardDriveDownload } from 'lucide-react'; // Added Settings2, ImageUp, ListChecks, HardDriveDownload
 
 export interface PatchNote {
     icon: LucideIcon;
@@ -10,147 +10,204 @@ export interface PatchNote {
 export interface PatchVersion {
     version: string;
     title: string;
-    date: string;
+    date: string; // Consider making this a Date object if more complex date logic is needed
     notes: PatchNote[];
 }
 
 export const patchNotes: PatchVersion[] = [
     {
-      version: '1.2.1',
-      title: 'Stability & Accuracy Enhancements',
-      date: 'July 2024', // TODO: Update with actual release month/year
+      version: '1.2.3', // Assuming next version
+      title: 'Local Data Management & Continued Refinements',
+      date: 'August 2024', // Placeholder, update with actual release month/year
       notes: [
         {
-          icon: ShieldCheck,
-          category: 'Fix',
-          text: 'Resolved critical Vercel deployment errors by ensuring user-provided API keys are correctly and consistently used for all AI operations, enhancing privacy and reliability.'
+          icon: HardDriveDownload,
+          category: 'Feature',
+          text: "Introducing Local Data Management! Save your profile and quiz history to your device and load it back anytime. Find this feature on your Profile page."
         },
+        // Add other notes for 1.2.3 if any, or this could be a focused release
+        // For example, if other minor fixes went in:
+        // {
+        //   icon: Bug,
+        //   category: 'Fix',
+        //   text: 'Minor UI adjustments on the quiz interface.'
+        // },
+      ]
+    },
+    {
+      version: '1.2.2',
+      title: 'Eco Mode & Enhanced Interactivity',
+      date: 'July 2024', // Placeholder, update with actual release month/year
+      notes: [
         {
-          icon: Bug,
-          category: 'Fix',
-          text: 'Corrected an issue in Hell Bound quiz mode that prevented quiz generation due to a missing model configuration on the server.'
-        },
-        {
-          icon: Bug,
-          category: 'Fix',
-          text: 'Fixed a navigation bug in the quiz interface where the "Back" button was incorrectly advancing to the next question.'
-        },
-        {
-          icon: Gem,
-          category: 'Improvement',
-          text: 'Improved Live LaTeX Preview in the quiz interface for open-ended answers to render mathematical notation more reliably.'
+          icon: Settings2, // Icon for settings/mode
+          category: 'Feature',
+          text: 'Introducing ECO MODE! Toggle on to minimize AI usage for resource efficiency, featuring local OCR for uploads and manual AI answer validation.'
         },
         {
           icon: Rocket,
           category: 'Improvement',
-          text: 'Optimized PDF file processing by adjusting how AI OCR is handled for multi-page documents, reducing upload delays.'
+          text: 'Local OCR (in Eco Mode) now includes image preprocessing (grayscale & binarization) to enhance text extraction quality from your uploads.'
         },
         {
-          icon: Zap,
+          icon: ShieldCheck,
+          category: 'Improvement',
+          text: 'Improved LaTeX rendering for more consistent and reliable display of mathematical formulas across the app.'
+        },
+        {
+          icon: Bug,
+          category: 'Fix',
+          text: 'Addressed issues where some multiple-choice questions had placeholder or misformatted answers, ensuring better question quality.'
+        },
+        {
+          icon: ImageUp, // Icon for file upload
           category: 'Feature',
-          text: 'Added new Privacy Policy and Terms of Service pages with detailed information about Luminael\'s commitment to user privacy and client-side processing.'
+          text: 'File upload for answers is now available for "Problem Solving" questions, allowing image uploads of detailed solutions.'
+        },
+        {
+          icon: ListChecks, // Icon for preview/list checking
+          category: 'Improvement',
+          text: 'Live LaTeX preview for answers derived from uploaded images (Open Ended & Problem Solving) is now more dependable.'
+        }
+      ]
+    },
+    {
+      version: '1.2.1',
+      title: 'API Key & Quiz Polish',
+      date: 'July 2024', // Placeholder
+      notes: [
+        {
+          icon: ShieldCheck,
+          category: 'Fix',
+          text: 'Strengthened API key usage for improved privacy and reliable AI operations.'
+        },
+        {
+          icon: Bug,
+          category: 'Fix',
+          text: 'Resolved a quiz generation issue in Hell Bound mode for uninterrupted challenges.'
+        },
+        {
+          icon: Bug,
+          category: 'Fix',
+          text: 'Corrected quiz interface navigation for a smoother experience.'
+        },
+        {
+          icon: Gem,
+          category: 'Improvement',
+          text: 'Improved Live LaTeX Preview for open-ended answers.'
+        },
+        {
+          icon: Rocket,
+          category: 'Improvement',
+          text: 'Optimized PDF file processing for faster uploads.'
+        },
+        {
+          icon: Zap, // Changed from FileText as it's a new content feature
+          category: 'Feature',
+          text: 'Added new Privacy Policy and Terms of Service pages.'
         },
         {
           icon: Gem,
           category: 'Polish',
-          text: 'Updated footer information with developer details and copyright notice.'
+          text: 'Updated footer information.'
         }
       ]
     },
     {
         version: '1.2.0',
-        title: 'The Bedrock Update',
+        title: 'Stability & Control Boost',
         date: 'June 2024',
         notes: [
             {
                 icon: Zap,
                 category: 'Improvement',
-                text: 'A massive architectural overhaul has eliminated an entire class of server-crashing bugs. The application is now fundamentally more stable and resilient.'
+                text: 'Major architectural improvements for enhanced application stability and resilience.'
             },
             {
-                icon: ShieldCheck,
+                icon: ShieldCheck, // More fitting for control/permissions
                 category: 'Feature',
-                text: 'You now have full control. Added the ability to remove individual files, stop file processing, and cancel quiz generation at any time.'
+                text: 'Gain more control: remove files, stop processing, and cancel quiz generation.'
             },
             {
                 icon: Rocket,
                 category: 'Feature',
-                text: 'Quiz generation now runs seamlessly in the background. Feel free to browse the Profile page while your quiz is being created.'
+                text: 'Quiz generation now runs in the background – browse other pages while you wait!'
             },
             {
                 icon: Bug,
                 category: 'Fix',
-                text: 'Permanently fixed all LaTeX math rendering issues by enforcing a strict, non-negotiable format for the AI. Mathematical notation will now render correctly, every time.'
+                text: 'Ensured consistent and correct rendering for all LaTeX mathematical formulas.'
             },
             {
                 icon: Gem,
                 category: 'Polish',
-                text: 'Improved UI visibility in Hell Bound mode, fixed text overflowing its container, and optimized header navigation for a snappier feel.'
+                text: 'UI refinements in Hell Bound mode, improved header navigation, and better text display.'
             },
             {
                 icon: Gem,
                 category: 'Polish',
-                text: 'The API Key input field now correctly enforces the standard 39-character limit to prevent errors.'
+                text: 'Corrected API Key input field to accept standard length keys.'
             },
             {
-                icon: Rocket,
+                icon: Rocket, // Re-using for improvement/guidance
                 category: 'Improvement',
-                text: 'The Profile page has been updated with a new "Key to Your Engine" section, explaining the role of the Gemini API key.'
+                text: 'Updated Profile page with more details on API key usage.'
             }
         ]
     },
     {
         version: '1.1.0',
-        title: 'The Phoenix Update',
+        title: 'Core Fixes & Enhancements',
         date: 'June 2024',
         notes: [
             {
-                icon: Zap,
+                icon: Zap, // Good for new feature announcement
                 category: 'Feature',
-                text: 'Patch Notes are here! A changelog will now appear after updates, and is permanently available on the Profile page.'
+                text: 'Introducing Patch Notes! Stay updated with the latest changes (also on Profile page).'
             },
             {
                 icon: Bug,
                 category: 'Fix',
-                text: 'Annihilated a persistent and infuriating crash on mobile devices (the infamous "Hydration Error"). The app is now rock-solid.'
+                text: 'Resolved a significant crash issue on mobile devices for a stable experience.'
             },
             {
                 icon: Bug,
                 category: 'Fix',
-                text: 'Corrected a major AI flaw causing duplicate questions to appear in quizzes.'
+                text: 'Improved AI behavior to prevent duplicate questions in quizzes.'
             },
             {
                 icon: Bug,
                 category: 'Fix',
-                text: 'Taught the AI to properly format all mathematical formulas (LaTeX), ensuring they now render correctly every time.'
+                text: 'Enhanced AI’s LaTeX formatting for reliable display of math formulas.'
             },
              {
                 icon: Rocket,
                 category: 'Improvement',
-                text: 'The Profile page has been transformed into a "Pioneer\'s Handbook", providing valuable info on the app\'s unique features and a direct way to submit feedback.'
+                text: 'Revamped Profile page to "Pioneer\'s Handbook" with helpful info and feedback options.'
             },
             {
                 icon: Gem,
                 category: 'Polish',
-                text: 'The "Number of Questions" input field now includes a handy "Max" button for quicker setup.'
+                text: 'Added "Max" button to "Number of Questions" input for convenience.'
             },
             {
                 icon: Gem,
                 category: 'Polish',
-                text: 'Fixed a frustrating visual bug where form elements on the main screen were misaligned.'
+                text: 'Fixed visual misalignments of form elements on the main screen.'
             },
             {
                 icon: Gem,
                 category: 'Polish',
-                text: 'Added a subtle indicator to the API Key icon in the header, which now only appears if the key is missing.'
+                text: 'API Key icon in header now subtly indicates if a key is missing.'
             },
             {
                 icon: ShieldCheck,
                 category: 'Improvement',
-                text: 'The Fullscreen toggle is now smarter, automatically hiding itself on devices (like iPhones) that do not support the feature, preventing confusion.'
+                text: 'Fullscreen toggle now smartly hides on unsupported devices (e.g., iPhones).'
             },
         ]
     }
 ];
 
-export const LATEST_VERSION = patchNotes[0].version; // This will now be 1.2.1
+// Ensure LATEST_VERSION points to the new version
+export const LATEST_VERSION = patchNotes[0].version;

@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { ocrImageWithFallback } from '@/lib/ocr';
 import { addPastQuiz } from '@/lib/indexed-db';
+import { replaceLatexDelimiters } from '@/lib/utils'; // Import the delimiter replacer
 
 interface QuizInterfaceProps {
   quiz: Quiz;
@@ -147,7 +148,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
       
       try {
         let extractedText: string;
-        if (currentQuestion.questionType === 'openEnded') {
+        if (currentQuestion.questionType === 'openEnded' || currentQuestion.questionType === 'problemSolving') {
             const response = await fetch('/api/extract-latex-from-image', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -182,7 +183,8 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
                 toast({ title: "Text Extracted with AI!", description: "The text from the image has been added to your answer." });
             }
         }
-        handleAnswerChange(extractedText);
+        const standardizedText = replaceLatexDelimiters(extractedText);
+        handleAnswerChange(standardizedText);
       } catch (error) {
         console.error("Image Extraction Error:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred during image processing.";
@@ -351,7 +353,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="open-ended-answer">Your Answer</Label>
-                {currentQuestion.questionType === 'openEnded' && (
+                {(currentQuestion.questionType === 'openEnded' || currentQuestion.questionType === 'problemSolving') && (
                   <>
                     <Input
                       type="file"
