@@ -41,13 +41,6 @@ interface QuizSetupContextType {
   isAnalyzingContent: boolean;
   canGenerateCalculative: boolean | null;
 
-  // Problem Image Specific State & Handlers
-  problemImageFile: File | null;
-  problemImageDataUrl: string | null;
-  isProcessingProblemImage: boolean;
-  handleProblemImageChange: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-  removeProblemImage: () => void;
-
   // Quiz lifecycle state
   view: View;
   quiz: Quiz | null;
@@ -57,7 +50,7 @@ interface QuizSetupContextType {
   isGenerating: boolean;
 
   // Lifecycle functions
-  startQuiz: (values: any) => Promise<void>; // values type will be from QuizSetup form
+  startQuiz: (values: any) => Promise<void>;
   submitQuiz: (answers: Record<number, string>) => void;
   restartQuiz: () => void;
   retakeQuiz: () => void;
@@ -77,11 +70,6 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
   const [parsingController, setParsingController] = useState<AbortController | null>(null);
   const [isAnalyzingContent, setIsAnalyzingContent] = useState<boolean>(false);
   const [canGenerateCalculative, setCanGenerateCalculative] = useState<boolean | null>(null);
-
-  // Problem Image Specific State
-  const [problemImageFile, setProblemImageFile] = useState<File | null>(null);
-  const [problemImageDataUrl, setProblemImageDataUrl] = useState<string | null>(null);
-  const [isProcessingProblemImage, setIsProcessingProblemImage] = useState<boolean>(false);
 
   // Quiz lifecycle state
   const [view, setView] = useState<View>('setup');
@@ -328,49 +316,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     }
   }, [processFile, apiKey, toast, processedFiles]);
   
-  const handleProblemImageChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      setProblemImageFile(null);
-      setProblemImageDataUrl(null);
-      return;
-    }
-
-    const validImageTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-    if (!validImageTypes.includes(file.type)) {
-      toast({ variant: "destructive", title: "Invalid File Type", description: "Please upload a valid image (PNG, JPG, WEBP, GIF)." });
-      setProblemImageFile(null);
-      setProblemImageDataUrl(null);
-      if (event.target) event.target.value = ''; // Reset file input
-      return;
-    }
-
-    setIsProcessingProblemImage(true);
-    setProblemImageFile(file);
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setProblemImageDataUrl(reader.result as string);
-      setIsProcessingProblemImage(false);
-    };
-    reader.onerror = () => {
-      toast({ variant: "destructive", title: "Image Read Error", description: "Could not read the image file." });
-      setProblemImageFile(null);
-      setProblemImageDataUrl(null);
-      setIsProcessingProblemImage(false);
-      if (event.target) event.target.value = ''; // Reset file input
-    };
-    reader.readAsDataURL(file);
-  }, [toast]);
-
-  const removeProblemImage = useCallback(() => {
-    setProblemImageFile(null);
-    setProblemImageDataUrl(null);
-    // Also reset the file input if we have a ref to it, but that's harder from the hook.
-    // The UI component will need to handle clearing its own input value if desired.
-  }, []);
-
-  const startQuiz = useCallback(async (values: any) => { // `values` comes from the react-hook-form
+  const startQuiz = useCallback(async (values: any) => {
     if (!apiKey) {
       toast({ variant: "destructive", title: "API Key Required", description: "Please set your Gemini API key." });
       return;
@@ -391,16 +337,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     setIsGeneratingState(true);
     setGenerationProgress({ current: 0, total: totalQuestions, message: '' });
 
-    let problemImagePayload: { problemImageBase64?: string; problemImageMimeType?: string } = {};
-    if (values.questionFormat === "problemSolving" && problemImageFile && problemImageDataUrl) {
-        const base64Data = problemImageDataUrl.split(',')[1];
-        if (base64Data) {
-            problemImagePayload = {
-                problemImageBase64: base64Data,
-                problemImageMimeType: problemImageFile.type
-            };
-        }
-    }
+    // Removed problemImagePayload logic as it's no longer part of this feature's setup phase
 
     try {
       setGenerationProgress(prev => ({ ...prev, total: totalQuestions, message: "Synthesizing key concepts..." }));
@@ -434,7 +371,8 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
             difficulty: values.difficulty || 'Medium',
             questionFormat: values.questionFormat || 'multipleChoice',
             existingQuestions: existingQuestionTitles,
-            ...(values.questionFormat === "problemSolving" && problemImagePayload), // Spread image payload only if relevant
+            // problemSpecificOcrText is now added directly if available and format is problemSolving
+            ...(values.questionFormat === "problemSolving" && values.problemSpecificOcrText && { problemSpecificOcrText: values.problemSpecificOcrText } ),
           };
         }
         
@@ -482,7 +420,8 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
       setGenerationController(null);
       setGenerationProgress({ current: 0, total: 0, message: '' });
     }
-  }, [apiKey, toast, processedFiles, isHellBound, incrementUsage, problemImageFile, problemImageDataUrl]);
+  // Removed problemImageFile, problemImageDataUrl from dependencies as they are no longer used for this
+  }, [apiKey, toast, processedFiles, isHellBound, incrementUsage]);
 
   const submitQuiz = useCallback((answers: Record<number, string>) => {
     setUserAnswers(answers);
@@ -495,9 +434,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     setIsParsing(false);
     setParseProgress({ current: 0, total: 0, message: '' });
     setCanGenerateCalculative(null);
-    setProblemImageFile(null); // Clear problem image
-    setProblemImageDataUrl(null); // Clear problem image preview
-    setIsProcessingProblemImage(false);
+    // Removed problem image state clearing
   }, []);
 
   const restartQuiz = useCallback(() => {
@@ -522,8 +459,7 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
         setUserAnswers(pastQuiz.userAnswers || {});
         const loadedFiles = [{ name: `Source for "${pastQuiz.title}"`, content: pastQuiz.sourceContent }];
         setProcessedFiles(loadedFiles);
-        setProblemImageFile(null); // Ensure problem image is cleared when loading from history
-        setProblemImageDataUrl(null);
+        // Removed problem image state clearing
         if (mode === 'results') setView('results');
         else setView('quiz');
       } else {
@@ -563,18 +499,14 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     isAnalyzingContent,
     canGenerateCalculative,
 
-    problemImageFile, // Added
-    problemImageDataUrl, // Added
-    isProcessingProblemImage, // Added
-    handleProblemImageChange, // Added
-    removeProblemImage, // Added
+    // Removed problem image states and handlers from context
     
     view,
     quiz,
     userAnswers,
     generationProgress,
     timer,
-    isGenerating: isGeneratingState || isParsing || isAnalyzingContent || isProcessingProblemImage,
+    isGenerating: isGeneratingState || isParsing || isAnalyzingContent, // Removed isProcessingProblemImage
 
     startQuiz,
     submitQuiz,

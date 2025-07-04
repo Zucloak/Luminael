@@ -24,7 +24,7 @@ import { useApiKey } from "@/hooks/use-api-key";
 import { PulsingCore } from "@/components/common/PulsingCore";
 import { PulsingCoreRed } from "../common/PulsingCoreRed";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ImageIcon, Trash2Icon } from "lucide-react"; // Added ImageIcon and Trash2Icon
+// ImageIcon and Trash2Icon are no longer needed here as the specific image upload UI is removed
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuizSetup } from "@/hooks/use-quiz-setup";
@@ -72,12 +72,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
     stopParsing,
     isAnalyzingContent,
     canGenerateCalculative,
-    // Problem Image specific states and handlers
-    problemImageFile,
-    problemImageDataUrl,
-    isProcessingProblemImage,
-    handleProblemImageChange,
-    removeProblemImage,
+    // Problem Image specific states and handlers are removed from destructuring
   } = useQuizSetup();
   
   useEffect(() => {
@@ -360,12 +355,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                           <FormItem>
                             <FormLabel>Question Format</FormLabel>
                             <Select
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                                if (value !== "problemSolving") {
-                                  removeProblemImage(); // Clear problem image if switching away from problem solving
-                                }
-                              }}
+                              onValueChange={field.onChange} // Simplified: removeProblemImage call removed
                               defaultValue={field.value}
                               disabled={isProcessing || isApiKeyMissing || apiKeyLoading}
                             >
@@ -415,39 +405,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                           </FormItem>
                         )}
                       />
-                       {/* Conditional UI for Problem Image Upload */}
-                       {form.watch("questionFormat") === "problemSolving" && (
-                        <div className="space-y-2 pt-4 border-t mt-4 animate-in fade-in-0 duration-300">
-                          <Label htmlFor="problem-image-upload" className="flex items-center text-sm font-medium">
-                            <ImageIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                            Optional: Upload Image for Problem Context
-                          </Label>
-                          <Input
-                            id="problem-image-upload"
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp,image/gif"
-                            onChange={handleProblemImageChange}
-                            disabled={isProcessingProblemImage || isProcessing || isApiKeyMissing || apiKeyLoading}
-                            className="pt-2 file:text-primary file:font-semibold"
-                          />
-                          {isProcessingProblemImage && <div className="flex items-center text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin mr-1.5" />Processing image...</div>}
-                          {problemImageDataUrl && !isProcessingProblemImage && (
-                            <div className="mt-2 p-2 border rounded-md relative bg-muted/30">
-                              <img src={problemImageDataUrl} alt="Problem context preview" className="max-w-full max-h-40 object-contain rounded-md mx-auto" />
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                onClick={removeProblemImage}
-                                className="absolute top-1 right-1 h-6 w-6"
-                                aria-label="Remove problem image"
-                                disabled={isProcessingProblemImage}
-                              >
-                                <Trash2Icon className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {/* Conditional UI for Problem Image Upload has been REMOVED */}
                       <FormField
                         control={form.control}
                         name="difficulty"

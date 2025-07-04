@@ -55,16 +55,8 @@ const generateQuizFlow = ai.defineFlow(
     if (questionFormat === 'problemSolving') {
       activePromptText = `You are an AI assistant laser-focused on generating calculative problems. Your SOLE task is to generate exactly ${numQuestions} procedural, computation-based problems based on the **Key Concepts** provided below.
 
-**SOURCE MATERIAL FOR PROBLEM:**
-
-**SOURCE MATERIAL FOR PROBLEM:**
-
-**General Key Concepts (from documents):**
+**Key Concepts:**
 ${context}
-
-${problemSpecificOcrText ? `**Additional Problem-Specific Text (from user-uploaded image - THIS IS HIGH PRIORITY for the problem's direct details):**\n${problemSpecificOcrText}\n` : '**No additional problem-specific image text was provided.**'}
-
-Use ALL provided source material above to formulate your calculative problem. If 'Problem-Specific Text' is available, it often contains the direct data or scenario for the problem and should be heavily prioritized.
 
 ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piece of mathematical notation, variable, formula, number, or expression (e.g., \`q_1 = 2 \\times 10^{-6} \\text{ C}\`, \`5 \\times 10^{-6} \\text{ C}\`, \`x^2\`, \`v_final\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters. This applies to question text, all multiple-choice options, and all parts of answers. NO EXCEPTIONS.
 - Use ONLY Dollar Sign Delimiters: For INLINE MATH, you MUST use \`\\$...\\$\`. For DISPLAY MATH, you MUST use \`\\$\\$...\\$\\$\`.
@@ -208,10 +200,7 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                 if (filteredCount < originalCount) {
                     console.warn(`[generateQuizFlow] Filtered out ${originalCount - filteredCount} non-problemSolving questions for 'problemSolving' mode.`);
                 }
-                // If problem-specific OCR text was provided for problem solving, flag the questions
-                if (problemSpecificOcrText && problemSpecificOcrText.trim() !== "") {
-                    output.quiz.questions.forEach(q => ((q as any).hadProblemSpecificOcrText = true));
-                }
+                // No longer flagging with hadProblemSpecificOcrText as the feature is removed from this flow's direct input
             }
             // Post-generation filtering for 'multipleChoice' mode
             else if (questionFormat === 'multipleChoice' && output.quiz && output.quiz.questions) {
