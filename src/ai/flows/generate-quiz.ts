@@ -73,6 +73,14 @@ THERE ARE NO EXCEPTIONS. Math without these delimiters is INCORRECT. THIS IS A P
 8.  **Difficulty**: Calibrate questions to a '${difficulty}' level.
 9.  **Impeccable and Robust LaTeX Formatting (RECALL CRITICAL RULE #0 ON DELIMITERS):**
     *   REMINDER: ALL math expressions, variables, and symbols MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display). This applies to the question text AND any mathematical content in answers or multiple choice options.
+    *   **Using \`\\\\text\` for Units/Annotations:** When using \`\\\\text{...}\` for units or text within a mathematical formula, the ENTIRE formula, including the \`\\\\text{...}\` portion, MUST be enclosed within a single pair of LaTeX dollar-sign delimiters (\`\\$...\\$\` or \`\\$\\$...\\$\\$\`).
+        Example - CORRECT: \`\\$E = mc^{2} \\\\text{ (Energy-mass equivalence)}\\$\`
+        Example - CORRECT: \`\\$v = 25 \\\\text{ m/s}\\$\`
+        Example - CORRECT: \`\\$(q_1 = 2 \\\\times 10^{-6} \\\\text{ C})\\$\` (Assuming the parentheses are part of the intended mathematical grouping)
+        Example - INCORRECT (missing outer delimiters): \`E = mc^{2} \\\\text{ (Energy-mass equivalence)}\`
+        Example - INCORRECT (delimiters don't enclose \`\\\\text\`): \`\\$E = mc^{2}\\$ \\\\text{ (Energy-mass equivalence)}\`
+        Example - INCORRECT (delimiters don't enclose \`\\\\text\`): \`\\$(q_1 = 2 \\\\times 10^{-6})\\$ \\\\text{ C}\`
+        Ensure any text inside \`\\\\text{}\` is plain text and does not contain unescaped special LaTeX characters.
     *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: For 'the value is x squared units', output: The value is \\$x^{2}\\$ units.
     *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
     *   **CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS:** ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\\$x^y\\$\`, \`\\$a_b\\$\`.
@@ -125,6 +133,14 @@ THERE ARE NO EXCEPTIONS. Math without these delimiters is INCORRECT. THIS IS A P
 7.  **Global De-duplication:** The provided list of \`existingQuestions\` (if any) may contain questions of various types previously generated in this session. DO NOT generate any question (regardless of its type for the current batch) that is identical or substantially similar to any question found in this \`existingQuestions\` list. The goal is to ensure maximum variety and avoid all repetition across the entire quiz session.
 8.  **Impeccable and Robust LaTeX Formatting (RECALL CRITICAL RULE #0 ON DELIMITERS):**
     *   REMINDER: ALL math expressions, variables, and symbols MUST be enclosed in \`\\$...\\$\` (inline) or \`\\$\\$...\\$\\$\` (display). This applies to the question text, AND for \`multipleChoice\` questions, it also applies to EACH of the options. For \`openEnded\` questions, this applies to the question text and the example answer/discussion points.
+    *   **Using \`\\\\text\` for Units/Annotations:** When using \`\\\\text{...}\` for units or text within a mathematical formula, the ENTIRE formula, including the \`\\\\text{...}\` portion, MUST be enclosed within a single pair of LaTeX dollar-sign delimiters (\`\\$...\\$\` or \`\\$\\$...\\$\\$\`).
+        Example - CORRECT: \`\\$E = mc^{2} \\\\text{ (Energy-mass equivalence)}\\$\`
+        Example - CORRECT: \`\\$v = 25 \\\\text{ m/s}\\$\`
+        Example - CORRECT: \`\\$(q_1 = 2 \\\\times 10^{-6} \\\\text{ C})\\$\` (Assuming the parentheses are part of the intended mathematical grouping)
+        Example - INCORRECT (missing outer delimiters): \`E = mc^{2} \\\\text{ (Energy-mass equivalence)}\`
+        Example - INCORRECT (delimiters don't enclose \`\\\\text\`): \`\\$E = mc^{2}\\$ \\\\text{ (Energy-mass equivalence)}\`
+        Example - INCORRECT (delimiters don't enclose \`\\\\text\`): \`\\$(q_1 = 2 \\\\times 10^{-6})\\$ \\\\text{ C}\`
+        Ensure any text inside \`\\\\text{}\` is plain text and does not contain unescaped special LaTeX characters.
     *   Enclose inline math with single dollar signs (\`\\$...\\$\`). Example: For 'the value is x squared units', output: The value is \\$x^{2}\\$ units.
     *   Enclose block/display math with double dollar signs (\`\\$\\$...\\$\\$\`). Example: \`\\$\\$ E = mc^{2} \\$\\$\`
     *   **CRITICAL FOR SUPERSCRIPTS/SUBSCRIPTS:** ALWAYS use curly braces for scripts, even for single characters. Examples: \`\\$x^{y}\\$\`, \`\\$a_{b}\\$\`, \`\\$10^{-19}\\$\`, \`\\$z^{6}\\$\`. Incorrect: \`\\$x^y\\$\`, \`\\$a_b\\$\`.
