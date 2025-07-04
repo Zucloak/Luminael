@@ -49,6 +49,10 @@ interface QuizSetupContextType {
   timer: number;
   isGenerating: boolean;
 
+  // Eco Mode
+  isEcoModeActive: boolean;
+  toggleEcoMode: () => void;
+
   // Lifecycle functions
   startQuiz: (values: any) => Promise<void>;
   submitQuiz: (answers: Record<number, string>) => void;
@@ -79,6 +83,9 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
   const [timer, setTimer] = useState<number>(0);
   const [isGeneratingState, setIsGeneratingState] = useState<boolean>(false);
   const [generationController, setGenerationController] = useState<AbortController | null>(null);
+
+  // Eco Mode state
+  const [isEcoModeActive, setIsEcoModeActive] = useState<boolean>(false);
 
   const { apiKey, incrementUsage } = useApiKey();
   const { toast } = useToast();
@@ -159,9 +166,13 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
             });
             if (!dataUrl) throw new Error(`Failed to read ${f.name}.`);
             try {
-              const { text, source } = await ocrImageWithFallback(dataUrl, apiKey, incrementUsage);
-              toast({ title: source === 'ai' ? 'Image content extracted with AI!' : 'Image content extracted locally!' });
-              return { content: text };
+              const { text, source, confidence } = await ocrImageWithFallback(dataUrl, apiKey, incrementUsage, isEcoModeActive);
+              // Toast will be handled by the caller based on confidence if needed (for Eco Mode)
+              if (!isEcoModeActive) { // Only toast non-Eco mode successes immediately
+                  toast({ title: source === 'ai' ? 'Image content extracted with AI!' : 'Image content extracted locally!' });
+              }
+              // Return content and confidence for potential UI feedback in Eco Mode
+              return { content: text, confidence, source };
             } catch (err) {
               const message = err instanceof Error ? err.message : String(err);
               throw new Error(`OCR failed for ${f.name}: ${message}`);
@@ -220,8 +231,20 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
                             return '';
                         }
                         try {
-                           const { text } = await ocrImageWithFallback(canvas.toDataURL(), apiKey, incrementUsage);
-                           setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `AI OCR for page ${pageData.pageNum} complete.` }));
+                            // Pass isEcoModeActive to ocrImageWithFallback for PDF pages
+                            const { text, confidence, source } = await ocrImageWithFallback(canvas.toDataURL(), apiKey, incrementUsage, isEcoModeActive);
+                            if (isEcoModeActive && (confidence === undefined || confidence < 50)) { // Example threshold
+                               toast({
+                                   title: `Local OCR for PDF page ${pageData.pageNum} may be incomplete`,
+                                   description: "Consider turning off ECO mode for better results on image-heavy PDFs.",
+                                   duration: 7000,
+                               });
+                            } else if (!isEcoModeActive && source === 'ai') {
+                                toast({ title: `AI OCR for PDF page ${pageData.pageNum} complete.`});
+                            }
+                            // No specific toast for successful local OCR in non-eco mode here, as it's part of a batch.
+                            // The main ocrImageWithFallback handles its own toasts for single images.
+                            setParseProgress(prev => ({ ...prev, current: prev.current + 1, message: `${source === 'ai' ? 'AI' : 'Local'} OCR for page ${pageData.pageNum} complete.` }));
                            return text;
                         } catch (err) {
                            const message = err instanceof Error ? err.message : String(err);
@@ -297,9 +320,26 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
         if (controller.signal.aborted) throw new Error("Cancelled");
         const file = newFiles[i];
         setParseProgress({ current: i + 1, total: newFiles.length, message: `Processing ${file.name}...` });
-        const { content } = await processFile(file);
+        // processFile now returns { content, confidence, source } for images/PDFs
+        const processedResult = await processFile(file);
         if (controller.signal.aborted) throw new Error("Cancelled");
-        currentProcessedFiles.push({ name: file.name, content });
+
+        currentProcessedFiles.push({ name: file.name, content: processedResult.content });
+
+        // Handle Eco Mode OCR feedback for single image files (PDF pages are handled inside processFile)
+        if (isEcoModeActive && file.type.startsWith('image/') && (processedResult.confidence === undefined || processedResult.confidence < 50)) { // Example threshold
+            toast({
+                title: `Local OCR for ${file.name} may be incomplete (Confidence: ${processedResult.confidence?.toFixed(0) ?? 'N/A'}%)`,
+                description: "For potentially better results, consider turning off ECO mode and reprocessing the file.",
+                duration: 7000, // Longer duration for this important feedback
+            });
+        } else if (!isEcoModeActive && file.type.startsWith('image/') && processedResult.source === 'ai') {
+             // Toast for successful AI OCR in non-eco mode was already in processFile, keep it there.
+        } else if (file.type.startsWith('image/') && processedResult.source === 'local' && processedResult.confidence && processedResult.confidence >= 50) {
+            toast({ title: `Local OCR for ${file.name} complete.`});
+        }
+
+
       }
       setProcessedFiles(currentProcessedFiles);
     } catch (error) {
@@ -488,6 +528,11 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     toast({ title: "Quiz generation cancelled." });
   }, [generationController, toast]);
 
+  const toggleEcoMode = useCallback(() => {
+    setIsEcoModeActive(prev => !prev);
+    // Optionally, you could toast or log here, but the UI will reflect the change.
+  }, []);
+
   const value = {
     processedFiles,
     fileError,
@@ -507,6 +552,9 @@ export function QuizSetupProvider({ children }: { children: React.ReactNode }) {
     generationProgress,
     timer,
     isGenerating: isGeneratingState || isParsing || isAnalyzingContent, // Removed isProcessingProblemImage
+
+    isEcoModeActive,
+    toggleEcoMode,
 
     startQuiz,
     submitQuiz,

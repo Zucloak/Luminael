@@ -23,9 +23,10 @@ interface QuizResultsProps {
   onRetake: () => void;
   user: UserProfile | null;
   sourceContent: string;
+  isEcoModeActive?: boolean; // Add isEcoModeActive prop
 }
 
-type ValidationStatus = 'Correct' | 'Partially Correct' | 'Incorrect' | null;
+type ValidationStatus = 'Correct' | 'Partially Correct' | 'Incorrect' | 'Deferred' | null;
 
 interface ValidationResult {
   status: ValidationStatus;
@@ -50,7 +51,7 @@ const TAG_COLORS: { [key: string]: string } = {
 };
 
 
-export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceContent }: QuizResultsProps) {
+export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceContent, isEcoModeActive }: QuizResultsProps) {
   const { apiKey, incrementUsage } = useApiKey();
   const [detailedResults, setDetailedResults] = useState<Result[]>([]);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
@@ -71,20 +72,22 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
           ...q,
           userAnswer,
           isCorrect: null,
-          isValidating: userAnswerProvided,
-          ...(!userAnswerProvided && {
-            validation: { status: 'Incorrect', explanation: 'No answer was provided.' }
-          })
+          // If Eco mode is ON, don't set isValidating to true initially.
+          // Set a deferred status instead.
+          isValidating: isEcoModeActive ? false : userAnswerProvided,
+          validation: isEcoModeActive && userAnswerProvided
+            ? { status: 'Deferred', explanation: 'AI validation deferred. Click to validate.'}
+            : (!userAnswerProvided ? { status: 'Incorrect', explanation: 'No answer was provided.' } : undefined)
         };
       } else if (q.questionType === 'problemSolving') {
         return {
           ...q,
           userAnswer,
           isCorrect: null,
-          isValidating: userAnswerProvided,
-          ...(!userAnswerProvided && {
-            validation: { status: 'Incorrect', explanation: 'No answer was provided.' }
-          })
+          isValidating: isEcoModeActive ? false : userAnswerProvided,
+          validation: isEcoModeActive && userAnswerProvided
+            ? { status: 'Deferred', explanation: 'AI validation deferred. Click to validate.'}
+            : (!userAnswerProvided ? { status: 'Incorrect', explanation: 'No answer was provided.' } : undefined)
         };
       } else {
         // This case should be impossible if Question union is exhaustive
@@ -100,12 +103,86 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
     setDetailedResults(initialResults);
   }, [quiz, answers]);
 
+  const validateSingleAnswer = useCallback(async (questionIndex: number) => {
+    if (!apiKey) {
+      toast({ variant: "destructive", title: "API Key Missing", description: "Cannot validate answer without an API key." });
+      // Update specific question to show API key error
+      setDetailedResults(prevResults =>
+        prevResults.map((r, idx) =>
+          idx === questionIndex
+            ? { ...r, isValidating: false, validation: { status: 'Incorrect', explanation: 'An API key is required for AI validation.' } }
+            : r
+        )
+      );
+      return;
+    }
+
+    const resultToValidate = detailedResults[questionIndex];
+    if (!resultToValidate || !(resultToValidate.questionType === 'openEnded' || resultToValidate.questionType === 'problemSolving') || resultToValidate.userAnswer === 'No answer') {
+      return; // Should not happen if button is shown correctly
+    }
+
+    // Set specific question to validating state
+    setDetailedResults(prevResults =>
+      prevResults.map((r, idx) =>
+        idx === questionIndex ? { ...r, isValidating: true, validation: undefined } : r
+      )
+    );
+
+    try {
+      const res = await fetch('/api/validate-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: resultToValidate.question,
+          userAnswer: resultToValidate.userAnswer,
+          correctAnswer: resultToValidate.answer,
+          apiKey,
+        }),
+      });
+      incrementUsage();
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.details || errorData.error || `Validation failed with status ${res.status}`);
+        } catch (jsonError) {
+          throw new Error(`Validation failed: The server returned an unexpected response. Status: ${res.status}`);
+        }
+      }
+      const validationResultData: ValidationResult = await res.json();
+      setDetailedResults(prevResults =>
+        prevResults.map((r, idx) =>
+          idx === questionIndex
+            ? { ...r, isValidating: false, validation: validationResultData }
+            : r
+        )
+      );
+    } catch (error) {
+      console.error("Validation error for question:", resultToValidate.question, error);
+      const message = error instanceof Error ? error.message : 'An error occurred during AI validation.';
+      setDetailedResults(prevResults =>
+        prevResults.map((r, idx) =>
+          idx === questionIndex
+            ? { ...r, isValidating: false, validation: { status: 'Incorrect', explanation: message } }
+            : r
+        )
+      );
+    }
+  }, [apiKey, detailedResults, incrementUsage, toast]);
+
   useEffect(() => {
-    const validateAnswers = async () => {
+    // Auto-validate only if NOT in Eco Mode
+    if (isEcoModeActive) {
+      return;
+    }
+
+    const validateAllPendingAnswers = async () => {
       if (!apiKey) {
         setDetailedResults(prevResults =>
           prevResults.map(r =>
-            (r.questionType === 'openEnded' || r.questionType === 'problemSolving') && r.isValidating
+            (r.questionType === 'openEnded' || r.questionType === 'problemSolving') && r.isValidating && !r.validation
               ? { ...r, isValidating: false, validation: { status: 'Incorrect', explanation: 'An API key is required for AI validation.' } }
               : r
           )
@@ -113,17 +190,33 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
         return;
       }
       
-      // Create a new array for modification to avoid issues with direct state mutation in loops
-      let newDetailedResults = [...detailedResults]; // This line was problematic, effectively cloning detailedResults which is already a state.
-                                                  // The actual update should happen via setDetailedResults with a functional update.
+      const questionsToValidateIndexes = detailedResults
+        .map((r, index) => ((r.questionType === 'openEnded' || r.questionType === 'problemSolving') && r.isValidating && !r.validation ? index : -1))
+        .filter(index => index !== -1);
 
-      for (let index = 0; index < detailedResults.length; index++) { // Iterate over the current state `detailedResults`
-        const result = detailedResults[index]; // Get the result from the current state
-        if ((result.questionType === 'openEnded' || result.questionType === 'problemSolving') && result.isValidating) {
+      if (questionsToValidateIndexes.length === 0) return;
+
+      // This loop will run validations one by one. For parallel, Promise.all would be used.
+      // Given current structure of validateSingleAnswer, sequential is fine.
+      for (const index of questionsToValidateIndexes) {
+        // We check isValidating flag inside validateSingleAnswer effectively
+        // No need to re-check here before calling
+        // The `isValidating` flag on `detailedResults[index]` is the key.
+        // The `validateSingleAnswer` function itself will set `isValidating: true` for the specific item during its run.
+        // The initial `isValidating` is set true in the first `useEffect` if not in Eco Mode and answer provided.
+        // So, this effect only triggers if there are items with `isValidating: true` and no `validation` object yet.
+
+        // Call the validation logic which is now encapsulated
+        // We can directly call validateSingleAnswer for each item that is marked as `isValidating`
+        // This will update the state correctly for each.
+        // However, `validateSingleAnswer` is designed for one-off calls.
+        // For auto-validation, we can adapt the original loop logic slightly.
+
+        const result = detailedResults[index];
+         // This check is important to ensure we only process items that are truly pending
+        if ((result.questionType === 'openEnded' || result.questionType === 'problemSolving') && result.isValidating && !result.validation) {
           try {
-            // Ensure we are not re-fetching for already validated or currently fetching items if somehow triggered multiple times
-            if (!result.validation) {
-              const res = await fetch('/api/validate-answer', {
+            const res = await fetch('/api/validate-answer', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -368,9 +461,18 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                                     </div>
                                     <div className="text-sm text-foreground/90 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
                                 </div>
+                            ) : result.validation?.status === 'Deferred' ? (
+                                <div className="p-3 rounded-md border border-dashed bg-muted/20 space-y-2">
+                                    <p className="text-sm text-muted-foreground italic">{result.validation.explanation}</p>
+                                    <Button size="sm" onClick={() => validateSingleAnswer(index)} disabled={!apiKey || result.isValidating}>
+                                        {result.isValidating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                                        Validate with AI
+                                    </Button>
+                                    {!apiKey && <p className="text-xs text-destructive">API key required to validate.</p>}
+                                </div>
                             ) : (
                               <div className="p-3 rounded-md border bg-muted/20">
-                                <p className="text-sm text-muted-foreground">AI validation was not performed for this question (e.g. no API key, or no answer provided).</p>
+                                <p className="text-sm text-muted-foreground">AI validation was not performed for this question (e.g. no API key, or no answer provided, or not applicable).</p>
                               </div>
                             )}
                         </div>

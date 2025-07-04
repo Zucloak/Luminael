@@ -179,6 +179,44 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
             <CardContent className="space-y-8 pt-6">
               <div className="space-y-2">
                 <Label className="text-lg font-semibold">1. Upload Content</Label>
+                <div className="flex items-center space-x-2 mt-2 mb-3 justify-end">
+                  <Switch
+                    id="eco-mode-toggle"
+                    checked={isEcoModeActive}
+                    onCheckedChange={toggleEcoMode}
+                    disabled={isProcessing || apiKeyLoading}
+                  />
+                  <Label htmlFor="eco-mode-toggle" className="text-sm font-medium">
+                    ECO MODE
+                  </Label>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AlertTriangle className={cn("h-4 w-4 cursor-help", isEcoModeActive ? "text-green-500" : "text-muted-foreground/50")} />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="font-semibold mb-1">ECO MODE {isEcoModeActive ? 'Active' : 'Inactive'}</p>
+                        {isEcoModeActive ? (
+                          <>
+                            <p className="text-xs text-muted-foreground">AI resource usage is minimized.</p>
+                            <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5 mt-1">
+                              <li>File OCR will use local processing only.</li>
+                              <li>AI answer validation in results will be manual.</li>
+                            </ul>
+                          </>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Standard AI processing enabled (AI-powered OCR, auto-validation).</p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                {isEcoModeActive && (
+                  <div className="p-2.5 mb-3 rounded-md bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-xs font-medium flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-px" />
+                    <span>Eco Mode Active – AI minimized. Manual validation available in results. Local OCR will be used for images/PDFs.</span>
+                  </div>
+                )}
                 {isApiKeyMissing && (
                   <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
@@ -216,6 +254,33 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                 )}
                 {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
                  {form.formState.errors.root && <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>}
+
+                {isEcoModeActive && processedFiles.length > 0 && !isParsing && (
+                  <div className="mt-4 p-3 border border-dashed rounded-md bg-muted/30">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Files were processed using local OCR in Eco Mode. For potentially higher accuracy or advanced analysis (like LaTeX extraction from complex images), you can switch off Eco Mode and re-upload/reprocess.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        toggleEcoMode(); // This will turn Eco Mode OFF
+                        toast({
+                          title: "Eco Mode Deactivated",
+                          description: "Please re-upload your files if you want them processed with AI OCR and analysis.",
+                          duration: 7000,
+                        });
+                        // Note: We don't automatically reprocess here to avoid unexpected AI calls.
+                        // User should re-initiate file upload if they want AI processing.
+                        // Or, a more advanced implementation could clear processedFiles and prompt re-upload.
+                        // For now, this informs the user.
+                      }}
+                    >
+                      Switch to Full AI Mode & Guide Reprocessing
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
