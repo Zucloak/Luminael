@@ -10,6 +10,7 @@ export type ProblemSolvingQuestion = {
   questionType: 'problemSolving';
   question: string; // Calculative, step-by-step, numeric or symbolic
   answer: string; // Detailed, step-by-step solution
+  wasImageProvidedToAI?: boolean; // Flag if an image was used for generating this question
 };
 
 export type OpenEndedQuestion = {
@@ -76,6 +77,8 @@ export const GenerateQuizInputSchema = z.object({
   questionFormat: z.enum(['multipleChoice', 'problemSolving', 'openEnded', 'mixed']).describe("The desired format for the quiz questions."),
   existingQuestions: z.array(z.string()).optional().describe('A list of questions already generated, to avoid duplicates.'),
   apiKey: z.string().optional().describe('Optional Gemini API key.'),
+  problemImageBase64: z.string().optional().describe("Optional base64 encoded image data specifically for a problem-solving question (pure base64, no data URL prefix)."),
+  problemImageMimeType: z.string().optional().describe("MIME type of the problem image, e.g., image/png or image/jpeg if problemImageBase64 is provided.")
 });
 export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 

@@ -40,7 +40,7 @@ const generateQuizFlow = ai.defineFlow(
     inputSchema: GenerateQuizInputSchema, // Use imported schema
     outputSchema: GenerateQuizOutputSchema, // Use imported schema
   },
-  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey }: GenerateQuizInput): Promise<GenerateQuizOutput> => {
+  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey, problemImageBase64, problemImageMimeType }: GenerateQuizInput): Promise<GenerateQuizOutput> => {
     if (!apiKey || apiKey.trim() === '') {
       throw new Error("A valid API Key is required for generateQuizFlow but was not provided or was empty.");
     }
@@ -49,13 +49,16 @@ const generateQuizFlow = ai.defineFlow(
       model: 'googleai/gemini-1.5-flash-latest' // Explicitly set model for this runner
     });
 
-    let activePrompt;
+    let activePromptText; // Renamed to avoid confusion with the final prompt structure for AI
+    let finalPromptPayload: any; // To hold either string or Parts array
 
     if (questionFormat === 'problemSolving') {
-      activePrompt = `You are an AI assistant laser-focused on generating calculative problems. Your SOLE task is to generate exactly ${numQuestions} procedural, computation-based problems based on the **Key Concepts** provided below.
+      activePromptText = `You are an AI assistant laser-focused on generating calculative problems. Your SOLE task is to generate exactly ${numQuestions} procedural, computation-based problems based on the **Key Concepts** provided below.
 
 **Key Concepts:**
 ${context}
+
+IMAGE CONTEXT (If Provided): An image may accompany the Key Concepts. If an image is part of the input, you MUST use the visual information (diagrams, graphs, schematics, data presented visually, etc.) in conjunction with the textual Key Concepts to formulate your calculative problem and its detailed step-by-step solution. Explicitly reference or describe relevant parts of the image if it helps in understanding or solving the problem.
 
 ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piece of mathematical notation, variable, formula, number, or expression (e.g., \`q_1 = 2 \\times 10^{-6} \\text{ C}\`, \`5 \\times 10^{-6} \\text{ C}\`, \`x^2\`, \`v_final\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters. This applies to question text, all multiple-choice options, and all parts of answers. NO EXCEPTIONS.
 - Use ONLY Dollar Sign Delimiters: For INLINE MATH, you MUST use \`\\$...\\$\`. For DISPLAY MATH, you MUST use \`\\$\\$...\\$\\$\`.
@@ -153,6 +156,13 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, WILL RESULT
 You MUST provide your response as a JSON object that strictly conforms to the GenerateQuizOutputSchema.
 `;
     }
+
+    // Construct the final prompt payload for Genkit
+    if (questionFormat === 'problemSolving' && problemImageBase64 && problemImageMimeType) {
+      finalPromptPayload = [{ text: activePromptText }, { inlineData: { mimeType: problemImageMimeType, data: problemImageBase64 } }];
+    } else {
+      finalPromptPayload = activePromptText;
+    }
         
     const maxRetries = 3;
     const initialDelay = 2000;
@@ -160,7 +170,7 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const {output} = await runner.generate({
-            prompt: activePrompt, // Corrected variable name here
+            prompt: finalPromptPayload, // Use the potentially multi-modal payload
             output: {
                 format: 'json',
                 schema: GenerateQuizOutputSchema
@@ -185,7 +195,7 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
               });
             }
 
-            // Post-generation filtering for 'problemSolving' mode as a safeguard
+            // Post-generation filtering & flagging for 'problemSolving' mode
             if (questionFormat === 'problemSolving' && output.quiz && output.quiz.questions) {
                 const originalCount = output.quiz.questions.length;
                 output.quiz.questions = output.quiz.questions.filter(
