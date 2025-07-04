@@ -26,9 +26,10 @@ export default function ProfilePage() {
   // Persist and load directory handle - this is a simplified example.
   // For robust persistence, IndexedDB is recommended for directory handles.
   useEffect(() => {
-    const storedHandle = localStorage.getItem("luminaelDirectoryHandle");
+    const storedHandle = localStorage.getItem("luminaelDirectoryHandle"); // This was a conceptual check, actual handle isn't stored here.
     const storedName = localStorage.getItem("luminaelDirectoryName");
-    if (storedHandle && storedName && window.showDirectoryPicker) { // Check for API support
+    // Check for API support using 'in' operator to avoid TypeScript build errors
+    if (storedName && ('showDirectoryPicker' in window)) {
         // This is a placeholder. True restoration of a serialized handle is complex
         // and often not possible directly from localStorage for security reasons.
         // A real implementation would need to re-request permission or use IndexedDB.
