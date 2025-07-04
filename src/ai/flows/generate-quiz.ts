@@ -40,7 +40,7 @@ const generateQuizFlow = ai.defineFlow(
     inputSchema: GenerateQuizInputSchema, // Use imported schema
     outputSchema: GenerateQuizOutputSchema, // Use imported schema
   },
-  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey, problemSpecificOcrText, problemImageBase64, problemImageMimeType }: GenerateQuizInput): Promise<GenerateQuizOutput> => {
+  async ({ context, numQuestions, difficulty, questionFormat, existingQuestions, apiKey, problemSpecificOcrText }: GenerateQuizInput): Promise<GenerateQuizOutput> => {
     if (!apiKey || apiKey.trim() === '') {
       throw new Error("A valid API Key is required for generateQuizFlow but was not provided or was empty.");
     }
