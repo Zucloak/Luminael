@@ -94,6 +94,13 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EX
     *   DO NOT use parentheses for math delimiters like \`\\\\(\` or \`\\\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
     *   BOXED ANSWERS: When using the \`\\\\boxed{...}\` command for final answers in problem-solving solutions, ensure this command and its argument are themselves enclosed within display math delimiters, like so: \`\\$\\$\\\\boxed{your final answer}\\$\\$\`.
+    *   **INTERNAL LATEX INTEGRITY (ESPECIALLY FOR COMPLEX STRUCTURES):**
+        *   When constructing complex expressions such as fractions (e.g., \`\\\\frac{numerator}{denominator}\`), square roots (e.g., \`\\\\sqrt{content}\`), or boxed content (e.g., \`\\\\boxed{content}\`), ensure that the \`numerator\`, \`denominator\`, or \`content\` (the material inside the curly braces \`{...}\` of these commands) is a single, complete, and syntactically valid LaTeX snippet *relative to its own context*.
+        *   **CRITICAL:** Avoid prematurely closing the overall math mode with a \`$\` or `\$\$` *inside* such structures if the entire structure is already meant to be part of a larger delimited math expression. Also, ensure correct pairing and nesting of curly braces \`{}\`.
+        *   For example, if the overall expression is meant to be `\$\$ \boxed{ \text{expression} } \$\$`, then `expression` itself must not contain unescaped `$` or `$$` that would break the box's content into separate math modes.
+        *   **INCORRECT EXAMPLE to avoid:** `\$\$ \boxed{ V = \frac{kQ}{ \sqrt{x^2+R^2} } \$ } \$\$` (The `\$` after `R^2}` is bad, breaking the box).
+        *   **INCORRECT EXAMPLE to avoid:** `\$\$ \boxed{ V = \frac{kQ}$ ${ \sqrt{x^2+R^2} } } \$\$` (The `kQ}$ ${ \sqrt...` part is bad, breaking the fraction and box content due to misplaced `$` and `{}`).
+        *   **CORRECT APPROACH for similar structure:** `\$\$ \boxed{ V = \frac{kQ}{\sqrt{x^2+R^2}} } \$\$` (The entire `V = ...` part is a single, well-formed LaTeX expression within the `\boxed{}` before the final `\$\$` delimiters are applied).
 
 **LISTS AND STEPS: IMPORTANT FORMATTING:**
 For any step-by-step explanations, derivations, or itemized lists in your answers, YOU MUST use standard Markdown numbered lists (e.g., \`1. First step.\\n2. Second step with math \\$x=y\\$.\`).
