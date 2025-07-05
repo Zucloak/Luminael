@@ -10,91 +10,76 @@ export function replaceLatexDelimiters(text: string): string {
 
   let newResult = text;
 
-  // Placeholders for correctly delimited $$ \boxed{...} $$ blocks
-  const boxedPlaceholders: string[] = [];
-  const boxedPlaceholderPrefix = "__LATEX_BOXED_PLACEHOLDER_";
+  // Step 0: Remove zero-width spaces and normalize some newlines early
+  newResult = newResult.replace(/\u200B/g, '');
+  newResult = newResult.replace(/([a-zA-Z])\s*\n\s*(\d+)\s*\n\s*=\s*/g, '$1_$2 = '); // C \n1\n = to C_1 =
+  // Convert single newlines that are not preceded/followed by another newline (likely breaking inline math) to spaces
+  newResult = newResult.replace(/(?<!\n)\n(?!\n)/g, ' ');
+  // Preserve paragraph breaks (double newlines or more)
+  newResult = newResult.replace(/\n{2,}/g, '\n\n');
 
-  // Step ALPHA: Absolutely protect correctly formed $$ \boxed{...} $$
-  newResult = newResult.replace(/(\$\$\s*\\boxed\{[\s\S]*?\}\s*\$\$)/g, (match) => {
-    boxedPlaceholders.push(match);
-    return `${boxedPlaceholderPrefix}${boxedPlaceholders.length - 1}__`;
+
+  // Step 1: Remove \boxed{...} and ensure its content is prepped for display math
+  // This regex captures the content inside \boxed{...}
+  // It handles cases where \boxed might be wrapped by $ or $$ already, or not.
+  newResult = newResult.replace(/\$\$?\s*\\boxed\{([\s\S]*?)\}\s*\$\$?/g, (match, content) => {
+    return `$$${content.trim()}$$`; // Replace with content, wrapped in $$
+  });
+  // Handle cases where \text{} might be outside a \boxed{} but intended to be part of it
+  // e.g., $$\boxed{10 \times 10^{-6}}$\text{ J}$$  ->  $$10 \times 10^{-6} \text{ J}$$
+  newResult = newResult.replace(/(\$\$\s*[^$]*?\S)\s*\$\s*(\\text\{[^}]*?\})\s*\$\$/g, (match, mainMath, textContent) => {
+    return `${mainMath.replace(/\$\$$/, '').trim()} ${textContent}$$`;
   });
 
-  // Step BETA: Remove zero-width spaces (everywhere except within placeholders)
-  const partsForBeta = newResult.split(boxedPlaceholderPrefix);
-  newResult = partsForBeta.map((part, index) => {
-    if (index === 0) return part.replace(/\u200B/g, '');
-    const [num, ...rest] = part.split("__");
-    return `${num}__${rest.join("__").replace(/\u200B/g, '')}`;
-  }).join(boxedPlaceholderPrefix);
 
-  // Step GAMMA: Normalize newlines that seem to fragment inline math (heuristic)
-  // Example: C \n1\n = to C_1 =
-  // This is very specific to patterns like "C <newline> <number> <newline> ="
-  newResult = newResult.replace(/([a-zA-Z])\s*\n\s*(\d+)\s*\n\s*=\s*/g, '$1_$2 = ');
-  // Clean up general excessive newlines into spaces, but try to preserve double newlines (paragraph breaks)
-  newResult = newResult.replace(/([^\n])\n([^\n])/g, '$1 $2'); // Single newline to space
-  newResult = newResult.replace(/\n{2,}/g, '\n\n'); // Keep paragraph breaks
-
-  // Step 0: Clean common AI artifacts (like $=)
+  // Step 2: Clean common AI artifacts (like $=)
   newResult = newResult.replace(/ \$=/g, ' =');
   newResult = newResult.replace(/\$=/g, '=');
 
-  // Step 1: Convert standard LaTeX command delimiters \(...\) and \[...\]
-  newResult = newResult.replace(/\\\((.*?)\\\)/gs, (match, content) => `$${content}$`);
-  newResult = newResult.replace(/\\\[(.*?)\\\]/gs, (match, content) => `$$${content}$$`);
+  // Step 3: Convert standard LaTeX command delimiters \(...\) and \[...\]
+  newResult = newResult.replace(/\\\(([\s\S]*?)\\\)/gs, (match, content) => `$${content}$`);
+  newResult = newResult.replace(/\\\[([\s\S]*?)\\\]/gs, (match, content) => `$$${content}$$`);
 
-  // Step 2: Normalize explicit escaped dollar signs (e.g., \\$ -> $)
-  // Applied carefully to parts not in placeholders
-  const partsForStep2 = newResult.split(boxedPlaceholderPrefix);
-  newResult = partsForStep2.map((part, index) => {
-    if (index === 0) return part.replace(/\\?\$/g, '$');
-    const [num, ...rest] = part.split("__");
-    return `${num}__${rest.join("__").replace(/\\?\$/g, '$')}`;
-  }).join(boxedPlaceholderPrefix);
+  // Step 4: Normalize explicit escaped dollar signs (e.g., \\$ -> $)
+  newResult = newResult.replace(/\\?\$/g, '$');
 
-  // Step B (from previous): Correct specific malformed pattern like $$\boxed{...}$\text{...}`
-  // Needs to operate on text not yet perfectly boxed and placeholdere'd.
-  newResult = newResult.replace(/(\$\$?\\s*\\boxed\{[^}]*?\})\s*\$?\s*(\\text\{[^}]*?\})\s*\$?\s*\$\$?/g, (match, box, textContent) => {
-    const boxContent = box.replace(/\\boxed\{([\s\S]*)\}$/, '$1');
-    return `$$\\boxed{${boxContent.trim()} ${textContent}}$$`;
+  // Step 5: Attempt to fix hanging $$ delimiters
+  // If a line starts with $$ but doesn't end with $$, add $$ at the end
+  newResult = newResult.replace(/^(\$\$[^\$]+)$/gm, (match, content) => `${content.trim()}$$`);
+  // If a line ends with $$ but doesn't start with $$, add $$ at the beginning
+  newResult = newResult.replace(/^([^\$]+\$\$)$/gm, (match, content) => `$$${content.trim()}`);
+  // If a line seems to be display math but is missing both, e.g. "foo = \frac{a}{b}"
+  newResult = newResult.replace(/^([a-zA-Z0-9\s]*\\(?:frac|sum|int|lim|prod|text|mathrm|mathbf|mathcal|mathsf|mathtt|operatorname)[\s\S]*)$/gm, (match, content) => {
+    if (!content.startsWith('$$') && !content.endsWith('$$') && !content.startsWith('$') && !content.endsWith('$')) {
+      return `$$${content.trim()}$$`;
+    }
+    return content;
   });
 
-  // Step 3: Handle \boxed{...} if not part of a placeholder (e.g. if AI forgot $$)
-  newResult = newResult.replace(/\s*\$\$?\s*(\\boxed\{[^}]*?\})\s*\$\$?\s*/g, '$1'); // Strip existing weak delimiters
-  newResult = newResult.replace(/(\\boxed\{[^}]*?\})(?!\s*\$)/g, '$$$$$1$$');    // Re-wrap robustly
-
-  // Step 4: Attempt to fix hanging $$ delimiters
-  newResult = newResult.replace(/^(\$\$[^\$]+)$/gm, (match, content) => `${content.trim()}$$`);
-  newResult = newResult.replace(/^([^\$]+\$\$)$/gm, (match, content) => `$$${content.trim()}`);
-
-  // Step 5: Wrap remaining likely inline math (heuristic, very conservative)
-  // This looks for common LaTeX commands or structures not already delimited.
-  // Example: wrap "q_1 = 2 \times 10^{-9}" if it's bare.
-  // This is hard to do perfectly. A simple heuristic:
-  // If a segment contains a backslash command, numbers, and common math symbols, and isn't already delimited.
-  // For now, this step is kept minimal to avoid over-wrapping.
-  // The AI should be prompted to use delimiters. This function is mainly for cleanup.
-  // A simple example: wrap 'ax^2 + bx + c = 0' if it's on its own and not delimited.
-  // This regex is illustrative and would need to be very carefully crafted.
-  // No aggressive general wrapping added here to avoid breaking plain text.
 
   // Step 6: Clean up repeated/redundant dollar signs
-  newResult = newResult.replace(/\${3,}/g, '$$');
+  newResult = newResult.replace(/\${3,}/g, '$$'); // $$$ or more -> $$
   newResult = newResult.replace(/^\$\s*\$\$(.*?)\$\$\s*\$$/gs, '$$$$$1$$'); // $ $$...$$ $ -> $$...$$
-  newResult = newResult.replace(/^\$\$\s*\$([^\$]+)\$\s*\$\$$/gs, '$$$1$');    // $$ $...$ $$ -> $...$ (if $...$ is simple)
+  newResult = newResult.replace(/^\$\$\s*\$([^\$\s].*?[^\$\s])\$\s*\$\$$/gs, '$$$1$'); // $$ $content$ $$ -> $content$
+  newResult = newResult.replace(/\$\$/g, (match, offset, fullString) => { // $$ appearing mid-string without being part of $$...$$
+    const prevChar = fullString.charAt(offset -1);
+    const nextChar = fullString.charAt(offset + 2);
+    if (prevChar !== '\n' && prevChar !== '' && nextChar !== '\n' && nextChar !== '') {
+        // If $$ is not at start/end of a line, it might be an error for inline math
+        // This is heuristic; might be too aggressive or not aggressive enough.
+    }
+    return match; // For now, keep this less aggressive. The AI should use $ for inline.
+  });
+
 
   // Step 7: Remove spaces immediately inside delimiters
   newResult = newResult.replace(/\$\s+([^$]*?)\s+\$/gs, '$$$1$');
   newResult = newResult.replace(/\$\$\s+([^$]*?)\s+\$\$/gs, '$$$$$1$$');
 
-  // Step 8: Final check for any single $ that might be left hanging
-  newResult = newResult.replace(/^\s*\$\s*$/gm, '');
-
-  // Step OMEGA: Restore original $$ \boxed{...} $$ placeholders
-  boxedPlaceholders.forEach((placeholder, index) => {
-    newResult = newResult.replace(`${boxedPlaceholderPrefix}${index}__`, placeholder);
-  });
+  // Step 8: Final check for any single $ that might be left hanging or empty $$/$
+  newResult = newResult.replace(/^\s*\$\s*$/gm, ''); // Remove lines that are just a single $
+  newResult = newResult.replace(/\$\s*\$/g, '');    // Remove empty $ $
+  newResult = newResult.replace(/\$\$\s*\$\$/g, ''); // Remove empty $$ $$
 
   return newResult.trim();
 }
