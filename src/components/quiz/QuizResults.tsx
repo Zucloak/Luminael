@@ -493,9 +493,9 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                       <div className="p-3 rounded-md border border-green-600/50 bg-green-500/10">
                         {(() => {
                           const processedAnswer = replaceLatexDelimiters(result.answer);
-                          if (processedAnswer.includes("\\boxed")) { // Log only if it's a boxed expression for targeted debugging
-                            console.log("DEBUG_BOXED_RESULT_ANSWER:", JSON.stringify(processedAnswer));
-                          }
+                          // Log all answers in this section for broader debugging
+                          console.log("DEBUG_RESULT_ANSWER (processed):", JSON.stringify(processedAnswer));
+                          console.log("DEBUG_RESULT_ANSWER (original):", JSON.stringify(result.answer));
                           return <MarkdownRenderer>{processedAnswer}</MarkdownRenderer>;
                         })()}
                       </div>
