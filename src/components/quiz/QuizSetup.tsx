@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState, useEffect } from "react";
-import { FileText, Sparkles, Loader2, AlertTriangle, Timer, X } from "lucide-react";
+import { FileText, Sparkles, Loader2, AlertTriangle, Timer, X, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -196,7 +196,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <AlertTriangle className={cn("h-4 w-4 cursor-help", isEcoModeActive ? "text-green-500" : "text-muted-foreground/50")} />
+                        <Leaf className={cn("h-4 w-4 cursor-help", isEcoModeActive ? "text-green-500" : "text-muted-foreground/50")} />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-xs">
                         <p className="font-semibold mb-1">ECO MODE {isEcoModeActive ? 'Active' : 'Inactive'}</p>
@@ -217,7 +217,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                 </div>
                 {isEcoModeActive && (
                   <div className="p-2.5 mb-3 rounded-md bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-xs font-medium flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-px" />
+                    <Leaf className="h-4 w-4 flex-shrink-0 mt-px text-green-500" />
                     <span>Eco Mode Active – AI minimized. Manual validation available in results. Local OCR will be used for images/PDFs.</span>
                   </div>
                 )}
@@ -268,6 +268,7 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                       type="button"
                       variant="outline"
                       size="sm"
+                      className="h-auto whitespace-normal"
                       onClick={() => {
                         toggleEcoMode(); // This will turn Eco Mode OFF
                         toast({
