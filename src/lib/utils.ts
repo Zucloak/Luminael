@@ -10,6 +10,28 @@ export function replaceLatexDelimiters(text: string): string {
 
   let newResult = text;
 
+  // Placeholder for correctly delimited $$...$$ blocks
+  const placeholders: string[] = [];
+  const placeholderPrefix = "__LATEX_PLACEHOLDER_";
+
+  // Step A: Temporarily replace well-formed $$...$$ blocks, especially those with \boxed
+  newResult = newResult.replace(/(\$\$[\s\S]*?\$\$)/g, (match) => {
+    if (match.includes("\\boxed")) {
+      placeholders.push(match);
+      return `${placeholderPrefix}${placeholders.length - 1}__`;
+    }
+    return match; // Return other $$ blocks as is for now, or also placeholder them if needed
+  });
+
+  // Step B: Correct specific malformed pattern like $$\boxed{...}$\text{...}`
+  // This should capture $$\boxed{content inside box}$ and then the \text{part}
+  newResult = newResult.replace(/(\$\$?\\s*\\boxed\{[^}]*?\})\s*\$?\s*(\\text\{[^}]*?\})\s*\$?\s*\$\$?/g, (match, box, textContent) => {
+    // Combine them: remove closing brace of box, add text, add brace, wrap with $$
+    const boxContent = box.replace(/\\boxed\{([\s\S]*)\}$/, '$1');
+    return `$$\\boxed{${boxContent.trim()} ${textContent}}$$;`
+  });
+
+
   // Step 0: Clean common AI artifacts
   newResult = newResult.replace(/ \$=/g, ' ='); // Clean " $=" to " ="
   newResult = newResult.replace(/\$=/g, '=');   // Clean "$=" to "="
@@ -19,43 +41,31 @@ export function replaceLatexDelimiters(text: string): string {
   newResult = newResult.replace(/\\\[(.*?)\\\]/gs, (match, content) => `$$${content}$$`);
 
   // Step 2: Normalize explicit escaped dollar signs from AI (e.g., \\$ -> $)
-  newResult = newResult.replace(/\\?\$/g, '$'); // Match literal \$ and also unescaped $ for safety before next steps
+  // Be careful not to affect placeholders
+  newResult = newResult.split(placeholderPrefix).map((part, index) => {
+    if (index === 0) return part.replace(/\\?\$/g, '$');
+    const [num, ...rest] = part.split("__");
+    return `${num}__${rest.join("__").replace(/\\?\$/g, '$')}`;
+  }).join(placeholderPrefix);
 
-  // Step 3: Handle \boxed{...} specifically. It should always be display style ($$).
+
+  // Step 3: Handle \boxed{...} specifically if not part of a placeholder. It should always be display style ($$).
   // Remove any existing $ or $$ immediately around a \boxed{} expression, and also leading/trailing newlines or spaces.
   newResult = newResult.replace(/\s*\$\$?\s*(\\boxed\{[^}]*?\})\s*\$\$?\s*/g, '$1');
   // Then, (re-)wrap all \boxed{...} expressions with $$...$$ to ensure display style.
-  newResult = newResult.replace(/(\\boxed\{[^}]*?\})(?!\s*\$)/g, '$$$$$1$$'); // Avoid double wrapping if already correctly wrapped by subsequent logic
+  newResult = newResult.replace(/(\\boxed\{[^}]*?\})(?!\s*\$)/g, '$$$$$1$$');
 
   // Step 4: Attempt to fix hanging $$ delimiters or wrap content that looks like it starts with $$
-  // If a string starts with $$ but doesn't end with $$, wrap the whole thing or the segment.
-  // This is heuristic.
   newResult = newResult.replace(/^(\$\$[^\$]+)$/gm, (match, content) => {
-    if (content.endsWith('\n')) return `${content.trim()}$$`; // if it ends with newline, trim and add $$
-    return `${content}$$`; // otherwise just add $$
+    if (content.endsWith('\n')) return `${content.trim()}$$`;
+    return `${content}$$`;
   });
-   // And if it ends with $$ but doesn't start with it
   newResult = newResult.replace(/^([^\$]+\$\$)$/gm, (match, content) => `$$${content}`);
 
 
-  // Step 5: Aggressively wrap potential inline math (heuristic)
-  // This targets common LaTeX structures not already delimited.
-  // Matches sequences like "word = \cmd^{...}_{...} \text{...}"
-  // Or "q_1 = 2 \times 10^{-9}"
-  // This is complex and might need refinement.
-  // Avoid wrapping if already inside $...$ or $$...$$
-  // This regex is a placeholder for a more sophisticated approach if needed,
-  // as true robust parsing is very hard with regex alone.
-  // For now, let's focus on ensuring what IS delimited is clean.
-  // The prompt to the AI to use $ and $$ for *all* math is the primary defense.
-  // The issues seem to be more about *malformed* delimiters from the AI.
-
   // Step 6: Clean up repeated/redundant dollar signs.
-  // Reduce sequences of 3 or more dollar signs to 2 (e.g., $$$ -> $$).
   newResult = newResult.replace(/\${3,}/g, '$$');
-  // Correct $ $$...$$ $ to $$...$$
   newResult = newResult.replace(/^\$\s*\$\$(.*?)\$\$\s*\$$/gs, '$$$$$1$$');
-   // Correct $$ $...$ $$ to $...$ if $...$ is the only content
   newResult = newResult.replace(/^\$\$\s*\$([^\$]+)\$\s*\$\$$/gs, '$$$1$');
 
 
@@ -64,7 +74,12 @@ export function replaceLatexDelimiters(text: string): string {
   newResult = newResult.replace(/\$\$\s+([^$]*?)\s+\$\$/gs, '$$$$$1$$');
 
   // Step 8: Final check for any single $ that might be left hanging at start/end of lines from previous ops.
-  newResult = newResult.replace(/^\s*\$\s*$/gm, ''); // Remove lines that are just a single $
+  newResult = newResult.replace(/^\s*\$\s*$/gm, '');
 
-  return newResult.trim(); // Trim the final result
+  // Step C: Restore placeholders
+  placeholders.forEach((placeholder, index) => {
+    newResult = newResult.replace(`${placeholderPrefix}${index}__`, placeholder);
+  });
+
+  return newResult.trim();
 }
