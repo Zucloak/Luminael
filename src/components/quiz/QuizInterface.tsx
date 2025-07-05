@@ -37,7 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { ocrImageWithFallback } from '@/lib/ocr';
 import { addPastQuiz } from '@/lib/indexed-db';
-import { replaceLatexDelimiters, cn } from '@/lib/utils'; // Import the delimiter replacer and cn
+import { replaceLatexDelimiters } from '@/lib/utils'; // Import the delimiter replacer
 
 
 interface QuizInterfaceProps {
