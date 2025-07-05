@@ -12,18 +12,17 @@ export function replaceLatexDelimiters(text: string): string {
 
   // Placeholder for correctly delimited $$...$$ blocks
   const placeholders: string[] = [];
-  const placeholderPrefix = "__LATEX_PLACEHOLDER_";
+  const placeholderPrefix = "__LATEX_BOXED_PLACEHOLDER_"; // More specific prefix
 
-  // Step A: Temporarily replace well-formed $$...$$ blocks, especially those with \boxed
-  newResult = newResult.replace(/(\$\$[\s\S]*?\$\$)/g, (match) => {
-    if (match.includes("\\boxed")) {
-      placeholders.push(match);
-      return `${placeholderPrefix}${placeholders.length - 1}__`;
-    }
-    return match; // Return other $$ blocks as is for now, or also placeholder them if needed
+  // Step A: Temporarily replace well-formed $$ \boxed{...} $$ blocks
+  // This regex is specific to $$ \boxed{...} $$
+  newResult = newResult.replace(/(\$\$\s*\\boxed\{[\s\S]*?\}\s*\$\$)/g, (match) => {
+    placeholders.push(match);
+    return `${placeholderPrefix}${placeholders.length - 1}__`;
   });
 
   // Step B: Correct specific malformed pattern like $$\boxed{...}$\text{...}`
+  // This should run on content *not* captured by the placeholder above.
   // This should capture $$\boxed{content inside box}$ and then the \text{part}
   newResult = newResult.replace(/(\$\$?\\s*\\boxed\{[^}]*?\})\s*\$?\s*(\\text\{[^}]*?\})\s*\$?\s*\$\$?/g, (match, box, textContent) => {
     // Combine them: remove closing brace of box, add text, add brace, wrap with $$
