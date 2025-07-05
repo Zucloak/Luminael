@@ -270,7 +270,7 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                         console.warn(`[generateQuizFlow] AI Adherence Warning (Original Mismatch) for question (title: "${q.question.substring(0, 30)}..."): The AI's answer "${currentAnswerStr}" does not exactly match any of the options: ${JSON.stringify(currentOptions)}.`);
 
                         // Attempt to find a match ignoring case and whitespace
-                        const matchedOption = currentOptions.find(opt => opt.trim().toLowerCase() === currentAnswerStr.trim().toLowerCase());
+                        const matchedOption = currentOptions.find((opt: string) => opt.trim().toLowerCase() === currentAnswerStr.trim().toLowerCase());
 
                         if (matchedOption) {
                             console.log(`[generateQuizFlow] Corrected AI answer for question "${q.question.substring(0, 30)}..." from "${currentAnswerStr}" to "${matchedOption}" based on case-insensitive match.`);
