@@ -29,9 +29,9 @@ export function replaceLatexDelimiters(text: string): string {
   }).join(boxedPlaceholderPrefix);
 
   // Step GAMMA: Normalize newlines that seem to fragment inline math (heuristic)
-  newResult = newResult.replace(/([a-zA-Z])\s*\n\s*(\d+)\s*\n\s*=\s*/g, '$1_$2 = ');
-  newResult = newResult.replace(/(?<!\n)\n(?!\n)/g, ' ');
-  newResult = newResult.replace(/\n{2,}/g, '\n\n');
+  // newResult = newResult.replace(/([a-zA-Z])\s*\n\s*(\d+)\s*\n\s*=\s*/g, '$1_$2 = '); // Too specific
+  // newResult = newResult.replace(/(?<!\n)\n(?!\n)/g, ' '); // This can break paragraph formatting combined with inline math. KaTeX handles newlines in display math.
+  newResult = newResult.replace(/\n{2,}/g, '\n\n'); // Keep this: normalizes multiple newlines to two.
 
   // Step 0: Clean common AI artifacts (like $=)
   newResult = newResult.replace(/ \$=/g, ' =');
@@ -41,23 +41,29 @@ export function replaceLatexDelimiters(text: string): string {
   newResult = newResult.replace(/\\\(([\s\S]*?)\\\)/gs, (match, content) => `$${content}$`);
   newResult = newResult.replace(/\\\[([\s\S]*?)\\\]/gs, (match, content) => `$$${content}$$`);
 
-  // Step 2: Normalize explicit escaped dollar signs (e.g., \\$ -> $)
+  // Step 2: Normalize EXPLICITLY escaped dollar signs (e.g., \\$ -> $).
+  // Avoids altering intentional single $ or $$.
   const partsForStep2 = newResult.split(boxedPlaceholderPrefix);
   newResult = partsForStep2.map((part, index) => {
-    if (index === 0) return part.replace(/\\?\$/g, '$');
-    const [num, ...rest] = part.split("__");
-    return `${num}__${rest.join("__").replace(/\\?\$/g, '$')}`;
+    const textToProcess = (index === 0) ? part : part.substring(part.indexOf("__") + 2);
+    const processedText = textToProcess.replace(/\\\$/g, '$'); // Only replace \\$ with $
+
+    if (index === 0) return processedText;
+    const [num] = part.split("__");
+    return `${num}__${processedText}`;
   }).join(boxedPlaceholderPrefix);
 
   // Step B (from previous, for malformed boxed with text outside):
-  newResult = newResult.replace(/(\$\$?\\s*\\boxed\{[^}]*?\})\s*\$?\s*(\\text\{[^}]*?\})\s*\$?\s*\$\$?/g, (match, box, textContent) => {
-    const boxContent = box.replace(/\\boxed\{([\s\S]*)\}$/, '$1');
-    return `$$\\boxed{${boxContent.trim()} ${textContent}}$$`;
-  });
+  // newResult = newResult.replace(/(\$\$?\\s*\\boxed\{[^}]*?\})\s*\$?\s*(\\text\{[^}]*?\})\s*\$?\s*\$\$?/g, (match, box, textContent) => {
+  //   const boxContent = box.replace(/\\boxed\{([\s\S]*)\}$/, '$1');
+  //   return `$$\\boxed{${boxContent.trim()} ${textContent}}$$`;
+  // });
 
   // Step 3: Handle \boxed{...} if not part of a placeholder (e.g. if AI forgot $$)
-  newResult = newResult.replace(/\s*\$\$?\s*(\\boxed\{[^}]*?\})\s*\$\$?\s*/g, '$1');
-  newResult = newResult.replace(/(\\boxed\{[^}]*?\})(?!\s*\$)/g, '$$$$$1$$');
+  // Rely on Step ALPHA for well-formed $$ \boxed{...} $$.
+  // The AI is prompted to deliver this format. Adding more rules here can be counter-productive.
+  // newResult = newResult.replace(/\s*\$\$?\s*(\\boxed\{[^}]*?\})\s*\$\$?\s*/g, '$1');
+  // newResult = newResult.replace(/(\\boxed\{[^}]*?\})(?!\s*\$)/g, '$$$$$1$$');
 
   // Step 4: Attempt to fix hanging $$ delimiters
   newResult = newResult.replace(/^(\$\$[^\$]+)$/gm, (match, content) => `${content.trim()}$$`);
@@ -69,8 +75,8 @@ export function replaceLatexDelimiters(text: string): string {
   newResult = newResult.replace(/^\$\$\s*\$([^\$\s].*?[^\$\s])\$\s*\$\$$/gs, '$$$1$');
 
   // Step 7: Remove spaces immediately inside delimiters
-  newResult = newResult.replace(/\$\s+([^$]*?)\s+\$/gs, '$$$1$');
-  newResult = newResult.replace(/\$\$\s+([^$]*?)\s+\$\$/gs, '$$$$$1$$');
+  newResult = newResult.replace(/\$\s+([\s\S]*?)\s+\$/gs, (match, content) => `$${content.trim()}$`);
+  newResult = newResult.replace(/\$\$\s+([\s\S]*?)\s+\$\$/gs, (match, content) => `$$${content.trim()}$$`);
 
   // Step 8: Final check for any single $ that might be left hanging or empty $$/$
   newResult = newResult.replace(/^\s*\$\s*$/gm, '');

@@ -492,10 +492,24 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                       </h4>
                       <div className="p-3 rounded-md border border-green-600/50 bg-green-500/10">
                         {(() => {
-                          const processedAnswer = replaceLatexDelimiters(result.answer);
-                          // Log all answers in this section for broader debugging
-                          console.log("DEBUG_RESULT_ANSWER (processed):", JSON.stringify(processedAnswer));
-                          console.log("DEBUG_RESULT_ANSWER (original):", JSON.stringify(result.answer));
+                          let processedAnswer = replaceLatexDelimiters(result.answer);
+
+                          // Remove \boxed{...} for display if it's a problemSolving question,
+                          // as per user request to not show the final answer boxed.
+                          if (result.questionType === 'problemSolving') {
+                            // This regex handles $$ \boxed{content} $$, $ \boxed{content} $,
+                            // and extracts 'content'.
+                            processedAnswer = processedAnswer.replace(/\$\$?\s*\\boxed{([\s\S]*?)}\s*\$\$?/g, '$1');
+
+                            // Fallback if \boxed was somehow present without $ or $$ delimiters,
+                            // though less likely with current AI prompts and replaceLatexDelimiters logic.
+                            if (processedAnswer.includes('\\boxed')) {
+                                processedAnswer = processedAnswer.replace(/\\boxed{([\s\S]*?)}/g, '$1');
+                            }
+                          }
+
+                          // console.log("DEBUG_RESULT_ANSWER (original):", JSON.stringify(result.answer));
+                          // console.log("DEBUG_RESULT_ANSWER (final for display):", JSON.stringify(processedAnswer));
                           return <MarkdownRenderer>{processedAnswer}</MarkdownRenderer>;
                         })()}
                       </div>
