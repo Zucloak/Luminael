@@ -426,12 +426,20 @@ interface ProcessFileResult {
         const result = await (generatorFn as any)({...params, apiKey});
         incrementUsage();
 
-        // if (result && (result as any).rawAiOutputForDebugging) {
-        //   console.log("RAW AI OUTPUT (Questions only, before filtering - from use-quiz-setup):", JSON.stringify((result as any).rawAiOutputForDebugging, null, 2));
-        // }
-        // if (result && result.quiz && result.quiz.questions) {
-        //   console.log("FINAL Quiz Questions (After potential filtering - from use-quiz-setup):", JSON.stringify(result.quiz.questions, null, 2));
-        // }
+        // ---- START OF NEW LOGGING CODE ----
+        if (result && (result as any).rawAiOutputForDebugging) {
+          console.log("--- RAW AI OUTPUT (from use-quiz-setup.ts) ---");
+          const rawQuestions = (result as any).rawAiOutputForDebugging;
+          if (Array.isArray(rawQuestions)) {
+            rawQuestions.forEach((q: any, index: number) => {
+              console.log(`RAW Question ${index + 1}:`, JSON.stringify(q, null, 2));
+            });
+          } else {
+             console.log("RAW AI Data:", JSON.stringify(rawQuestions, null, 2));
+          }
+          console.log("--- END OF RAW AI OUTPUT ---");
+        }
+        // ---- END OF NEW LOGGING CODE ----
 
         if (result && result.quiz && Array.isArray(result.quiz.questions)) {
           const newQuestions = result.quiz.questions.filter((q: Question) => q && q.question && q.question.trim() !== '');
