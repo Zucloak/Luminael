@@ -53,6 +53,11 @@ export function replaceLatexDelimiters(text: string): string {
     return `${num}__${processedText}`;
   }).join(boxedPlaceholderPrefix);
 
+  // Step 2.5: Fix AI error where display math uses an inline closer (e.g., $$content$)
+  // This looks for $$ followed by content, then a single $ that's at the end or followed by space.
+  // It ensures the character before the single $ is not itself a $.
+  newResult = newResult.replace(/(\$\$[\s\S]*?[^\$])\$(\s|$|[,.;?!])/g, '$1\$\$$2');
+
   // Step B (from previous, for malformed boxed with text outside):
   // newResult = newResult.replace(/(\$\$?\\s*\\boxed\{[^}]*?\})\s*\$?\s*(\\text\{[^}]*?\})\s*\$?\s*\$\$?/g, (match, box, textContent) => {
   //   const boxContent = box.replace(/\\boxed\{([\s\S]*)\}$/, '$1');
