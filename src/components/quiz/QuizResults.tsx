@@ -497,14 +497,18 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                           // Remove \boxed{...} for display if it's a problemSolving question,
                           // as per user request to not show the final answer boxed.
                           if (result.questionType === 'problemSolving') {
-                            // This regex handles $$ \boxed{content} $$, $ \boxed{content} $,
-                            // and extracts 'content'.
-                            processedAnswer = processedAnswer.replace(/\$\$?\s*\\boxed{([\s\S]*?)}\s*\$\$?/g, '$1');
-
-                            // Fallback if \boxed was somehow present without $ or $$ delimiters,
-                            // though less likely with current AI prompts and replaceLatexDelimiters logic.
-                            if (processedAnswer.includes('\\boxed')) {
-                                processedAnswer = processedAnswer.replace(/\\boxed{([\s\S]*?)}/g, '$1');
+                            const boxedContentMatch = processedAnswer.match(/\$\$?\s*\\boxed{([\s\S]*?)}\s*\$\$?/);
+                            if (boxedContentMatch && boxedContentMatch[1]) {
+                              let content = boxedContentMatch[1];
+                              // Re-wrap the extracted content as display math
+                              processedAnswer = `$$${content}$$`;
+                            } else if (processedAnswer.includes('\\boxed')) {
+                              // Fallback for \boxed{} not caught with $$/$ delimiters
+                              const simplerBoxedContentMatch = processedAnswer.match(/\\boxed{([\s\S]*?)}/);
+                              if (simplerBoxedContentMatch && simplerBoxedContentMatch[1]) {
+                                  // Re-wrap the extracted content as display math
+                                  processedAnswer = `$$${simplerBoxedContentMatch[1]}$$`;
+                              }
                             }
                           }
 

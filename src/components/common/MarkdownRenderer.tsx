@@ -12,6 +12,11 @@ interface MarkdownRendererProps {
 }
 
 export function MarkdownRenderer({ children, className }: MarkdownRendererProps) {
+  // Diagnostic log to see what children are passed, especially for problematic cases
+  if (typeof children === 'string' && (children.includes("\\frac{kQ}{r}") || children.includes("\\rho(r')"))) {
+    console.log("[MarkdownRenderer] Received children for rendering:", JSON.stringify(children));
+  }
+
   return (
     <div className={cn("markdown-renderer-wrapper", className)}>
       <ReactMarkdown

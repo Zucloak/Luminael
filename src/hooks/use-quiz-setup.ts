@@ -435,9 +435,12 @@ interface ProcessFileResult {
               console.log(`RAW Question ${index + 1}:`, JSON.stringify(q, null, 2));
             });
           } else {
-             console.log("RAW AI Data:", JSON.stringify(rawQuestions, null, 2));
+             console.log("RAW AI Data (not an array):", JSON.stringify(rawQuestions, null, 2));
           }
           console.log("--- END OF RAW AI OUTPUT ---");
+        } else {
+          console.warn("[use-quiz-setup.ts] rawAiOutputForDebugging property was not found on the result object from the AI flow, or the result object itself was falsy.");
+          console.log("[use-quiz-setup.ts] Full AI flow result object:", JSON.stringify(result, null, 2));
         }
         // ---- END OF NEW LOGGING CODE ----
 
