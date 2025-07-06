@@ -500,14 +500,33 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                             const boxedContentMatch = processedAnswer.match(/\$\$?\s*\\boxed{([\s\S]*?)}\s*\$\$?/);
                             if (boxedContentMatch && boxedContentMatch[1]) {
                               let content = boxedContentMatch[1];
-                              // Re-wrap the extracted content as display math
+                              // Clean known AI error: if \boxed{...\$} occurs, the $ is part of 'content'.
+                              // This happens if AI produces \$\\boxed{X\\$}\$ which becomes $$\boxed{X$}$$
+                              // The content extracted is "X$". We need "X".
+                              if (content.endsWith('$')) {
+                                const beforeLastDollar = content.substring(0, content.length - 1);
+                                // Only strip if it's a single trailing $ and not part of a valid internal expression
+                                // This heuristic assumes internal $ would likely be paired or part of a command.
+                                if (!beforeLastDollar.includes('$')) { // Simple check: no other $ in the rest of the string
+                                    content = beforeLastDollar;
+                                }
+                                // More complex check could involve balancing, but might be overkill for this specific AI error.
+                              }
+                              // Re-wrap the (potentially cleaned) content as display math
                               processedAnswer = `$$${content}$$`;
                             } else if (processedAnswer.includes('\\boxed')) {
                               // Fallback for \boxed{} not caught with $$/$ delimiters
                               const simplerBoxedContentMatch = processedAnswer.match(/\\boxed{([\s\S]*?)}/);
                               if (simplerBoxedContentMatch && simplerBoxedContentMatch[1]) {
+                                  let content = simplerBoxedContentMatch[1];
+                                  if (content.endsWith('$')) {
+                                    const beforeLastDollar = content.substring(0, content.length - 1);
+                                    if (!beforeLastDollar.includes('$')) {
+                                        content = beforeLastDollar;
+                                    }
+                                  }
                                   // Re-wrap the extracted content as display math
-                                  processedAnswer = `$$${simplerBoxedContentMatch[1]}$$`;
+                                  processedAnswer = `$$${content}$$`;
                               }
                             }
                           }
