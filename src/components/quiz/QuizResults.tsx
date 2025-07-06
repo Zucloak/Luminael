@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Check, X, Award, RotateCw, Pencil, Sparkles, BrainCircuit, CheckCircle, AlertCircle, XCircle, Save, Loader2 } from 'lucide-react'; // Added Loader2
 import { useState, useEffect, useMemo, useCallback } from 'react'; // Added useCallback
-import { cn } from '@/lib/utils';
+import { cn, replaceLatexDelimiters } from '@/lib/utils'; // Import replaceLatexDelimiters
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
@@ -393,7 +393,7 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                   ) : (
                     <Pencil className="h-5 w-5 text-primary flex-shrink-0 mt-1" /> // Default icon if no validation status (e.g. before validation)
                   )}
-                  <div className="flex-1">Question {index + 1}: <MarkdownRenderer>{result.question}</MarkdownRenderer></div>
+                  <div className="flex-1">Question {index + 1}: <MarkdownRenderer>{replaceLatexDelimiters(result.question)}</MarkdownRenderer></div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
@@ -415,7 +415,7 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                           <div className="font-medium flex items-start gap-2">
                             {isUserAnswer && (result.isCorrect ? <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/> : <X className="h-4 w-4 text-red-600 flex-shrink-0 mt-1"/>)}
                             {isCorrectAnswer && !isUserAnswer && <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-1"/>}
-                            <div className="flex-1"><MarkdownRenderer>{option}</MarkdownRenderer></div>
+                            <div className="flex-1"><MarkdownRenderer>{replaceLatexDelimiters(option)}</MarkdownRenderer></div>
                           </div>
                           {isUserAnswer && !isCorrectAnswer && <p className="text-xs text-red-600 pl-6">Your answer</p>}
                           {isCorrectAnswer && <p className="text-xs text-green-600 pl-6">Correct answer</p>}
@@ -430,7 +430,7 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                     <div>
                       <h4 className="font-semibold mb-2 text-muted-foreground">Your Answer:</h4>
                       <div className="p-3 rounded-md border bg-muted/50">
-                        {result.userAnswer === 'No answer' ? <em>No answer provided.</em> : <MarkdownRenderer>{result.userAnswer}</MarkdownRenderer>}
+                        {result.userAnswer === 'No answer' ? <em>No answer provided.</em> : <MarkdownRenderer>{replaceLatexDelimiters(result.userAnswer)}</MarkdownRenderer>}
                       </div>
                     </div>
 
@@ -474,7 +474,7 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                                                 // Deferred text style handled by its own block
                                             )}>{result.validation.status}</span>
                                         </div>
-                                        <div className="text-sm text-foreground/90 pl-7"><MarkdownRenderer>{result.validation.explanation}</MarkdownRenderer></div>
+                                        <div className="text-sm text-foreground/90 pl-7"><MarkdownRenderer>{replaceLatexDelimiters(result.validation.explanation)}</MarkdownRenderer></div>
                                     </div>
                                 )
                             ) : (
@@ -490,7 +490,52 @@ export function QuizResults({ quiz, answers, onRestart, onRetake, user, sourceCo
                       <h4 className="font-semibold mb-2 text-green-600">
                         {result.questionType === 'problemSolving' ? 'Correct Solution:' : 'Suggested Answer:'}
                       </h4>
-                      <div className="p-3 rounded-md border border-green-600/50 bg-green-500/10"><MarkdownRenderer>{result.answer}</MarkdownRenderer></div>
+                      <div className="p-3 rounded-md border border-green-600/50 bg-green-500/10">
+                        {(() => {
+                          let processedAnswer = replaceLatexDelimiters(result.answer);
+
+                          // Remove \boxed{...} for display if it's a problemSolving question,
+                          // as per user request to not show the final answer boxed.
+                          if (result.questionType === 'problemSolving') {
+                            const boxedContentMatch = processedAnswer.match(/\$\$?\s*\\boxed{([\s\S]*?)}\s*\$\$?/);
+                            if (boxedContentMatch && boxedContentMatch[1]) {
+                              let content = boxedContentMatch[1];
+                              // Clean known AI error: if \boxed{...\$} occurs, the $ is part of 'content'.
+                              // This happens if AI produces \$\\boxed{X\\$}\$ which becomes $$\boxed{X$}$$
+                              // The content extracted is "X$". We need "X".
+                              if (content.endsWith('$')) {
+                                const beforeLastDollar = content.substring(0, content.length - 1);
+                                // Only strip if it's a single trailing $ and not part of a valid internal expression
+                                // This heuristic assumes internal $ would likely be paired or part of a command.
+                                if (!beforeLastDollar.includes('$')) { // Simple check: no other $ in the rest of the string
+                                    content = beforeLastDollar;
+                                }
+                                // More complex check could involve balancing, but might be overkill for this specific AI error.
+                              }
+                              // Re-wrap the (potentially cleaned) content as display math
+                              processedAnswer = `$$${content}$$`;
+                            } else if (processedAnswer.includes('\\boxed')) {
+                              // Fallback for \boxed{} not caught with $$/$ delimiters
+                              const simplerBoxedContentMatch = processedAnswer.match(/\\boxed{([\s\S]*?)}/);
+                              if (simplerBoxedContentMatch && simplerBoxedContentMatch[1]) {
+                                  let content = simplerBoxedContentMatch[1];
+                                  if (content.endsWith('$')) {
+                                    const beforeLastDollar = content.substring(0, content.length - 1);
+                                    if (!beforeLastDollar.includes('$')) {
+                                        content = beforeLastDollar;
+                                    }
+                                  }
+                                  // Re-wrap the extracted content as display math
+                                  processedAnswer = `$$${content}$$`;
+                              }
+                            }
+                          }
+
+                          // console.log("DEBUG_RESULT_ANSWER (original):", JSON.stringify(result.answer));
+                          // console.log("DEBUG_RESULT_ANSWER (final for display):", JSON.stringify(processedAnswer));
+                          return <MarkdownRenderer>{processedAnswer}</MarkdownRenderer>;
+                        })()}
+                      </div>
                     </div>
                   </div>
                 )}

@@ -9,7 +9,7 @@ const faqs = [
     },
     {
         question: "How does the quiz generation work?",
-        answer: "Luminael's AI engine performs a deep analysis of your uploaded files to build a conceptual understanding of the material. It intelligently identifies the most critical topics and relationships within your content. This understanding is then used as a blueprint to generate a focused, relevant quiz designed to test true comprehension, not just memorization."
+        answer: "Luminael's AI deeply understands your uploaded materials. It identifies key ideas and how they connect to create a custom quiz that truly tests your knowledge, not just what you've memorized."
     },
     {
         question: "Is my API key secure?",
@@ -17,7 +17,7 @@ const faqs = [
     },
     {
         question: "What file types are supported?",
-        answer: "You can upload text files (.txt), Markdown files (.md), Word documents (.docx), PDFs (.pdf), and common image files (.png, .jpg, .jpeg). For images and scanned PDFs, Luminael uses a combination of local and AI-powered text recognition (OCR) to extract the content."
+        answer: "You can upload text files (.txt), Markdown files (.md), Word documents (.docx), PDFs (.pdf), and common image files (.png, .jpg, .jpeg). For images and scanned PDFs, Luminael intelligently extracts the text so it can be used for your quiz."
     },
     {
         question: "What is Hell Bound Mode?",

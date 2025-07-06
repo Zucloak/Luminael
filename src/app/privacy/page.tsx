@@ -77,6 +77,7 @@ export default function PrivacyPolicyPage() {
         <ul className="list-disc list-inside mb-4 space-y-1 pl-4">
           <li>Your API key settings (if you choose to save them for convenience).</li>
           <li>Your saved quiz history (if you use the feature to save quizzes locally).</li>
+          <li><strong>API Usage Tracking (`luminael_api_usage`):</strong> To help you manage your API key&apos;s daily usage limits, the application locally stores a daily counter of how many times you&apos;ve used your API key within Luminael. This information is stored in your browser&apos;s `localStorage`, resets daily, and is only used to display your usage to you. It is not sent to any server.</li>
         </ul>
         <p>
           You have full control to review, delete, or clear this data at any time through your browser&apos;s developer tools and site settings. I believe in empowering you, and that starts with giving you complete ownership and control over information stored by the application on your own device.

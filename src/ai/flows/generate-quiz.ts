@@ -262,30 +262,40 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                 }
 
                 // Additional check: After "Option A/B/C/D" correction, does the answer match an option?
-                if (q.questionType === 'multipleChoice') {
-                    const currentAnswer = typeof q.answer === 'string' ? q.answer : '';
-                    // Ensure q.options is an array of strings. It might have been deleted if question was reclassified.
-                    const currentOptions = (Array.isArray((q as any).options) ? (q as any).options.filter((opt: any) => typeof opt === 'string') : []) as string[];
+                if (q.questionType === 'multipleChoice' && (q as any).options && Array.isArray((q as any).options)) {
+                    let currentAnswerStr = typeof q.answer === 'string' ? q.answer : '';
+                    const currentOptions = (q as any).options.filter((opt: any): opt is string => typeof opt === 'string');
 
-                    if (currentOptions.length > 0 && !currentOptions.includes(currentAnswer)) {
-                        console.warn(`[generateQuizFlow] AI Adherence Warning for question (title: "${q.question.substring(0, 30)}..."): The AI's answer "${currentAnswer}" does not exactly match any of the options: ${JSON.stringify(currentOptions)}. The AI is expected to provide an answer that is an exact textual match to one of the options.`);
-                        // No programmatic change to q.answer here to avoid incorrect guesses.
+                    if (currentOptions.length > 0 && !currentOptions.includes(currentAnswerStr)) {
+                        console.warn(`[generateQuizFlow] AI Adherence Warning (Original Mismatch) for question (title: "${q.question.substring(0, 30)}..."): The AI's answer "${currentAnswerStr}" does not exactly match any of the options: ${JSON.stringify(currentOptions)}.`);
+
+                        // Attempt to find a match ignoring case and whitespace
+                        const matchedOption = currentOptions.find((opt: string) => opt.trim().toLowerCase() === currentAnswerStr.trim().toLowerCase());
+
+                        if (matchedOption) {
+                            console.log(`[generateQuizFlow] Corrected AI answer for question "${q.question.substring(0, 30)}..." from "${currentAnswerStr}" to "${matchedOption}" based on case-insensitive match.`);
+                            q.answer = matchedOption; // Update q.answer to the exact string from options
+                        } else {
+                            // If still no match, log a more severe warning.
+                            // Consider if any other fallback is safe. For now, just log.
+                            // The prompt is very strict, so this indicates a significant AI deviation.
+                            console.error(`[generateQuizFlow] CRITICAL AI Adherence Failure for question (title: "${q.question.substring(0, 30)}..."): The AI's answer "${currentAnswerStr}" could not be matched to any option ${JSON.stringify(currentOptions)} even with lenient checking. This question may not be scorable correctly.`);
+                            // Do not assign a default answer, as it would be a guess.
+                        }
                     }
                 }
               });
             }
 
             // Apply delimiter replacement to all relevant fields
+            // IMPORTANT: Delimiter replacement happens AFTER the answer/option matching logic.
+            // This is crucial because matching should be based on the AI's original textual output.
             if (output.quiz && output.quiz.questions) {
-              // Note: output.quiz.questions might have been re-assigned by the .map() if misclassified questions were handled
               output.quiz.questions.forEach(q => {
                 if (q.question) q.question = replaceLatexDelimiters(q.question);
-                if (q.answer) q.answer = replaceLatexDelimiters(q.answer);
-                if (q.questionType === 'multipleChoice' && q.options) {
-                  // Ensure options is an array of strings before mapping
-                  if (Array.isArray(q.options)) {
-                    q.options = q.options.map(opt => typeof opt === 'string' ? replaceLatexDelimiters(opt) : opt);
-                  }
+                if (q.answer) q.answer = replaceLatexDelimiters(q.answer); // Answer is now potentially corrected to an exact option string
+                if (q.questionType === 'multipleChoice' && (q as any).options && Array.isArray((q as any).options)) {
+                  (q as any).options = (q as any).options.map((opt: string) => typeof opt === 'string' ? replaceLatexDelimiters(opt) : opt);
                 }
               });
             }

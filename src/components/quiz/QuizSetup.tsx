@@ -202,14 +202,14 @@ export function QuizSetup({ onQuizStart, isGenerating, isHellBound, onHellBoundT
                         <p className="font-semibold mb-1">ECO MODE {isEcoModeActive ? 'Active' : 'Inactive'}</p>
                         {isEcoModeActive ? (
                           <>
-                            <p className="text-xs text-muted-foreground">AI resource usage is minimized.</p>
+                            <p className="text-xs text-muted-foreground">Eco Mode helps reduce AI usage.</p>
                             <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5 mt-1">
-                              <li>File OCR will use local processing only.</li>
-                              <li>AI answer validation in results will be manual.</li>
+                              <li>Text from images/PDFs is extracted directly on your device.</li>
+                              <li>Quiz answer checks are done manually by you in the results.</li>
                             </ul>
                           </>
                         ) : (
-                          <p className="text-xs text-muted-foreground">Standard AI processing enabled (AI-powered OCR, auto-validation).</p>
+                          <p className="text-xs text-muted-foreground">Standard processing uses AI for enhanced text extraction from images/PDFs and for automatic answer suggestions in your results.</p>
                         )}
                       </TooltipContent>
                     </Tooltip>

@@ -39,6 +39,7 @@ import { ocrImageWithFallback } from '@/lib/ocr';
 import { addPastQuiz } from '@/lib/indexed-db';
 import { replaceLatexDelimiters } from '@/lib/utils'; // Import the delimiter replacer
 
+
 interface QuizInterfaceProps {
   quiz: Quiz;
   timer: number;
@@ -327,7 +328,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
             </div>
         </div>
         <CardTitle className="font-headline text-2xl md:text-3xl leading-tight pt-2">
-          <MarkdownRenderer>{currentQuestion.question}</MarkdownRenderer>
+          <MarkdownRenderer>{replaceLatexDelimiters(currentQuestion.question)}</MarkdownRenderer>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -342,7 +343,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
                 <Label htmlFor={`q${currentQuestionIndex}-o${index}`} className="flex items-center space-x-3 font-normal text-base cursor-pointer w-full">
                   <RadioGroupItem value={option} id={`q${currentQuestionIndex}-o${index}`} />
                   <div className="flex-1">
-                    <MarkdownRenderer>{option}</MarkdownRenderer>
+                    <MarkdownRenderer>{replaceLatexDelimiters(option)}</MarkdownRenderer>
                   </div>
                 </Label>
               </div>
@@ -394,7 +395,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
                 <Label>Live Preview</Label>
                 <Card className="p-4 bg-muted/50 min-h-[4rem] flex items-center justify-center text-lg">
                   <MarkdownRenderer>
-                    {answers[currentQuestionIndex] || ''}
+                    {replaceLatexDelimiters(answers[currentQuestionIndex] || '')}
                   </MarkdownRenderer>
                 </Card>
               </div>
