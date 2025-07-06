@@ -37,16 +37,18 @@ export function replaceLatexDelimiters(text: string): string {
   newResult = newResult.replace(/ \$=/g, ' =');
   newResult = newResult.replace(/\$=/g, '=');
 
-  // Step 1: Convert standard LaTeX command delimiters \(...\) and \[...\]
-  newResult = newResult.replace(/\\\(([\s\S]*?)\\\)/gs, (match, content) => `$${content}$`);
-  newResult = newResult.replace(/\\\[([\s\S]*?)\\\]/gs, (match, content) => `$$${content}$$`);
+  // Step 1: Convert LaTeX command delimiters (e.g., \(...\), \\\(...\\\), \[...\]) to $...$ and $$...$$
+  // Handles one or more backslashes before ( and [
+  newResult = newResult.replace(/\\+\(([\s\S]*?)\\+\)/gs, (match, content) => `$${content}$`);
+  newResult = newResult.replace(/\\+\[([\s\S]*?)\\+\]/gs, (match, content) => `$$${content}$$`);
 
-  // Step 2: Normalize EXPLICITLY escaped dollar signs (e.g., \\$ -> $).
-  // Avoids altering intentional single $ or $$.
+  // Step 2: Normalize all escaped dollar signs (e.g., \\$, \\\\$) to $.
+  // This ensures that any \\+$ sequence becomes a simple $.
   const partsForStep2 = newResult.split(boxedPlaceholderPrefix);
   newResult = partsForStep2.map((part, index) => {
     const textToProcess = (index === 0) ? part : part.substring(part.indexOf("__") + 2);
-    const processedText = textToProcess.replace(/\\\$/g, '$'); // Only replace \\$ with $
+    // Replace one or more backslashes followed by a dollar, with a single dollar
+    const processedText = textToProcess.replace(/\\+\$/g, '$');
 
     if (index === 0) return processedText;
     const [num] = part.split("__");
