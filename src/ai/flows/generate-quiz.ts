@@ -93,7 +93,8 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EX
     *   DO NOT use non-standard or custom LaTeX commands.
     *   DO NOT use parentheses for math delimiters like \`\\\\(\` or \`\\\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
-    *   BOXED ANSWERS: When using the \`\\\\boxed{...}\` command for final answers in problem-solving solutions, ensure this command and its argument are themselves enclosed within display math delimiters, like so: \`\\$\\$\\\\boxed{your final answer}\\$\\$\`.
+    *   **BOXED CONTENT (ABSOLUTE RULE):** ALL uses of the \`\\\\boxed{...}\` command (e.g., for final answers or important formulas) MUST be enclosed in DISPLAY MATH delimiters: \`\\$\\$\\\\boxed{your content}\\$\\$\`. Inline boxing (\`\\$\\\\boxed{...}\\$\`) is FORBIDDEN.
+    *   **DISPLAY VS. INLINE MATH:** Use \`\\$\\$...\\$\\$\` for standalone equations, significant fractions, summations, integrals, matrices, or any multi-line mathematical expressions. Use \`\\$...\\$\` for smaller, inline mathematical elements that are part of a sentence's flow.
     *   **INTERNAL LATEX INTEGRITY (ESPECIALLY FOR COMPLEX STRUCTURES):**
         *   When constructing complex expressions such as fractions (e.g., \`\\\\frac{numerator}{denominator}\`), square roots (e.g., \`\\\\sqrt{content}\`), or boxed content (e.g., \`\\\\boxed{content}\`), ensure that the \`numerator\`, \`denominator\`, or \`content\` (the material inside the curly braces \`{...}\` of these commands) is a single, complete, and syntactically valid LaTeX snippet *relative to its own context*.
         *   **CRITICAL:** Avoid prematurely closing the overall math mode with a '$' or '$$' *inside* such structures if the entire structure is already meant to be part of a larger delimited math expression. Also, ensure correct pairing and nesting of curly braces '{}'.
@@ -102,9 +103,12 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EX
         *   **INCORRECT EXAMPLE to avoid:** '\$\$ \boxed{ V = \frac{kQ}\$ \${ \sqrt{x^2+R^2} } } \$\$' (The 'kQ}\$ \${ \sqrt...' part is bad, breaking the fraction and box content due to misplaced '$' and '{').
         *   **CORRECT APPROACH for similar structure:** '\$\$ \boxed{ V = \frac{kQ}{\sqrt{x^2+R^2}} } \$\$' (The entire 'V = ...' part is a single, well-formed LaTeX expression within the '\boxed{}' before the final '\$\$' delimiters are applied).
 
-**LISTS AND STEPS: IMPORTANT FORMATTING:**
-For any step-by-step explanations, derivations, or itemized lists in your answers, YOU MUST use standard Markdown numbered lists (e.g., \`1. First step.\\n2. Second step with math \\$x=y\\$.\`).
-DO NOT use LaTeX environments like \`\\\\begin{enumerate}\`, \`\\\\end{enumerate}\`, \`\\\\begin{itemize}\`, or \`\\\\item\`. Use Markdown numbering. Any LaTeX math *within* a Markdown list item must still be correctly delimited with dollar signs.
+**LISTS AND STEPS (ESPECIALLY FOR PROBLEM-SOLVING ANSWERS):**
+For any step-by-step explanations, derivations, or itemized lists in your answers:
+1.  **PRIMARY METHOD: Use standard Markdown numbered lists** (e.g., \`1. First step.\\n2. Second step with math \\$x=y\\$.\`).
+2.  **LaTeX Math within Markdown:** Any LaTeX math *within* a Markdown list item must still be correctly delimited with appropriate dollar signs (\`\\$...\\$\` or \`\\$\\$...\\$\\$\`).
+3.  **Complex Equations within a Step:** If a single step in a derivation involves a complex multi-line equation (e.g., using an \`align\` environment), that specific equation block SHOULD be wrapped in \`\\$\\$...\\$\\$\`.
+4.  **AVOID LaTeX List Environments:** DO NOT use top-level LaTeX environments like \`\\\\begin{enumerate}\`, \`\\\\end{enumerate}\`, \`\\\\begin{itemize}\`, or \`\\\\item\` to create the overall list structure. Use Markdown for the list itself.
 
 **Output Format Mandate:**
 You MUST provide your response as a JSON object that strictly conforms to the GenerateQuizOutputSchema, containing a 'quiz' object, which in turn contains a 'questions' array. EACH question object in this array MUST be a ProblemSolvingQuestionSchema object.
@@ -163,11 +167,15 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EX
     *   DO NOT use non-standard or custom LaTeX commands.
     *   DO NOT use parentheses for math delimiters like \`\\(\` or \`\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
-    *   BOXED ANSWERS: When using the \`\\\\boxed{...}\` command for final answers in problem-solving solutions, ensure this command and its argument are themselves enclosed within display math delimiters, like so: \`\\$\\$\\\\boxed{your final answer}\\$\\$\`.
+    *   **BOXED CONTENT (ABSOLUTE RULE):** ALL uses of the \`\\\\boxed{...}\` command (e.g., for final answers or important formulas) MUST be enclosed in DISPLAY MATH delimiters: \`\\$\\$\\\\boxed{your content}\\$\\$\`. Inline boxing (\`\\$\\\\boxed{...}\\$\`) is FORBIDDEN. This applies to questions, options, and answers.
+    *   **DISPLAY VS. INLINE MATH:** Use \`\\$\\$...\\$\\$\` for standalone equations, significant fractions, summations, integrals, matrices, or any multi-line mathematical expressions. Use \`\\$...\\$\` for smaller, inline mathematical elements that are part of a sentence's flow. This applies to questions, options, and answers.
 
-**LISTS AND STEPS: IMPORTANT FORMATTING:**
-For any step-by-step explanations, derivations, or itemized lists in your answers, YOU MUST use standard Markdown numbered lists (e.g., \`1. First step.\\n2. Second step with math \\$x=y\\$.\`).
-DO NOT use LaTeX environments like \`\\\\begin{enumerate}\`, \`\\\\end{enumerate}\`, \`\\\\begin{itemize}\`, or \`\\\\item\`. Use Markdown numbering. Any LaTeX math *within* a Markdown list item must still be correctly delimited with dollar signs.
+**LISTS AND STEPS (ESPECIALLY FOR OPEN-ENDED/PROBLEM-SOLVING ANSWERS):**
+For any step-by-step explanations, derivations, or itemized lists in your answers:
+1.  **PRIMARY METHOD: Use standard Markdown numbered lists** (e.g., \`1. First step.\\n2. Second step with math \\$x=y\\$.\`).
+2.  **LaTeX Math within Markdown:** Any LaTeX math *within* a Markdown list item must still be correctly delimited with appropriate dollar signs (\`\\$...\\$\` or \`\\$\\$...\\$\\$\`).
+3.  **Complex Equations within a Step:** If a single step in a derivation involves a complex multi-line equation (e.g., using an \`align\` environment), that specific equation block SHOULD be wrapped in \`\\$\\$...\\$\\$\`.
+4.  **AVOID LaTeX List Environments:** DO NOT use top-level LaTeX environments like \`\\\\begin{enumerate}\`, \`\\\\end{enumerate}\`, \`\\\\begin{itemize}\`, or \`\\\\item\` to create the overall list structure. Use Markdown for the list itself.
 
 **Output Format Mandate:**
 You MUST provide your response as a JSON object that strictly conforms to the GenerateQuizOutputSchema.
@@ -277,10 +285,9 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
                             q.answer = matchedOption; // Update q.answer to the exact string from options
                         } else {
                             // If still no match, log a more severe warning.
-                            // Consider if any other fallback is safe. For now, just log.
                             // The prompt is very strict, so this indicates a significant AI deviation.
-                            console.error(`[generateQuizFlow] CRITICAL AI Adherence Failure for question (title: "${q.question.substring(0, 30)}..."): The AI's answer "${currentAnswerStr}" could not be matched to any option ${JSON.stringify(currentOptions)} even with lenient checking. This question may not be scorable correctly.`);
-                            // Do not assign a default answer, as it would be a guess.
+                            console.error(`[generateQuizFlow] CRITICAL AI ADHERENCE FAILURE (MCQ Answer Mismatch): For question starting with "${q.question.substring(0, 50)}...", the AI's provided answer "${currentAnswerStr}" could NOT be matched to any of the options: ${JSON.stringify(currentOptions)}, even after case-insensitive and whitespace-trimmed comparison. The AI was explicitly and repeatedly instructed that the 'answer' field MUST be an exact string copy of one of the 'options'. This question will likely be unscorable or mis-scored. This is a failure by the AI to follow critical output formatting instructions.`);
+                            // Do not assign a default answer, as it would be a guess and could hide the AI's error.
                         }
                     }
                 }

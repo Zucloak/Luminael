@@ -8,92 +8,113 @@ export function cn(...inputs: ClassValue[]) {
 export function replaceLatexDelimiters(text: string): string {
   if (!text || typeof text !== 'string') return "";
 
-  let newResult = text;
+  let result = text;
 
   // Placeholders for correctly delimited $$ \boxed{...} $$ blocks
   const boxedPlaceholders: string[] = [];
-  const boxedPlaceholderPrefix = "__LATEX_BOXED_PLACEHOLDER_";
+  const BOXED_PLACEHOLDER_PREFIX = "__LATEX_BOXED_PLACEHOLDER_";
 
-  // Step ALPHA: Absolutely protect correctly formed $$ \boxed{...} $$
-  newResult = newResult.replace(/(\$\$\s*\\boxed\{[\s\S]*?\}\s*\$\$)/g, (match) => {
+  // Step A (Alpha): Protect correctly formed $$ \boxed{...} $$
+  // This is critical because \boxed{} can contain complex LaTeX that other rules might break.
+  result = result.replace(/(\$\$\s*\\boxed\{[\s\S]*?\}\s*\$\$)/g, (match) => {
     boxedPlaceholders.push(match);
-    return `${boxedPlaceholderPrefix}${boxedPlaceholders.length - 1}__`;
+    return `${BOXED_PLACEHOLDER_PREFIX}${boxedPlaceholders.length - 1}__`;
   });
 
-  // Step BETA: Remove zero-width spaces (everywhere except within placeholders)
-  const partsForBeta = newResult.split(boxedPlaceholderPrefix);
-  newResult = partsForBeta.map((part, index) => {
-    if (index === 0) return part.replace(/\u200B/g, '');
-    const [num, ...rest] = part.split("__");
-    return `${num}__${rest.join("__").replace(/\u200B/g, '')}`;
-  }).join(boxedPlaceholderPrefix);
+  // Step B: Remove zero-width spaces (U+200B) which can break LaTeX rendering.
+  // This is done after placeholder replacement to avoid altering placeholder markers.
+  const partsForZeroWidthRemoval = result.split(BOXED_PLACEHOLDER_PREFIX);
+  result = partsForZeroWidthRemoval.map((part, index) => {
+    if (index === 0) return part.replace(/\u200B/g, ''); // Process the first part
+    // For subsequent parts, only process text after the placeholder ID
+    const placeholderIdEndIndex = part.indexOf("__");
+    if (placeholderIdEndIndex === -1) return part.replace(/\u200B/g, ''); // Should not happen
+    const placeholderId = part.substring(0, placeholderIdEndIndex + 2);
+    const restOfPart = part.substring(placeholderIdEndIndex + 2);
+    return `${placeholderId}${restOfPart.replace(/\u200B/g, '')}`;
+  }).join(BOXED_PLACEHOLDER_PREFIX);
 
-  // Step GAMMA: Normalize newlines that seem to fragment inline math (heuristic)
-  // newResult = newResult.replace(/([a-zA-Z])\s*\n\s*(\d+)\s*\n\s*=\s*/g, '$1_$2 = '); // Too specific
-  // newResult = newResult.replace(/(?<!\n)\n(?!\n)/g, ' '); // This can break paragraph formatting combined with inline math. KaTeX handles newlines in display math.
-  newResult = newResult.replace(/\n{2,}/g, '\n\n'); // Keep this: normalizes multiple newlines to two.
 
-  // Step 0: Clean common AI artifacts (like $=)
-  newResult = newResult.replace(/ \$=/g, ' =');
-  newResult = newResult.replace(/\$=/g, '=');
+  // Step C: Normalize multiple newlines to a maximum of two (paragraph breaks).
+  result = result.replace(/\n{3,}/g, '\n\n');
 
-  // Step 1: Convert LaTeX command delimiters (e.g., \(...\), \\\(...\\\), \[...\]) to $...$ and $$...$$
+  // Step D: Clean common AI artifacts like "$=" without space, or " $=" with leading space.
+  // These should not interfere with LaTeX processing if done carefully.
+  result = result.replace(/ \$=/g, ' ='); // " $= " -> " = "
+  result = result.replace(/\$=/g, '=');   // "$=" -> "="
+
+  // Step E: Convert \(...\) to $...$ and \[...\] to $$...$$
+  // This aligns with the AI prompt that asks for $ and $$ delimiters.
   // Handles one or more backslashes before ( and [
-  newResult = newResult.replace(/\\+\(([\s\S]*?)\\+\)/gs, (match, content) => `$${content}$`);
-  newResult = newResult.replace(/\\+\[([\s\S]*?)\\+\]/gs, (match, content) => `$$${content}$$`);
+  result = result.replace(/\\+\(([\s\S]*?)\\+\)/gs, (match, content) => `$${content.trim()}$`);
+  result = result.replace(/\\+\[([\s\S]*?)\\+\]/gs, (match, content) => `$$${content.trim()}$$`);
 
-  // Step 2: Normalize all escaped dollar signs (e.g., \\$, \\\\$) to $.
-  // This ensures that any \\+$ sequence becomes a simple $.
-  const partsForStep2 = newResult.split(boxedPlaceholderPrefix);
-  newResult = partsForStep2.map((part, index) => {
-    const textToProcess = (index === 0) ? part : part.substring(part.indexOf("__") + 2);
-    // Replace one or more backslashes followed by a dollar, with a single dollar
-    const processedText = textToProcess.replace(/\\+\$/g, '$');
+  // Step F: REMOVED - The original Step 2 (Normalize all escaped dollar signs \\$ to $) was too dangerous.
+  // It would convert intentional literal dollar signs (e.g., for currency) into math delimiters.
+  // The AI is explicitly prompted to use $...$ and $$...$$ for math, and \\$ for literal $.
+  // So, we should trust the AI's output for \\$ or fix it in the prompt if it's misusing it.
 
-    if (index === 0) return processedText;
-    const [num] = part.split("__");
-    return `${num}__${processedText}`;
-  }).join(boxedPlaceholderPrefix);
+  // Step G: Fix AI error where display math uses an inline closer (e.g., $$content$)
+  // This looks for $$ followed by content, then a single $ that's at the end of a line or followed by space/punctuation.
+  // Ensures the character before the single $ is not itself a $ (to avoid $$...$$ becoming $$$...$$$).
+  result = result.replace(/(\$\$[\s\S]*?[^\$])\$(\s|$|[,.;?!])/g, '$1\$\$$2');
 
-  // Step 2.5: Fix AI error where display math uses an inline closer (e.g., $$content$)
-  // This looks for $$ followed by content, then a single $ that's at the end or followed by space.
-  // It ensures the character before the single $ is not itself a $.
-  newResult = newResult.replace(/(\$\$[\s\S]*?[^\$])\$(\s|$|[,.;?!])/g, '$1\$\$$2');
+  // Step H: Address \boxed{...} if it's NOT already correctly wrapped in $$...$$ (which Step A handles)
+  // This targets cases where the AI might output just \boxed{...} or $ \boxed{...} $.
+  // We want to ensure these are display math.
+  // This regex avoids matching if already part of a placeholder.
+  const partsForBoxedFix = result.split(BOXED_PLACEHOLDER_PREFIX);
+  result = partsForBoxedFix.map((part, index) => {
+    let currentPart = part;
+    if (index > 0) { // Reconstruct the part if it was split
+        const placeholderIdEndIndex = part.indexOf("__");
+        if (placeholderIdEndIndex !== -1) {
+            currentPart = part.substring(placeholderIdEndIndex + 2);
+        }
+    }
 
-  // Step B (from previous, for malformed boxed with text outside):
-  // newResult = newResult.replace(/(\$\$?\\s*\\boxed\{[^}]*?\})\s*\$?\s*(\\text\{[^}]*?\})\s*\$?\s*\$\$?/g, (match, box, textContent) => {
-  //   const boxContent = box.replace(/\\boxed\{([\s\S]*)\}$/, '$1');
-  //   return `$$\\boxed{${boxContent.trim()} ${textContent}}$$`;
-  // });
+    // If \boxed is found not properly wrapped, wrap it with $$
+    // Ensure it's not already preceded by $$ or followed by $$ closely.
+    // This is tricky; the primary reliance is on AI prompt and Step A for correct $$ \boxed{} $$
+    // A simpler approach: if we find `\boxed` that wasn't caught by Step A,
+    // it's likely missing its `$$` delimiters.
+    // This step is risky if `\boxed` is legitimately used inline (though rare and usually bad practice).
+    // The prompt specifically asks for `$$ \boxed{...} $$`.
+    // So, if we find `\boxed` not in a placeholder, it's likely an error.
+    // Let's be conservative: only wrap if it's clearly standalone or $...$-wrapped.
+    currentPart = currentPart.replace(/(?<!\$)\$\s*(\\boxed\{[\s\S]*?\})\s*\$(?!\$)/g, `\$\$ $1 \$\$`); // $ \boxed{} $ -> $$ \boxed{} $$
+    currentPart = currentPart.replace(/^(\s*\\boxed\{[\s\S]*?\})\s*$/gm, `\$\$ $1 \$\$`); // \boxed{} (alone on line) -> $$ \boxed{} $$
 
-  // Step 3: Handle \boxed{...} if not part of a placeholder (e.g. if AI forgot $$)
-  // Rely on Step ALPHA for well-formed $$ \boxed{...} $$.
-  // The AI is prompted to deliver this format. Adding more rules here can be counter-productive.
-  // newResult = newResult.replace(/\s*\$\$?\s*(\\boxed\{[^}]*?\})\s*\$\$?\s*/g, '$1');
-  // newResult = newResult.replace(/(\\boxed\{[^}]*?\})(?!\s*\$)/g, '$$$$$1$$');
+    if (index === 0) return currentPart;
+    const placeholderId = part.substring(0, part.indexOf("__") + 2);
+    return `${placeholderId}${currentPart}`;
 
-  // Step 4: Attempt to fix hanging $$ delimiters
-  newResult = newResult.replace(/^(\$\$[^\$]+)$/gm, (match, content) => `${content.trim()}$$`);
-  newResult = newResult.replace(/^([^\$]+\$\$)$/gm, (match, content) => `$$${content.trim()}`);
+  }).join(BOXED_PLACEHOLDER_PREFIX);
 
-  // Step 6: Clean up repeated/redundant dollar signs
-  newResult = newResult.replace(/\${3,}/g, '$$');
-  newResult = newResult.replace(/^\$\s*\$\$(.*?)\$\$\s*\$$/gs, '$$$$$1$$');
-  newResult = newResult.replace(/^\$\$\s*\$([^\$\s].*?[^\$\s])\$\s*\$\$$/gs, '$$$1$');
 
-  // Step 7: Remove spaces immediately inside delimiters
-  newResult = newResult.replace(/\$\s+([\s\S]*?)\s+\$/gs, (match, content) => `$${content.trim()}$`);
-  newResult = newResult.replace(/\$\$\s+([\s\S]*?)\s+\$\$/gs, (match, content) => `$$${content.trim()}$$`);
+  // Step I: Clean up repeated/redundant dollar signs.
+  // $$$... -> $$...
+  // ...$$$ -> ...$$
+  // $ $ $ -> $ (should be caught by space removal or specific patterns)
+  // $$ $$ -> $$ (empty display math)
+  result = result.replace(/\${3,}/g, '$$'); // Three or more $ become $$
+  result = result.replace(/\$\s+\$/g, '$'); // $ whitespace $ becomes $ (for empty inline) - careful not to break $ word $
+  result = result.replace(/\$\$\s+\$\$/g, '$$'); // $$ whitespace $$ becomes $$ (for empty display)
 
-  // Step 8: Final check for any single $ that might be left hanging or empty $$/$
-  newResult = newResult.replace(/^\s*\$\s*$/gm, '');
-  newResult = newResult.replace(/\$\s*\$/g, '');
-  newResult = newResult.replace(/\$\$\s*\$\$/g, '');
 
-  // Step OMEGA: Restore original $$ \boxed{...} $$ placeholders
-  boxedPlaceholders.forEach((placeholder, index) => {
-    newResult = newResult.replace(`${boxedPlaceholderPrefix}${index}__`, placeholder);
+  // Step J: Remove spaces immediately inside delimiters if content exists.
+  result = result.replace(/\$\s+([\s\S]+?)\s+\$/gs, (match, content) => `$${content.trim()}$`);
+  result = result.replace(/\$\$\s+([\s\S]+?)\s+\$\$/gs, (match, content) => `$$${content.trim()}$$`);
+
+  // Step K: Final check for empty math modes $$, $ $ or $$ $$, etc.
+  // These can sometimes result from other replacements.
+  result = result.replace(/^\s*\$(?:\s*)\$\s*$/gm, ''); // Remove lines with only $ $ or $
+  result = result.replace(/^\s*\$\$(?:\s*)\$\$\s*$/gm, ''); // Remove lines with only $$ $$ or $$
+
+  // Step L (Omega): Restore original $$ \boxed{...} $$ placeholders
+  boxedPlaceholders.forEach((placeholder, idx) => {
+    result = result.replace(`${BOXED_PLACEHOLDER_PREFIX}${idx}__`, placeholder);
   });
 
-  return newResult.trim();
+  return result.trim();
 }
