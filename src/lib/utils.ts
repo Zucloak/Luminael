@@ -8,7 +8,8 @@ export function cn(...inputs: ClassValue[]) {
 export function replaceLatexDelimiters(text: string): string {
   if (!text || typeof text !== 'string') return "";
 
-  let result = text;
+  // Step 0: Remove all tab characters globally, as they interfere with parsing and are not needed.
+  let result = text.replace(/\t/g, '');
 
   // Placeholders for correctly delimited $$ \boxed{...} $$ blocks
   const boxedPlaceholders: string[] = [];

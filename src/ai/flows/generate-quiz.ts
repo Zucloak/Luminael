@@ -64,6 +64,14 @@ ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piec
 - ABSOLUTELY DO NOT use \`\\\\(...\\\\)\` or \`\\\\[...\\\\]\` as math delimiters. Using parenthesis-based delimiters is a FAILURE.
 - **CRITICALLY DO NOT use \`\\\\\\$\` (a backslash followed by a dollar sign) as your math delimiter.** Use only unescaped \`\\$\` or \`\\$\\$\` as instructed above for starting and ending math content. \`\\\\\\$\` is for outputting a literal dollar sign character, NOT for delimiting math.
 - **CRITICALLY DO NOT use \`\\\\\\$\` (a backslash followed by a dollar sign) as your math delimiter.** Use only unescaped \`\\$\` or \`\\$\\$\` as instructed above for starting and ending math content. \`\\\\\\$\` is for outputting a literal dollar sign character, NOT for delimiting math.
+- **MANDATORY DELIMITERS FOR ALL MATH CONTENT:** EVERY mathematical formula, equation, standalone variable (e.g., `P`, `V`, `I`, `R`, `x`, `R_eq`), number used in a formula context, or symbolic expression MUST be enclosed in appropriate dollar-sign delimiters (\`\$...\$\` for inline, \`\$\$...\$\$\` for display). NO EXCEPTIONS. Plain text formulas or symbols (e.g., "P = IV" or "R_eq = R1 + R2") are UNACCEPTABLE and will fail rendering.
+  EXAMPLE OF FAILURE (Missing Delimiters): `The formula is P = IV.`
+  CORRECT USAGE (Inline): `The formula is \$P = IV\$.`
+  CORRECT USAGE (Display): `An important equation is \$\$P = IV\$\$`
+- **MANDATORY DELIMITERS FOR ALL MATH CONTENT:** EVERY mathematical formula, equation, standalone variable (e.g., `P`, `V`, `I`, `R`, `x`, `R_eq`), number used in a formula context, or symbolic expression MUST be enclosed in appropriate dollar-sign delimiters (\`\$...\$\` for inline, \`\$\$...\$\$\` for display). NO EXCEPTIONS. Plain text formulas or symbols (e.g., "P = IV" or "R_eq = R1 + R2") are UNACCEPTABLE and will fail rendering.
+  EXAMPLE OF FAILURE (Missing Delimiters): `The formula is P = IV.`
+  CORRECT USAGE (Inline): `The formula is \$P = IV\$.`
+  CORRECT USAGE (Display): `An important equation is \$\$P = IV\$\$`
 - SINGLE PAIR OF DELIMITERS ONLY: Each distinct mathematical expression must be enclosed by **exactly ONE pair** of appropriate dollar-sign delimiters. For inline math, use \`\\$...\\$\`. For display math, use \`\\$\\$...\\$\\$\`. **NEVER output extra dollar signs before or after a correctly delimited expression.** For example, \`\\$\\$\\boxed{X}\\$\\$\` is CORRECT. \`\\$\\$\\boxed{X}\\$\\$\\$\` (extra \`\\$\` at end) is WRONG. \`\\$\\$\\$\\$\\boxed{X}\\$\\$\\$\\$\` (too many \`\\$\`) is WRONG. Ensure clean, standard usage.
   CORRECT Example for your output: \`\\$q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\$\`
   CORRECT Example for your output: \`A charge of \\$5 \\\\times 10^{-6} \\\\text{ C}\\$ is moved...\`
