@@ -73,7 +73,8 @@ ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piec
   CORRECT Example for your output: \`...electric field of strength \\$10^4 \\\\text{ N/C}\\$... \`
   INCORRECT (MISSING DOLLAR SIGNS!): \`(q_1 = 2 \\times 10^{-6} \\text{ C})\`
   INCORRECT (WRONG DELIMITERS!): \`\\\\(q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\\\)\`
-FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EXTRA/MISPLACED DELIMITERS, WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
+  INCORRECT (MISSING DELIMITERS ENTIRELY): \`The equation is R_eq = R1 + R2.\` (This is plain text and will NOT render as math)
+FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EXTRA/MISPLACED DELIMITERS, OR OMITTING DELIMITERS ENTIRELY FOR MATH CONTENT, WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
 
 **ABSOLUTE NON-NEGOTIABLE RULES FOR THIS TASK (Problem Solving Questions ONLY):**
 1.  **ONLY 'problemSolving' Questions**: Every single question you generate MUST be a procedural, computation-based problem that requires a step-by-step derivation to reach a numeric or symbolic answer. Each question's \`questionType\` field MUST be set to exactly \`problemSolving\`.
@@ -98,6 +99,7 @@ FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EX
     *   DO NOT use non-standard or custom LaTeX commands.
     *   DO NOT use parentheses for math delimiters like \`\\\\(\` or \`\\\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
+    *   **Subscripts/Superscripts:** ALL subscripts and superscripts MUST use LaTeX notation (e.g., \`F_B\`, \`R_{eq}\`, \`x^2\`). DO NOT use HTML tags like \`<sub>\` or \`<sup>\`.
     *   **BOXED CONTENT (ABSOLUTE RULE):** ALL uses of the \`\\\\boxed{...}\` command (e.g., for final answers or important formulas) MUST be enclosed in DISPLAY MATH delimiters: \`\\$\\$\\\\boxed{your content}\\$\\$\`. Inline boxing (\`\\$\\\\boxed{...}\\$\`) is FORBIDDEN.
     *   **DISPLAY VS. INLINE MATH:** Use \`\\$\\$...\\$\\$\` for standalone equations, significant fractions, summations, integrals, matrices, or any multi-line mathematical expressions. Use \`\\$...\\$\` for smaller, inline mathematical elements that are part of a sentence's flow.
     *   **INTERNAL LATEX INTEGRITY (ESPECIALLY FOR COMPLEX STRUCTURES):**
@@ -139,16 +141,21 @@ ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piec
   CORRECT Example for your output: \`...electric field of strength \\$10^4 \\\\text{ N/C}\\$... \`
   INCORRECT (MISSING DOLLAR SIGNS!): \`(q_1 = 2 \\times 10^{-6} \\text{ C})\`
   INCORRECT (WRONG DELIMITERS!): \`\\\\(q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\\\)\`
-FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EXTRA/MISPLACED DELIMITERS, WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
+  INCORRECT (MISSING DELIMITERS ENTIRELY): \`The equation is R_eq = R1 + R2.\` (This is plain text and will NOT render as math)
+FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EXTRA/MISPLACED DELIMITERS, OR OMITTING DELIMITERS ENTIRELY FOR MATH CONTENT, WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
 
 **CRITICAL RULE FOR MULTIPLE CHOICE OPTIONS (FAILURE IS NOT AN OPTION):**
 For EVERY multiple-choice question, you MUST provide exactly 4 options.
 These options MUST be:
-1.  **Distinct and Unique:** No two options can be the same.
-2.  **Meaningful and Relevant:** Options must be plausible answers related to the question.
-3.  **NOT Placeholders:** Under NO CIRCUMSTANCES should options be "string", "null", an empty string "", "N/A", "Option A", "Option B", etc. This is a critical failure.
-4.  **Complete:** Each option string must be a full answer, not a fragment.
-If you cannot provide 4 distinct, meaningful options, DO NOT generate the multiple-choice question at all.
+1.  **Distinct and Unique:** No two options can be the same (case-insensitive check after trimming whitespace).
+2.  **Meaningful and Relevant:** Options must be plausible answers directly related to the question and derived from the provided Key Concepts.
+3.  **NOT Placeholders or Trivial:** Under NO CIRCUMSTANCES should options be generic placeholders like "string", "null", an empty string "", "N/A", "---", "Nothing", "Option A", "Option B", "Option C", "Option D" (when the answer is just "A", "B", etc.). This is a critical failure.
+    EXAMPLE OF BAD OPTIONS (PLACEHOLDERS): `["string", "string", "string", "string"]`
+    EXAMPLE OF BAD OPTIONS (TRIVIAL/IDENTICAL): `["Answer A", "Answer A", "Answer A", "Answer A"]`
+    EXAMPLE OF BAD OPTIONS (NULLS): `[null, "Valid Option", null, null]`
+    EXAMPLE OF GOOD OPTIONS (DISTINCT & MEANINGFUL): `["\$2\\pi r\$", "\$\\pi r^2\$", "\$4\\pi r^2\$", "\$r^2\$"]`
+4.  **Complete:** Each option string must be a full, self-contained potential answer, not a fragment.
+If you cannot provide 4 distinct, meaningful, non-placeholder options, DO NOT generate the multiple-choice question. It will be discarded if it does not meet these standards.
 
 **NON-NEGOTIABLE RULES (for 'multipleChoice', 'openEnded', 'mixed' formats):**
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
@@ -186,6 +193,7 @@ If you cannot provide 4 distinct, meaningful options, DO NOT generate the multip
     *   DO NOT use non-standard or custom LaTeX commands.
     *   DO NOT use parentheses for math delimiters like \`\\(\` or \`\\)\`. Only use dollar signs.
     *   Test your LaTeX output mentally: Ensure every mathematical element is correctly delimited per CRITICAL RULE #0.
+    *   **Subscripts/Superscripts:** ALL subscripts and superscripts MUST use LaTeX notation (e.g., \`F_B\`, \`R_{eq}\`, \`x^2\`). DO NOT use HTML tags like \`<sub>\` or \`<sup>\`.
     *   **BOXED CONTENT (ABSOLUTE RULE):** ALL uses of the \`\\\\boxed{...}\` command (e.g., for final answers or important formulas) MUST be enclosed in DISPLAY MATH delimiters: \`\\$\\$\\\\boxed{your content}\\$\\$\`. Inline boxing (\`\\$\\\\boxed{...}\\$\`) is FORBIDDEN. This applies to questions, options, and answers.
     *   **DISPLAY VS. INLINE MATH:** Use \`\\$\\$...\\$\\$\` for standalone equations, significant fractions, summations, integrals, matrices, or any multi-line mathematical expressions. Use \`\\$...\\$\` for smaller, inline mathematical elements that are part of a sentence's flow. This applies to questions, options, and answers.
 
@@ -225,48 +233,79 @@ You MUST provide your response as a JSON object that strictly conforms to the Ge
             // Capture raw questions for debugging BEFORE ANY modification (including delimiter replacement)
             const rawQuestionsForDebug = JSON.parse(JSON.stringify(output.quiz?.questions || []));
 
-            // Handle misclassified MultipleChoice questions (e.g., with "string" or "No options provided" options)
+            // Enhanced server-side validation and filtering for MultipleChoice questions
             if (output.quiz && output.quiz.questions) {
-              output.quiz.questions = output.quiz.questions.map(q => {
-                if (q.questionType === 'multipleChoice') {
-                  let isMisclassified = false;
-                  if (q.options && q.options.length > 0) {
-                    const allOptionsArePlaceholders = q.options.every(opt => {
-                      const optText = (opt || "").trim().toLowerCase();
-                      return optText === "string" ||
-                             optText.startsWith("no options provided") ||
-                             optText.startsWith("placeholder") ||
-                             optText.includes("lorem ipsum");
-                    });
-                    if (allOptionsArePlaceholders) {
-                      isMisclassified = true;
-                      console.warn(`[generateQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") identified with placeholder options.`);
-                    } else {
-                      // Check for duplicate options within this specific question's options array
-                      const uniqueOptions = new Set(q.options.map(opt => (opt || "").trim()));
-                      if (uniqueOptions.size < q.options.length) {
-                        console.warn(`[generateQuizFlow] Question (title: "${q.question.substring(0, 30)}...") has duplicate options. The AI should provide distinct options.`);
-                      }
-                    }
-                  } else if (!q.options || q.options.length === 0) {
-                    isMisclassified = true;
-                    console.warn(`[generateQuizFlow] Misclassified MC question (title: "${q.question.substring(0, 30)}...") identified with missing/empty options.`);
-                  }
+                const originalQuestionCount = output.quiz.questions.length;
+                output.quiz.questions = output.quiz.questions.map(q => {
+                    if (q.questionType === 'multipleChoice') {
+                        const options = (q as any).options; // Cast to access options, assuming MultipleChoiceQuestion structure
+                        let isFaultyMcq = false;
+                        const placeholderTerms = [
+                            "string", "null", "n/a", "---", "placeholder",
+                            "no options provided", "nothing", "option a", "option b",
+                            "option c", "option d", // Check for these as literal option text
+                            "a", "b", "c", "d" // Also check for single letter trivial options
+                        ];
 
-                  if (isMisclassified) {
-                    // Create a new OpenEndedQuestion object
-                    // Ensure OpenEndedQuestion is imported from '@/lib/types' if not already
-                    const { question, answer } = q; // Destructure relevant fields from original `q`
-                    const newOpenEndedQuestion: OpenEndedQuestion = {
-                      questionType: 'openEnded',
-                      question,
-                      answer, // Assuming the original 'answer' field contains the open-ended answer
-                    };
-                    return newOpenEndedQuestion; // Replace the old question with the new one
-                  }
+                        if (!options || !Array.isArray(options) || options.length < 4) {
+                            console.warn(`[generateQuizFlow] FAULTY MCQ (Structural Issue): Question starting with "${q.question.substring(0, 50)}..." has missing, non-array, or insufficient options (less than 4). Options received: ${JSON.stringify(options)}. Question DISCARDED.`);
+                            isFaultyMcq = true;
+                        } else {
+                            const distinctNormalizedOptions = new Set<string>();
+                            let placeholderFound = false;
+                            let allOptionsEffectivelyEmpty = true;
+                            let nonMeaningfulOptionFound = false;
+
+                            for (let i = 0; i < options.length; i++) {
+                                const opt = options[i];
+                                if (opt === null || typeof opt !== 'string') {
+                                    console.warn(`[generateQuizFlow] FAULTY MCQ (Invalid Option Type): Question starting with "${q.question.substring(0, 50)}..." has a non-string or null option: ${JSON.stringify(opt)} at index ${i}. Question DISCARDED.`);
+                                    isFaultyMcq = true;
+                                    break;
+                                }
+                                const trimmedOpt = opt.trim();
+                                if (trimmedOpt !== "") {
+                                    allOptionsEffectivelyEmpty = false;
+                                } else {
+                                     // If option is empty string, it's a fault
+                                    console.warn(`[generateQuizFlow] FAULTY MCQ (Empty Option): Question starting with "${q.question.substring(0, 50)}..." has an empty string option at index ${i}. Question DISCARDED.`);
+                                    isFaultyMcq = true;
+                                    break;
+                                }
+
+                                const lowerOpt = trimmedOpt.toLowerCase();
+                                distinctNormalizedOptions.add(lowerOpt); // Add normalized option for distinctness check
+
+                                // Check against more comprehensive placeholder/trivial terms
+                                if (placeholderTerms.some(term => lowerOpt === term)) {
+                                    placeholderFound = true;
+                                    console.warn(`[generateQuizFlow] FAULTY MCQ (Placeholder Option): Question starting with "${q.question.substring(0, 50)}..." contains placeholder/trivial option: "${opt}" at index ${i}. Question DISCARDED.`);
+                                    isFaultyMcq = true;
+                                    break;
+                                }
+                            }
+
+                            if (isFaultyMcq) { /* already decided to discard */ }
+                            else if (allOptionsEffectivelyEmpty) { // This check is somewhat redundant due to individual empty check now
+                                console.warn(`[generateQuizFlow] FAULTY MCQ (All Options Effectively Empty): Question starting with "${q.question.substring(0, 50)}..." appears to have all options as empty or whitespace. Question DISCARDED.`);
+                                isFaultyMcq = true;
+                            } else if (distinctNormalizedOptions.size < 4 && options.length >= 4) {
+                                // This catches cases like ["Valid Option", "Valid Option", "Another", "Another"] or ["A", "A", "A", "A"]
+                                console.warn(`[generateQuizFlow] FAULTY MCQ (Not Enough Distinct Options): Question starting with "${q.question.substring(0, 50)}..." has ${distinctNormalizedOptions.size} distinct options after normalization (expected 4). Original: ${JSON.stringify(options)}. Distinct normalized: ${JSON.stringify(Array.from(distinctNormalizedOptions))}. Question DISCARDED.`);
+                                isFaultyMcq = true;
+                            }
+                        }
+
+                        if (isFaultyMcq) {
+                            return null; // Mark for filtering
+                        }
+                    }
+                    return q;
+                }).filter(q => q !== null); // Type assertion Question[] might be needed if TypeScript complains
+
+                if (output.quiz.questions.length < originalQuestionCount) {
+                    console.log(`[generateQuizFlow] Discarded ${originalQuestionCount - output.quiz.questions.length} faulty MCQs during validation.`);
                 }
-                return q; // Return original question if no transformation needed
-              });
             }
 
             // Correction for "Option A" style answers BEFORE delimiter replacement
