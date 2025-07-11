@@ -150,10 +150,10 @@ These options MUST be:
 1.  **Distinct and Unique:** No two options can be the same (case-insensitive check after trimming whitespace).
 2.  **Meaningful and Relevant:** Options must be plausible answers directly related to the question and derived from the provided Key Concepts.
 3.  **NOT Placeholders or Trivial:** Under NO CIRCUMSTANCES should options be generic placeholders like "string", "null", an empty string "", "N/A", "---", "Nothing", "Option A", "Option B", "Option C", "Option D" (when the answer is just "A", "B", etc.). This is a critical failure.
-    EXAMPLE OF BAD OPTIONS (PLACEHOLDERS): `["string", "string", "string", "string"]`
-    EXAMPLE OF BAD OPTIONS (TRIVIAL/IDENTICAL): `["Answer A", "Answer A", "Answer A", "Answer A"]`
-    EXAMPLE OF BAD OPTIONS (NULLS): `[null, "Valid Option", null, null]`
-    EXAMPLE OF GOOD OPTIONS (DISTINCT & MEANINGFUL): `["\$2\\pi r\$", "\$\\pi r^2\$", "\$4\\pi r^2\$", "\$r^2\$"]`
+    EXAMPLE OF BAD OPTIONS (PLACEHOLDERS): \\\`["string", "string", "string", "string"]\\\`
+    EXAMPLE OF BAD OPTIONS (TRIVIAL/IDENTICAL): \\\`["Answer A", "Answer A", "Answer A", "Answer A"]\\\`
+    EXAMPLE OF BAD OPTIONS (NULLS): \\\`[null, "Valid Option", null, null]\\\`
+    EXAMPLE OF GOOD OPTIONS (DISTINCT & MEANINGFUL): \\\`["\$2\\pi r\$", "\$\\pi r^2\$", "\$4\\pi r^2\$", "\$r^2\$"]\\\`
 4.  **Complete:** Each option string must be a full, self-contained potential answer, not a fragment.
 If you cannot provide 4 distinct, meaningful, non-placeholder options, DO NOT generate the multiple-choice question. It will be discarded if it does not meet these standards.
 
