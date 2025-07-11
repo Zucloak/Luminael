@@ -104,6 +104,15 @@ export function replaceLatexDelimiters(text: string): string {
 
   }).join(BOXED_PLACEHOLDER_PREFIX);
 
+  // Step H2: Specifically target orphaned \boxed{...} at the end of problem-solving answers.
+  // This looks for \boxed at the end of the string (or line, effectively, due to how it's processed later),
+  // possibly preceded by a newline and whitespace, and optionally followed by a stray single $.
+  // This runs on the entire 'result' string at this point.
+  // It's placed after other \boxed fixes and general delimiter promotions.
+  result = result.replace(/(\\n|^)?\s*(\\\\boxed\{[\s\S]*?\})(?:\\s*\$)?\s*$/g, (match, newlineOrStart, boxedContent) => {
+    // console.log(`[replaceLatexDelimiters Step H2] Correcting trailing orphaned \\boxed: Original: "${match}", Box: "${boxedContent}"`);
+    return (newlineOrStart || '') + `\$\$${boxedContent.trim()}\$\$`;
+  });
 
   // Step I: Clean up repeated/redundant dollar signs.
   // $$$... -> $$...
