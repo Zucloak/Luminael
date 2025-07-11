@@ -63,15 +63,10 @@ ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piec
 - Use ONLY Dollar Sign Delimiters: For INLINE MATH, you MUST use \`\\$...\\$\`. For DISPLAY MATH, you MUST use \`\\$\\$...\\$\\$\`.
 - ABSOLUTELY DO NOT use \`\\\\(...\\\\)\` or \`\\\\[...\\\\]\` as math delimiters. Using parenthesis-based delimiters is a FAILURE.
 - **CRITICALLY DO NOT use \`\\\\\\$\` (a backslash followed by a dollar sign) as your math delimiter.** Use only unescaped \`\\$\` or \`\\$\\$\` as instructed above for starting and ending math content. \`\\\\\\$\` is for outputting a literal dollar sign character, NOT for delimiting math.
-- **CRITICALLY DO NOT use \`\\\\\\$\` (a backslash followed by a dollar sign) as your math delimiter.** Use only unescaped \`\\$\` or \`\\$\\$\` as instructed above for starting and ending math content. \`\\\\\\$\` is for outputting a literal dollar sign character, NOT for delimiting math.
-- **MANDATORY DELIMITERS FOR ALL MATH CONTENT:** EVERY mathematical formula, equation, standalone variable (e.g., `P`, `V`, `I`, `R`, `x`, `R_eq`), number used in a formula context, or symbolic expression MUST be enclosed in appropriate dollar-sign delimiters (\`\$...\$\` for inline, \`\$\$...\$\$\` for display). NO EXCEPTIONS. Plain text formulas or symbols (e.g., "P = IV" or "R_eq = R1 + R2") are UNACCEPTABLE and will fail rendering.
-  EXAMPLE OF FAILURE (Missing Delimiters): `The formula is P = IV.`
-  CORRECT USAGE (Inline): `The formula is \$P = IV\$.`
-  CORRECT USAGE (Display): `An important equation is \$\$P = IV\$\$`
-- **MANDATORY DELIMITERS FOR ALL MATH CONTENT:** EVERY mathematical formula, equation, standalone variable (e.g., `P`, `V`, `I`, `R`, `x`, `R_eq`), number used in a formula context, or symbolic expression MUST be enclosed in appropriate dollar-sign delimiters (\`\$...\$\` for inline, \`\$\$...\$\$\` for display). NO EXCEPTIONS. Plain text formulas or symbols (e.g., "P = IV" or "R_eq = R1 + R2") are UNACCEPTABLE and will fail rendering.
-  EXAMPLE OF FAILURE (Missing Delimiters): `The formula is P = IV.`
-  CORRECT USAGE (Inline): `The formula is \$P = IV\$.`
-  CORRECT USAGE (Display): `An important equation is \$\$P = IV\$\$`
+- **MANDATORY DELIMITERS FOR ALL MATH CONTENT:** EVERY mathematical formula, equation, standalone variable (e.g., \`P\`, \`V\`, \`I\`, \`R\`, \`x\`, \`R_eq\`), number used in a formula context, or symbolic expression MUST be enclosed in appropriate dollar-sign delimiters (\`\$...\$\` for inline, \`\$\$...\$\$\` for display). NO EXCEPTIONS. Plain text formulas or symbols (e.g., "P = IV" or "R_eq = R1 + R2") are UNACCEPTABLE and will fail rendering.
+  EXAMPLE OF FAILURE (Missing Delimiters): \`The formula is P = IV.\`
+  CORRECT USAGE (Inline): \`The formula is \$P = IV\$.\`
+  CORRECT USAGE (Display): \`An important equation is \$\$P = IV\$\$\`
 - SINGLE PAIR OF DELIMITERS ONLY: Each distinct mathematical expression must be enclosed by **exactly ONE pair** of appropriate dollar-sign delimiters. For inline math, use \`\\$...\\$\`. For display math, use \`\\$\\$...\\$\\$\`. **NEVER output extra dollar signs before or after a correctly delimited expression.** For example, \`\\$\\$\\boxed{X}\\$\\$\` is CORRECT. \`\\$\\$\\boxed{X}\\$\\$\\$\` (extra \`\\$\` at end) is WRONG. \`\\$\\$\\$\\$\\boxed{X}\\$\\$\\$\\$\` (too many \`\\$\`) is WRONG. Ensure clean, standard usage.
   CORRECT Example for your output: \`\\$q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\$\`
   CORRECT Example for your output: \`A charge of \\$5 \\\\times 10^{-6} \\\\text{ C}\\$ is moved...\`
@@ -133,6 +128,11 @@ ${context}
 ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piece of mathematical notation, variable, formula, number, or expression (e.g., \`q_1 = 2 \\times 10^{-6} \\text{ C}\`, \`5 \\times 10^{-6} \\text{ C}\`, \`x^2\`, \`v_final\`), it MUST be enclosed in appropriate LaTeX dollar sign delimiters. This applies to question text, all multiple-choice options, and all parts of answers. NO EXCEPTIONS.
 - Use ONLY Dollar Sign Delimiters: For INLINE MATH, you MUST use \`\\$...\\$\`. For DISPLAY MATH, you MUST use \`\\$\\$...\\$\\$\`.
 - ABSOLUTELY DO NOT use \`\\\\(...\\\\)\` or \`\\\\[...\\\\]\` as math delimiters. Using parenthesis-based delimiters is a FAILURE.
+- **CRITICALLY DO NOT use \`\\\\\\$\` (a backslash followed by a dollar sign) as your math delimiter.** Use only unescaped \`\\$\` or \`\\$\\$\` as instructed above for starting and ending math content. \`\\\\\\$\` is for outputting a literal dollar sign character, NOT for delimiting math.
+- **MANDATORY DELIMITERS FOR ALL MATH CONTENT:** EVERY mathematical formula, equation, standalone variable (e.g., \`P\`, \`V\`, \`I\`, \`R\`, \`x\`, \`R_eq\`), number used in a formula context, or symbolic expression MUST be enclosed in appropriate dollar-sign delimiters (\`\$...\$\` for inline, \`\$\$...\$\$\` for display). NO EXCEPTIONS. Plain text formulas or symbols (e.g., "P = IV" or "R_eq = R1 + R2") are UNACCEPTABLE and will fail rendering.
+  EXAMPLE OF FAILURE (Missing Delimiters): \`The formula is P = IV.\`
+  CORRECT USAGE (Inline): \`The formula is \$P = IV\$.\`
+  CORRECT USAGE (Display): \`An important equation is \$\$P = IV\$\$\`
 - SINGLE PAIR OF DELIMITERS ONLY: Each distinct mathematical expression must be enclosed by **exactly ONE pair** of appropriate dollar-sign delimiters. For inline math, use \`\\$...\\$\`. For display math, use \`\\$\\$...\\$\\$\`. **NEVER output extra dollar signs before or after a correctly delimited expression.** For example, \`\\$\\$\\boxed{X}\\$\\$\` is CORRECT. \`\\$\\$\\boxed{X}\\$\\$\\$\` (extra \`\\$\` at end) is WRONG. \`\\$\\$\\$\\$\\boxed{X}\\$\\$\\$\\$\` (too many \`\\$\`) is WRONG. Ensure clean, standard usage.
   CORRECT Example for your output: \`\\$q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\$\`
   CORRECT Example for your output: \`A charge of \\$5 \\\\times 10^{-6} \\\\text{ C}\\$ is moved...\`
@@ -140,6 +140,15 @@ ULTRA-CRITICAL RULE #0: ALL MATH MUST BE WRAPPED IN DOLLAR SIGNS! For EVERY piec
   INCORRECT (MISSING DOLLAR SIGNS!): \`(q_1 = 2 \\times 10^{-6} \\text{ C})\`
   INCORRECT (WRONG DELIMITERS!): \`\\\\(q_1 = 2 \\\\times 10^{-6} \\\\text{ C}\\\\)\`
 FAILURE TO WRAP ALL MATH IN DOLLAR SIGNS, OR USING WRONG DELIMITERS, OR USING EXTRA/MISPLACED DELIMITERS, WILL RESULT IN UNRENDERED TEXT AND IS A CRITICAL ERROR.
+
+**CRITICAL RULE FOR MULTIPLE CHOICE OPTIONS (FAILURE IS NOT AN OPTION):**
+For EVERY multiple-choice question, you MUST provide exactly 4 options.
+These options MUST be:
+1.  **Distinct and Unique:** No two options can be the same.
+2.  **Meaningful and Relevant:** Options must be plausible answers related to the question.
+3.  **NOT Placeholders:** Under NO CIRCUMSTANCES should options be "string", "null", an empty string "", "N/A", "Option A", "Option B", etc. This is a critical failure.
+4.  **Complete:** Each option string must be a full answer, not a fragment.
+If you cannot provide 4 distinct, meaningful options, DO NOT generate the multiple-choice question at all.
 
 **NON-NEGOTIABLE RULES (for 'multipleChoice', 'openEnded', 'mixed' formats):**
 1.  **Strictly Adhere to Content:** You are strictly forbidden from using any external knowledge. All questions, options, and answers MUST be directly derived from the Key Concepts provided.
