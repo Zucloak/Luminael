@@ -58,9 +58,28 @@ export function replaceLatexDelimiters(text: string): string {
 
   // Step E: Convert \(...\) to $...$ and \[...\] to $$...$$
   // This aligns with the AI prompt that asks for $ and $$ delimiters.
-  // Handles one or more backslashes before ( and [
-  result = result.replace(/\\+\(([\s\S]*?)\\+\)/gs, (match, content) => `$${content.trim()}$`);
-  result = result.replace(/\\+\[([\s\S]*?)\\+\]/gs, (match, content) => `$$${content.trim()}$$`);
+  // Handles one or more backslashes before the opening ( or [
+  // And makes the backslash before the closing ) or ] optional.
+  // Includes a negative lookahead to avoid over-matching.
+  result = result.replace(/\\+\(([\s\S]*?)\)(?![`$\\\]A-Za-z0-9])/gs, (match, content) => {
+    let processedContent = content;
+    // Handle case where AI might include a backslash before the closing parenthesis, e.g., \\(content\\)
+    // The main regex captures up to the first literal ')'
+    if (processedContent.endsWith('\\')) {
+      processedContent = processedContent.slice(0, -1);
+    }
+    console.log(`[replaceLatexDelimiters Step E] Correcting \\(...\\) to \$...\$: Original: "${match}", Processed Content: "${processedContent.trim()}"`);
+    return `$${processedContent.trim()}$`;
+  });
+  result = result.replace(/\\+\[([\s\S]*?)\](?![`$\\\]A-Za-z0-9])/gs, (match, content) => {
+    let processedContent = content;
+    // Handle case where AI might include a backslash before the closing bracket, e.g., \\[content \\]
+    if (processedContent.endsWith('\\')) {
+      processedContent = processedContent.slice(0, -1);
+    }
+    console.log(`[replaceLatexDelimiters Step E] Correcting \\[...\\] to \$\$...\$\$: Original: "${match}", Processed Content: "${processedContent.trim()}"`);
+    return `$$${processedContent.trim()}$$`;
+  });
 
   // Step F: REMOVED - The original Step 2 (Normalize all escaped dollar signs \\$ to $) was too dangerous.
   // It would convert intentional literal dollar signs (e.g., for currency) into math delimiters.
@@ -104,6 +123,15 @@ export function replaceLatexDelimiters(text: string): string {
 
   }).join(BOXED_PLACEHOLDER_PREFIX);
 
+  // Step H2: Specifically target orphaned \boxed{...} at the end of problem-solving answers.
+  // This looks for \boxed at the end of the string (or line, effectively, due to how it's processed later),
+  // possibly preceded by a newline and whitespace, and optionally followed by a stray single $.
+  // This runs on the entire 'result' string at this point.
+  // It's placed after other \boxed fixes and general delimiter promotions.
+  result = result.replace(/(\\n|^)?\s*(\\\\boxed\{[\s\S]*?\})(?:\\s*\$)?\s*$/g, (match, newlineOrStart, boxedContent) => {
+    // console.log(`[replaceLatexDelimiters Step H2] Correcting trailing orphaned \\boxed: Original: "${match}", Box: "${boxedContent}"`);
+    return (newlineOrStart || '') + `\$\$${boxedContent.trim()}\$\$`;
+  });
 
   // Step I: Clean up repeated/redundant dollar signs.
   // $$$... -> $$...
