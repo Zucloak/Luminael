@@ -58,9 +58,28 @@ export function replaceLatexDelimiters(text: string): string {
 
   // Step E: Convert \(...\) to $...$ and \[...\] to $$...$$
   // This aligns with the AI prompt that asks for $ and $$ delimiters.
-  // Handles one or more backslashes before ( and [
-  result = result.replace(/\\+\(([\s\S]*?)\\+\)/gs, (match, content) => `$${content.trim()}$`);
-  result = result.replace(/\\+\[([\s\S]*?)\\+\]/gs, (match, content) => `$$${content.trim()}$$`);
+  // Handles one or more backslashes before the opening ( or [
+  // And makes the backslash before the closing ) or ] optional.
+  // Includes a negative lookahead to avoid over-matching.
+  result = result.replace(/\\+\(([\s\S]*?)\)(?![`$\\\]A-Za-z0-9])/gs, (match, content) => {
+    let processedContent = content;
+    // Handle case where AI might include a backslash before the closing parenthesis, e.g., \\(content\\)
+    // The main regex captures up to the first literal ')'
+    if (processedContent.endsWith('\\')) {
+      processedContent = processedContent.slice(0, -1);
+    }
+    console.log(`[replaceLatexDelimiters Step E] Correcting \\(...\\) to \$...\$: Original: "${match}", Processed Content: "${processedContent.trim()}"`);
+    return `$${processedContent.trim()}$`;
+  });
+  result = result.replace(/\\+\[([\s\S]*?)\](?![`$\\\]A-Za-z0-9])/gs, (match, content) => {
+    let processedContent = content;
+    // Handle case where AI might include a backslash before the closing bracket, e.g., \\[content \\]
+    if (processedContent.endsWith('\\')) {
+      processedContent = processedContent.slice(0, -1);
+    }
+    console.log(`[replaceLatexDelimiters Step E] Correcting \\[...\\] to \$\$...\$\$: Original: "${match}", Processed Content: "${processedContent.trim()}"`);
+    return `$$${processedContent.trim()}$$`;
+  });
 
   // Step F: REMOVED - The original Step 2 (Normalize all escaped dollar signs \\$ to $) was too dangerous.
   // It would convert intentional literal dollar signs (e.g., for currency) into math delimiters.
