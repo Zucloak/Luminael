@@ -101,6 +101,73 @@ export function replaceLatexDelimiters(text: string): string {
   result = result.replace(/\$\s+\$/g, '$'); // $ whitespace $ becomes $ (for empty inline) - careful not to break $ word $
   result = result.replace(/\$\$\s+\$\$/g, '$$'); // $$ whitespace $$ becomes $$ (for empty display)
 
+  // Step HH: Promote $...$ to $$...$$ for likely display math content
+  // This targets expressions containing \int, \sum, \frac (as primary element),
+  // or newlines, when wrapped in single $ signs.
+  // This step is applied *after* \boxed has been handled (Step A and H) and before general space trimming within delimiters.
+  const partsForDisplayPromotion = result.split(BOXED_PLACEHOLDER_PREFIX);
+  result = partsForDisplayPromotion.map((part, index) => {
+    let currentPart = part;
+    // Only process text outside of the placeholder IDs themselves
+    if (index > 0) {
+      const placeholderIdEndIndex = part.indexOf("__");
+      if (placeholderIdEndIndex !== -1) {
+        currentPart = part.substring(placeholderIdEndIndex + 2);
+      } else {
+         // This case should ideally not be reached if placeholders are structured correctly
+        currentPart = ""; // Or handle as an error/log
+      }
+    }
+
+    // Regex to find patterns like: $ \int ... $, $ \frac{...}{...} $, $ ... \n ... $
+    // It captures the content *inside* the single dollar signs.
+    currentPart = currentPart.replace(
+      /\$([\s\S]*?)\$/gs, (match, content) => {
+        const trimmedContent = content.trim();
+        // Check for display math indicators
+        const isDisplayMath =
+          trimmedContent.startsWith('\\int') ||
+          trimmedContent.startsWith('\\sum') ||
+          trimmedContent.startsWith('\\prod') ||
+          trimmedContent.startsWith('\\lim') ||
+          trimmedContent.startsWith('\\oint') ||
+          trimmedContent.startsWith('\\frac') || // A bit broad, but common for display
+          trimmedContent.includes('\n') || // Multi-line content
+          trimmedContent.startsWith('\\begin{'); // Starts with a LaTeX environment
+
+        if (isDisplayMath) {
+          // Avoid re-processing if it accidentally matches something already display-like from \boxed
+          // or if the content itself is just a placeholder marker (though unlikely here)
+          if (content.includes(BOXED_PLACEHOLDER_PREFIX) || content.includes("__LATEX_BOXED_PLACEHOLDER_")) { // check both just in case
+            return match; // Don't change if it contains a placeholder
+          }
+          // Ensure we are not dealing with something that is already $$...$$ internally by mistake
+          if (trimmedContent.startsWith('$') && trimmedContent.endsWith('$')) {
+             // This could be nested $$ inside $, which is unlikely or already an error.
+             // Or it could be the AI literally outputting "$$...$$" inside a "$...$"
+             // If it's $ $$...$$ $, we want $$...$$
+             const innerContent = trimmedContent.substring(1, trimmedContent.length -1);
+             if (innerContent.trim().startsWith('$') && innerContent.trim().endsWith('$')) { // e.g. $ $  $$content$$  $ $
+                // it's $ $$ content $$ $
+                // return innerContent; // just return the $$content$$
+                // safer: just return the original match to avoid complex logic here.
+                // The outer $$ will be handled by later rules if this is $ $$...$$ $
+                return `$$${innerContent.substring(1, innerContent.length-1).trim()}$$`;
+             }
+          }
+          // console.log(`[replaceLatexDelimiters] Promoting to display math: ${match}`);
+          return `$$${trimmedContent}$$`;
+        }
+        return match; // Return original if not display math
+      }
+    );
+
+    if (index === 0) return currentPart;
+    // Re-attach the placeholder ID part
+    const placeholderId = part.substring(0, part.indexOf("__") + 2);
+    return `${placeholderId}${currentPart}`;
+  }).join(BOXED_PLACEHOLDER_PREFIX);
+
 
   // Step J: Remove spaces immediately inside delimiters if content exists.
   result = result.replace(/\$\s+([\s\S]+?)\s+\$/gs, (match, content) => `$${content.trim()}$`);
