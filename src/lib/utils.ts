@@ -124,18 +124,18 @@ export function replaceLatexDelimiters(text: string): string {
     currentPart = currentPart.replace(
       /\$([\s\S]*?)\$/gs, (match, content) => {
         const trimmedContent = content.trim();
-        // Check for display math indicators
-        const isDisplayMath =
-          trimmedContent.startsWith('\\int') ||
-          trimmedContent.startsWith('\\sum') ||
-          trimmedContent.startsWith('\\prod') ||
-          trimmedContent.startsWith('\\lim') ||
-          trimmedContent.startsWith('\\oint') ||
-          trimmedContent.startsWith('\\frac') || // A bit broad, but common for display
-          trimmedContent.includes('\n') || // Multi-line content
-          trimmedContent.startsWith('\\begin{'); // Starts with a LaTeX environment
+        // Check for display math indicators. More assertive now.
+        const isLikelyDisplayMath =
+          trimmedContent.includes('\\int') ||
+          trimmedContent.includes('\\sum') ||
+          trimmedContent.includes('\\prod') ||
+          trimmedContent.includes('\\lim') ||
+          trimmedContent.includes('\\oint') ||
+          (trimmedContent.includes('\\frac') && trimmedContent.length > 15 && !trimmedContent.match(/[a-zA-Z0-9]\s*\\frac/)) || // Heuristic: \frac in longer expressions, not immediately following a char/num
+          trimmedContent.includes('\n') ||
+          trimmedContent.startsWith('\\begin{'); // Good for environments
 
-        if (isDisplayMath) {
+        if (isLikelyDisplayMath) {
           // Avoid re-processing if it accidentally matches something already display-like from \boxed
           // or if the content itself is just a placeholder marker (though unlikely here)
           if (content.includes(BOXED_PLACEHOLDER_PREFIX) || content.includes("__LATEX_BOXED_PLACEHOLDER_")) { // check both just in case
