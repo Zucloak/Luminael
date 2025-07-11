@@ -21,6 +21,18 @@ export function replaceLatexDelimiters(text: string): string {
     return `${BOXED_PLACEHOLDER_PREFIX}${boxedPlaceholders.length - 1}__`;
   });
 
+  // Step AA: Convert AI's common error of using \\$ as delimiters to $$...$$
+  // This specifically targets the AI's mistake of outputting e.g. \\$\int x dx\\$
+  // We convert it to $$...$$ because these are almost always display math.
+  // This runs before other transformations to prevent interference.
+  // It's applied to the whole string, trusting that legitimate uses of \\$...\\$ (literal escaped dollars at start/end of a phrase) are rare in this context.
+  // This is a targeted fix for a persistent AI error pattern.
+  // (?<!\\) ensures we don't match an already escaped backslash, e.g. \\\\$ which means literal \\ followed by $
+  result = result.replace(/(?<!\\)\\\$([\s\S]*?)(?<!\\)\\\$/gs, (match, content) => {
+    // console.log(`[replaceLatexDelimiters Step AA] Correcting AI's \\$ delimiter error: "${match}" to "$$${content.trim()}$$"`);
+    return `$$${content.trim()}$$`;
+  });
+
   // Step B: Remove zero-width spaces (U+200B) which can break LaTeX rendering.
   // This is done after placeholder replacement to avoid altering placeholder markers.
   const partsForZeroWidthRemoval = result.split(BOXED_PLACEHOLDER_PREFIX);
