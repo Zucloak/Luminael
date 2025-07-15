@@ -23,10 +23,13 @@ export function useUser() {
     }
   }, []);
 
-  const saveUser = (profile: UserProfile) => {
+  const saveUser = (profile: Partial<UserProfile>) => {
     try {
-      window.localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
-      setUser(profile);
+      // Retrieve the existing profile, merge it with the new partial profile, and save back.
+      const existingProfile = JSON.parse(window.localStorage.getItem(USER_PROFILE_KEY) || '{}');
+      const updatedProfile = { ...existingProfile, ...profile };
+      window.localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(updatedProfile));
+      setUser(updatedProfile);
     } catch (error) {
       console.error("Failed to save user profile to localStorage", error);
     }

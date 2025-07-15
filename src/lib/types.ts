@@ -29,6 +29,7 @@ export interface Quiz {
 export interface UserProfile {
   name: string;
   studentId: string;
+  utilityToolsEnabled?: boolean;
 }
 
 export interface PastQuiz {

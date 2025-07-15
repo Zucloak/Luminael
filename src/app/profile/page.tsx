@@ -8,9 +8,12 @@ import { getPastQuizzes } from "@/lib/indexed-db"; // For fetching quiz data
 import { calculateQuizAnalytics } from "@/lib/analyticsUtils"; // For calculating analytics
 // Ensure AverageScoreDataPoint is imported for the Tooltip formatter cast
 import type { UserDeviceData, QuizAnalyticsData, PastQuiz, AverageScoreDataPoint } from "@/lib/types";
-import { BrainCircuit, Sparkles, ShieldCheck, Mail, History, KeyRound, Save, FolderOpen, Loader2, HardDriveDownload, LineChart as LineChartIcon, BarChart2 } from 'lucide-react'; // Added LineChartIcon, BarChart2, removed HardDriveUpload
+import { BrainCircuit, Sparkles, ShieldCheck, Mail, History, KeyRound, Save, FolderOpen, Loader2, HardDriveDownload, LineChart as LineChartIcon, BarChart2, Wrench } from 'lucide-react';
 import { patchNotes } from '@/lib/patch-notes';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { useUser } from "@/hooks/use-user";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'; // Recharts components
 import { cn } from "@/lib/utils";
@@ -20,6 +23,7 @@ import React, { useState, useRef, useEffect } from 'react';
 type DirectoryHandle = any; // FileSystemDirectoryHandle - using any for broader compatibility if not fully typed
 
 export default function ProfilePage() {
+  const { user, saveUser } = useUser();
   const { toast } = useToast();
   const [isLoadingSave, setIsLoadingSave] = useState(false);
   const [isLoadingLoad, setIsLoadingLoad] = useState(false);
@@ -288,6 +292,37 @@ export default function ProfilePage() {
                     accept=".json"
                     className="hidden"
                 />
+
+                {/* Feature Settings Section */}
+                <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                        <Wrench className="h-5 w-5 text-primary" /> Feature Settings
+                    </h3>
+                    <div className="p-4 rounded-md border bg-muted/30 space-y-3">
+                        <div className="flex items-center justify-between space-x-2">
+                            <Label htmlFor="utility-tools-toggle" className="flex flex-col space-y-1">
+                                <span>Enable Utility Tools</span>
+                                <span className="font-normal leading-snug text-muted-foreground">
+                                Access beta features like a graphing tool, scientific calculator, and more.
+                                </span>
+                            </Label>
+                            <Switch
+                                id="utility-tools-toggle"
+                                checked={!!user?.utilityToolsEnabled}
+                                onCheckedChange={(checked) => {
+                                    saveUser({ utilityToolsEnabled: checked });
+                                    toast({
+                                        title: "Settings Updated",
+                                        description: `Utility Tools have been ${checked ? 'enabled' : 'disabled'}. The page will reload to apply changes.`,
+                                    });
+                                    // A small delay to allow the toast to be seen before reload
+                                    setTimeout(() => window.location.reload(), 1500);
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+                {/* End Feature Settings Section */}
 
 
                 <div className="space-y-4">
