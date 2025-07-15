@@ -52,7 +52,8 @@ export function Calculator() {
     if (expression.length === 0) return;
     try {
       // Assuming the equation is in the form of 'expression=0' and solving for 'x'
-      const solutions = nerdamer.solve(expression, 'x').toString();
+      // We cast to `any` to bypass TypeScript's check, as the 'Solve' add-on dynamically adds the method at runtime.
+      const solutions = (nerdamer as any).solve(expression, 'x').toString();
       const formattedSolutions = solutions.replace(/[\[\]]/g, ''); // Remove brackets
       setTokens([createToken('special', `x = ${formattedSolutions}`)]);
     } catch (error) {
