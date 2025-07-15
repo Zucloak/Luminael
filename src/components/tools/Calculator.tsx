@@ -34,6 +34,24 @@ export function Calculator() {
     });
   };
 
+  const handleOperator = (op: string) => {
+    setState(prev => {
+      if (prev.expression === 'Error' || prev.expression === 'NaN') return prev;
+      const lastChar = prev.expression.slice(-1);
+      if (['+', '-', '*', '/'].includes(lastChar)) {
+        return {
+          display: prev.display.slice(0, -1) + op,
+          expression: prev.expression.slice(0, -1) + op
+        };
+      } else {
+        return {
+          display: prev.display + op,
+          expression: prev.expression + op
+        };
+      }
+    });
+  };
+
   const handleClear = () => setState({ display: '0', expression: '0' });
 
   const handleBackspace = () => {
