@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,27 +20,31 @@ import { Translator } from '../tools/Translator';
 
 export function UtilityToolbar() {
   const controls = useAnimation();
+  const dragControls = React.useRef<HTMLDivElement>(null);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: any) => {
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const viewportWidth = window.innerWidth;
-    const endX = info.point.x;
+    // The final position is the offset from the element's layout position.
+    // Since we position with CSS (right-4), its initial "0" is near the right edge.
+    const finalX = dragControls.current?.getBoundingClientRect().left || 0;
 
-    // Snap to the closest edge (left or right)
-    if (endX < viewportWidth / 2) {
-      controls.start({ x: 20 - info.offset.x }); // Snap to 20px from left
+    if (finalX + (dragControls.current?.clientWidth || 0) / 2 < viewportWidth / 2) {
+      // Snap left
+      controls.start({ x: -(viewportWidth - 80) }); // Animate to ~20px from left
     } else {
-      controls.start({ x: viewportWidth - 76 - info.offset.x }); // Snap to 20px from right (76 = button width 56 + margin 20)
+      // Snap right
+      controls.start({ x: 0 }); // Animate back to its original CSS position (right-4)
     }
   };
 
   return (
     <motion.div
-      drag
+      ref={dragControls}
+      drag="x" // Allow dragging only on the x-axis to prevent vertical scroll issues
       dragMomentum={false}
       onDragEnd={handleDragEnd}
       animate={controls}
-      initial={{ x: "calc(100vw - 76px)", y: "calc(50vh - 28px)" }} // Initial position middle-right
-      className="fixed z-50 cursor-grab active:cursor-grabbing"
+      className="fixed top-1/2 -translate-y-1/2 right-4 z-50 cursor-grab active:cursor-grabbing"
     >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
