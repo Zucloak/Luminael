@@ -26,9 +26,17 @@ export function UtilityToolbar() {
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
   const nodeRef = React.useRef(null);
 
+  // Set initial position to be middle-right of the screen.
+  // Note: This requires the parent to be the viewport, which is true in this app's layout.
+  const defaultPosition = {
+    x: window.innerWidth - 80, // approx position
+    y: window.innerHeight / 2 - 24,
+  };
+
+
   return (
-    <Draggable handle=".drag-handle" nodeRef={nodeRef}>
-      <div ref={nodeRef} className="fixed top-1/2 -translate-y-1/2 right-4 z-50 cursor-move">
+    <Draggable handle=".drag-handle" nodeRef={nodeRef} defaultPosition={defaultPosition}>
+      <div ref={nodeRef} className="fixed z-50 cursor-move">
         <div className="flex items-center gap-0.5">
           <div className="drag-handle p-2 bg-secondary rounded-l-full hover:bg-muted cursor-grab active:cursor-grabbing" onMouseDown={stopPropagation}>
             <GripVertical className="h-6 w-6 text-muted-foreground" />
@@ -40,7 +48,7 @@ export function UtilityToolbar() {
                 className="rounded-r-full h-12 w-12 shadow-lg"
                 aria-label="Open Utility Tools"
               >
-                <Wrench className="h-6 w-6 text-foreground" />
+                <Wrench className="h-6 w-6 text-primary" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" onMouseDown={stopPropagation}>
