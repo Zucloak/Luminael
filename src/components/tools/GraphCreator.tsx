@@ -51,11 +51,10 @@ export function GraphCreator() {
 
     // Clear previous plots
     board.suspendUpdate();
-    const allObjects = board.objects;
-    for (const el in allObjects) {
-        if (allObjects.hasOwnProperty(el)) {
-            board.removeObject(allObjects[el]);
-        }
+    // Use Object.values and a type assertion for a type-safe iteration
+    const allObjects = Object.values(board.objects as Record<string, JXG.GeometryElement>);
+    for (const el of allObjects) {
+        board.removeObject(el);
     }
     // Re-draw axis after clearing
      board.create('axis', [[0, 0], [1, 0]]);
