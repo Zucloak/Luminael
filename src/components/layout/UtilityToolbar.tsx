@@ -2,10 +2,6 @@
 
 import React from 'react';
 import Draggable from 'react-draggable';
-import React from 'react';
-import Draggable from 'react-draggable';
-import React from 'react';
-import Draggable from 'react-draggable';
 import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
