@@ -3,18 +3,16 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { evaluate } from 'mathjs';
-
-const buttonClasses = "h-14 text-xl font-semibold rounded-md";
-const operatorButtonClasses = `${buttonClasses} bg-secondary text-secondary-foreground hover:bg-secondary/80`;
-const functionButtonClasses = `${buttonClasses} bg-muted text-muted-foreground hover:bg-muted/80`;
+import { evaluate, format } from 'mathjs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export function Calculator() {
   const [display, setDisplay] = useState('0');
   const [isScientific, setIsScientific] = useState(false);
 
   const handleInput = (value: string) => {
-    if (display === 'Error') {
+    if (display === 'Error' || display === 'NaN') {
       setDisplay(value);
       return;
     }
@@ -22,104 +20,102 @@ export function Calculator() {
   };
 
   const handleOperator = (op: string) => {
-    if (display === 'Error') return;
-    // Avoid multiple operators in a row
-    if (/[+\-*/.]$/.test(display)) {
+    if (display === 'Error' || display === 'NaN') return;
+    const lastChar = display.slice(-1);
+    if (['+', '-', '*', '/'].includes(lastChar)) {
       setDisplay(display.slice(0, -1) + op);
     } else {
       setDisplay(display + op);
     }
   };
 
-  const handleClear = () => {
-    setDisplay('0');
-  };
-
-  const handleBackspace = () => {
-    if (display === 'Error' || display.length === 1) {
-        setDisplay('0');
-    } else {
-        setDisplay(display.slice(0, -1));
-    }
-  }
+  const handleClear = () => setDisplay('0');
+  const handleBackspace = () => setDisplay(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
 
   const handleCalculate = () => {
     try {
-      const result = evaluate(display.replace(/%/g, '/100')); // Handle percentage
-      setDisplay(String(result));
+      // Replace user-friendly symbols with mathjs-compatible ones
+      const expression = display.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+      const result = evaluate(expression);
+      setDisplay(format(result, { precision: 14 }));
     } catch (error) {
       setDisplay('Error');
     }
   };
 
   const handleScientificFunc = (func: string) => {
-    if (display === 'Error') return;
-    // If display is 0, start new, else wrap existing
-    const currentVal = (display === '0') ? '' : display;
-    setDisplay(`${func}(${currentVal})`);
+    if (display === 'Error' || display === 'NaN') {
+      setDisplay(`${func}(`);
+    } else if (display === '0') {
+      setDisplay(`${func}(`);
+    } else {
+      // This is a simple implementation. A more advanced one would parse the expression.
+      setDisplay(`${func}(${display})`);
+    }
   };
 
-  const buttons = [
-    { label: 'C', handler: handleClear, className: functionButtonClasses },
-    { label: '(', handler: () => handleInput('('), className: functionButtonClasses },
-    { label: ')', handler: () => handleInput(')'), className: functionButtonClasses },
-    { label: '÷', handler: () => handleOperator('/'), className: operatorButtonClasses },
-    { label: '7', handler: () => handleInput('7'), className: buttonClasses },
-    { label: '8', handler: () => handleInput('8'), className: buttonClasses },
-    { label: '9', handler: () => handleInput('9'), className: buttonClasses },
-    { label: '×', handler: () => handleOperator('*'), className: operatorButtonClasses },
-    { label: '4', handler: () => handleInput('4'), className: buttonClasses },
-    { label: '5', handler: () => handleInput('5'), className: buttonClasses },
-    { label: '6', handler: () => handleInput('6'), className: buttonClasses },
-    { label: '−', handler: () => handleOperator('-'), className: operatorButtonClasses },
-    { label: '1', handler: () => handleInput('1'), className: buttonClasses },
-    { label: '2', handler: () => handleInput('2'), className: buttonClasses },
-    { label: '3', handler: () => handleInput('3'), className: buttonClasses },
-    { label: '+', handler: () => handleOperator('+'), className: operatorButtonClasses },
-    { label: '0', handler: () => handleInput('0'), className: `${buttonClasses} col-span-2` },
-    { label: '.', handler: () => handleOperator('.'), className: buttonClasses },
-    { label: '=', handler: handleCalculate, className: operatorButtonClasses },
-  ];
-
-  const scientificButtons = [
-    { label: 'sin', handler: () => handleScientificFunc('sin'), className: functionButtonClasses },
-    { label: 'cos', handler: () => handleScientificFunc('cos'), className: functionButtonClasses },
-    { label: 'tan', handler: () => handleScientificFunc('tan'), className: functionButtonClasses },
-    { label: 'log', handler: () => handleScientificFunc('log10'), className: functionButtonClasses },
-    { label: 'ln', handler: () => handleScientificFunc('log'), className: functionButtonClasses },
-    { label: '√', handler: () => handleScientificFunc('sqrt'), className: functionButtonClasses },
-    { label: 'x²', handler: () => handleInput('^2'), className: functionButtonClasses },
-    { label: 'π', handler: () => handleInput('pi'), className: functionButtonClasses },
-    { label: '%', handler: () => handleOperator('%'), className: functionButtonClasses },
-    { label: '⌫', handler: handleBackspace, className: functionButtonClasses },
-  ];
+  // Base classes for different button types
+  const btnBase = "h-12 text-lg rounded-md";
+  const btnNum = `${btnBase} bg-muted hover:bg-muted/80`;
+  const btnOp = `${btnBase} bg-primary/20 hover:bg-primary/30 text-primary`;
+  const btnFunc = `${btnBase} bg-secondary hover:bg-secondary/80`;
 
   return (
-    <Card className="w-full max-w-sm mx-auto shadow-md border-0">
-      <CardContent className="p-4">
-        <div className="bg-muted text-muted-foreground rounded-lg p-4 mb-4 text-right text-4xl font-mono break-all">
+    <Card className="w-full max-w-sm mx-auto shadow-md border-0 bg-background">
+      <CardContent className="p-2">
+        <div className="bg-muted text-muted-foreground rounded-lg p-4 mb-4 text-right text-4xl font-mono break-all h-20 flex items-center justify-end">
           {display}
         </div>
-        <div className="flex justify-end mb-2">
-            <Button variant="ghost" size="sm" onClick={() => setIsScientific(!isScientific)}>
-                {isScientific ? 'Standard' : 'Scientific'}
-            </Button>
+
+        <div className="flex justify-end items-center gap-2 mb-2 pr-1">
+            <Label htmlFor="scientific-mode" className="text-xs">Scientific</Label>
+            <Switch id="scientific-mode" checked={isScientific} onCheckedChange={setIsScientific} />
         </div>
-        <div className={`grid grid-cols-4 gap-2 ${isScientific ? 'lg:grid-cols-5' : ''}`}>
-            {isScientific && (
-                <div className="col-span-4 lg:col-span-1 lg:order-first">
-                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-                        {scientificButtons.map(btn => (
-                            <Button key={btn.label} onClick={btn.handler} className={btn.className}>{btn.label}</Button>
-                        ))}
-                    </div>
-                </div>
-            )}
-            <div className={`grid grid-cols-4 gap-2 ${isScientific ? 'col-span-4 lg:col-span-4' : 'col-span-4'}`}>
-                {buttons.map(btn => (
-                    <Button key={btn.label} onClick={btn.handler} className={btn.className}>{btn.label}</Button>
-                ))}
-            </div>
+
+        <div className="grid grid-cols-5 gap-2">
+          {/* Scientific Buttons - conditionally rendered */}
+          {isScientific && (
+            <>
+              <Button onClick={() => handleScientificFunc('sin')} className={btnFunc}>sin</Button>
+              <Button onClick={() => handleScientificFunc('cos')} className={btnFunc}>cos</Button>
+              <Button onClick={() => handleScientificFunc('tan')} className={btnFunc}>tan</Button>
+              <Button onClick={() => handleInput('^')} className={btnFunc}>x^y</Button>
+              <Button onClick={handleBackspace} className={`${btnFunc} text-destructive`}>⌫</Button>
+
+              <Button onClick={() => handleScientificFunc('log')} className={btnFunc}>log</Button>
+              <Button onClick={() => handleScientificFunc('sqrt')} className={btnFunc}>√</Button>
+              <Button onClick={() => handleInput('(')} className={btnFunc}>(</Button>
+              <Button onClick={() => handleInput(')')} className={btnFunc}>)</Button>
+              <Button onClick={() => handleOperator('%')} className={btnFunc}>%</Button>
+            </>
+          )}
+
+          {/* Standard Buttons */}
+          <Button onClick={handleClear} className={`${btnFunc} ${isScientific ? 'col-span-2' : 'col-span-3'} text-destructive`}>C</Button>
+          {!isScientific && <Button onClick={handleBackspace} className={`${btnFunc} text-destructive`}>⌫</Button>}
+          <Button onClick={() => handleOperator('/')} className={`${btnOp} ${isScientific ? 'col-span-3' : ''}`}>÷</Button>
+
+          <Button onClick={() => handleInput('7')} className={btnNum}>7</Button>
+          <Button onClick={() => handleInput('8')} className={btnNum}>8</Button>
+          <Button onClick={() => handleInput('9')} className={btnNum}>9</Button>
+          <Button onClick={() => handleOperator('*')} className={btnOp}>×</Button>
+          {isScientific && <Button onClick={() => handleInput('pi')} className={btnFunc}>π</Button>}
+
+          <Button onClick={() => handleInput('4')} className={btnNum}>4</Button>
+          <Button onClick={() => handleInput('5')} className={btnNum}>5</Button>
+          <Button onClick={() => handleInput('6')} className={btnNum}>6</Button>
+          <Button onClick={() => handleOperator('-')} className={btnOp}>−</Button>
+          {isScientific && <Button onClick={() => handleInput('e')} className={btnFunc}>e</Button>}
+
+          <Button onClick={() => handleInput('1')} className={btnNum}>1</Button>
+          <Button onClick={() => handleInput('2')} className={btnNum}>2</Button>
+          <Button onClick={() => handleInput('3')} className={btnNum}>3</Button>
+          <Button onClick={() => handleOperator('+')} className={btnOp}>+</Button>
+          {isScientific && <div className="row-span-2"><Button onClick={handleCalculate} className={`${btnOp} w-full h-full`}>=</Button></div>}
+
+          <Button onClick={() => handleInput('0')} className={`${btnNum} col-span-2`}>0</Button>
+          <Button onClick={() => handleInput('.')} className={btnNum}>.</Button>
+          {!isScientific && <Button onClick={handleCalculate} className={`${btnOp} col-span-2`}>=</Button>}
         </div>
       </CardContent>
     </Card>

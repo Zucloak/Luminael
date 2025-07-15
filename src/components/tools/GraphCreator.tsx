@@ -1,105 +1,119 @@
 "use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useRef, useState } from 'react';
+import JXG from 'jsxgraph/dist/jsxgraphcore';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { Trash2 } from 'lucide-react';
-
-interface DataPoint {
-  name: string;
-  value: number;
-}
+import { Label } from '@/components/ui/label';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function GraphCreator() {
-  const [data, setData] = useState<DataPoint[]>([
-    { name: 'A', value: 12 },
-    { name: 'B', value: 19 },
-    { name: 'C', value: 3 },
-  ]);
-  const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
+  const boardRef = useRef<JXG.Board | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [fnInput, setFnInput] = useState('sin(x)');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleDataChange = (index: number, field: keyof DataPoint, newValue: string | number) => {
-    const newData = [...data];
-    if (field === 'value') {
-      const numValue = Number(newValue);
-      if (!isNaN(numValue)) {
-        newData[index] = { ...newData[index], [field]: numValue };
-        setData(newData);
-      }
-    } else {
-      newData[index] = { ...newData[index], [field]: String(newValue) };
-      setData(newData);
+  useEffect(() => {
+    // Initialize board only once
+    if (containerRef.current && !boardRef.current) {
+      // JXG.Options.infobox.fontSize = 0; // Disable info box
+      boardRef.current = JXG.JSXGraph.initBoard(containerRef.current.id, {
+        boundingbox: [-10, 10, 10, -10],
+        axis: true,
+        showCopyright: false,
+        showNavigation: true,
+        pan: {
+            enabled: true,
+            needShift: false,
+        },
+        zoom: {
+            factorX: 1.25,
+            factorY: 1.25,
+            wheel: true,
+            needShift: false,
+        }
+      });
     }
-  };
 
-  const addDataPoint = () => {
-    setData([...data, { name: `New`, value: Math.floor(Math.random() * 20) }]);
-  };
+    // Cleanup on unmount
+    return () => {
+      if (boardRef.current) {
+        JXG.JSXGraph.freeBoard(boardRef.current);
+        boardRef.current = null;
+      }
+    };
+  }, []);
 
-  const removeDataPoint = (index: number) => {
-    setData(data.filter((_, i) => i !== index));
-  };
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
 
+    // Clear previous plots
+    board.suspendUpdate();
+    const allObjects = board.objects;
+    for (const el in allObjects) {
+        if (allObjects.hasOwnProperty(el)) {
+            board.removeObject(allObjects[el]);
+        }
+    }
+    // Re-draw axis after clearing
+     board.create('axis', [[0, 0], [1, 0]]);
+     board.create('axis', [[0, 0], [0, 1]]);
 
-  const ChartComponent = chartType === 'bar' ? BarChart : LineChart;
-  const ChartElement = chartType === 'bar' ? <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> : <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} />;
+    try {
+      if (fnInput.trim() !== '') {
+        board.create('functiongraph', [function(x: number) {
+          try {
+            // A bit of a hack to evaluate functions like sin(x), x^2, etc.
+            // This is NOT safe for complex user input but works for simple functions.
+            // A proper parser would be needed for production.
+            const scope = { x: x, sin: Math.sin, cos: Math.cos, tan: Math.tan, exp: Math.exp, log: Math.log };
+            const compiled = new Function('scope', `with(scope) { return ${fnInput} }`);
+            return compiled(scope);
+          } catch (e) {
+            return NaN;
+          }
+        }]);
+      }
+      setError(null);
+    } catch (e: any) {
+      setError(`Invalid function: ${e.message}`);
+    } finally {
+      board.unsuspendUpdate();
+    }
+  }, [fnInput]);
 
   return (
     <Card className="w-full border-0">
       <CardHeader>
-        <CardTitle>Graph Creator</CardTitle>
+        <CardTitle>Interactive Graph Creator</CardTitle>
+        <CardDescription>Enter a function to plot it on the graph. Pan with your mouse and zoom with your scroll wheel.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <h4 className="font-medium mb-2">Chart</h4>
-          <div className="p-4 bg-muted rounded-md h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-                <ChartComponent data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.5}/>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    {ChartElement}
-                </ChartComponent>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <div
+            id="jsxbox"
+            ref={containerRef}
+            className="jxgbox w-full h-[400px] border rounded-md"
+            style={{ backgroundColor: 'var(--card-background)' }}
+        ></div>
 
-        <div className="flex gap-2">
-            <Button variant={chartType === 'bar' ? 'default' : 'outline'} onClick={() => setChartType('bar')}>Bar Chart</Button>
-            <Button variant={chartType === 'line' ? 'default' : 'outline'} onClick={() => setChartType('line')}>Line Chart</Button>
+        <div className="space-y-2">
+            <Label htmlFor="function-input">Function f(x):</Label>
+            <Input
+                id="function-input"
+                type="text"
+                placeholder="e.g., x^2, sin(x), 2*x + 1"
+                value={fnInput}
+                onChange={(e) => setFnInput(e.target.value)}
+            />
         </div>
-
-        <div>
-            <h4 className="font-medium mb-2">Data Points</h4>
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-            {data.map((point, index) => (
-                <div key={index} className="flex items-center gap-2">
-                    <Input
-                        type="text"
-                        placeholder="Label"
-                        value={point.name}
-                        onChange={(e) => handleDataChange(index, 'name', e.target.value)}
-                        className="flex-1"
-                    />
-                    <Input
-                        type="number"
-                        placeholder="Value"
-                        value={point.value}
-                        onChange={(e) => handleDataChange(index, 'value', e.target.value)}
-                        className="w-24"
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => removeDataPoint(index)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                </div>
-            ))}
-            </div>
-            <Button onClick={addDataPoint} className="mt-2" variant="outline">Add Data Point</Button>
-        </div>
+        {error && (
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
       </CardContent>
     </Card>
   );
