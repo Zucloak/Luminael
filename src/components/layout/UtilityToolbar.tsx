@@ -50,7 +50,7 @@ export function UtilityToolbar() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="secondary"
-            className="rounded-full h-14 w-14 shadow-lg flex items-center justify-center"
+            className="rounded-full h-14 w-14 shadow-xl border flex items-center justify-center"
             aria-label="Open Utility Tools"
           >
             <Wrench className="h-7 w-7 text-primary" />
