@@ -24,10 +24,11 @@ import { Translator } from '../tools/Translator';
 
 export function UtilityToolbar() {
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+  const nodeRef = React.useRef(null);
 
   return (
-    <Draggable handle=".drag-handle" bounds="parent">
-      <div className="fixed top-4 right-4 z-50 cursor-move">
+    <Draggable handle=".drag-handle" bounds="parent" nodeRef={nodeRef}>
+      <div ref={nodeRef} className="fixed top-4 right-4 z-50 cursor-move">
         <div className="flex items-center gap-0.5">
           <div className="drag-handle p-2 bg-secondary rounded-l-full hover:bg-muted cursor-grab active:cursor-grabbing" onMouseDown={stopPropagation}>
             <GripVertical className="h-6 w-6 text-muted-foreground" />
