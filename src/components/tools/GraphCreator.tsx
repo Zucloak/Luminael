@@ -78,10 +78,7 @@ export function GraphCreator() {
         if (f.funcStr.trim() !== '') {
           try {
             // This simple evaluation is for demonstration. A robust parser is needed for complex expressions.
-            const plot = board.create('functiongraph', [f.funcStr], { strokeColor: f.color, strokeWidth: 2 });
-            if (plot.hasPoint(1,1) && plot.Y(1) === undefined) { // A simple check for parsing errors
-                throw new Error("Could not parse function.");
-            }
+            board.create('functiongraph', [f.funcStr], { strokeColor: f.color, strokeWidth: 2 });
           } catch (e: any) {
             newError = `Invalid function: "${f.funcStr}"`;
           }
