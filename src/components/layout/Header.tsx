@@ -45,11 +45,6 @@ export function Header() {
         <div className="flex items-center gap-2 sm:gap-4">
           {loading ? (
             <Skeleton className="h-10 w-24 rounded-md" />
-          ) : user ? (
-            <span className={cn(
-              "font-semibold text-sm hidden md:inline",
-              isHellBound ? "text-accent" : "text-foreground"
-            )}>Welcome, {user.name}</span>
           ) : null}
           <Button asChild variant="outline" size="icon" aria-label="Home" className={cn(isHellBound && "text-foreground hover:text-accent-foreground")}>
             <Link href="/">

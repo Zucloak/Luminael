@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { AppProviders } from '@/components/providers/AppProviders';
 import { Header } from '@/components/layout/Header';
 import { MainContent } from '@/components/layout/MainContent';
+import { ConditionalUtilityToolbar } from '@/components/layout/ConditionalUtilityToolbar';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -38,6 +39,7 @@ export default function RootLayout({
           <MainContent>
             {children}
           </MainContent>
+          <ConditionalUtilityToolbar />
         </AppProviders>
         <Toaster />
       </body>
