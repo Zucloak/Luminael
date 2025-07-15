@@ -40,7 +40,7 @@ export function UtilityToolbar() {
   return (
     <motion.div
       ref={dragControls}
-      drag="x" // Allow dragging only on the x-axis to prevent vertical scroll issues
+      drag={true} // Allow dragging in any direction
       dragMomentum={false}
       onDragEnd={handleDragEnd}
       animate={controls}

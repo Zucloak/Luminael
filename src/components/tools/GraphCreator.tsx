@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, Eraser } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Define a type for a single function input
@@ -35,11 +35,12 @@ export function GraphCreator() {
     { id: 1, funcStr: 'sin(x)', color: '#3b82f6', error: null },
     { id: 2, funcStr: 'cos(x)', color: '#ef4444', error: null },
   ]);
+  const [userPoints, setUserPoints] = useState<JXG.Point[]>([]);
 
   // Initialize board
   useEffect(() => {
     if (containerRef.current && !boardRef.current) {
-      boardRef.current = JXG.JSXGraph.initBoard(containerRef.current.id, {
+      const board = JXG.JSXGraph.initBoard(containerRef.current.id, {
         boundingbox: [-10, 10, 10, -10],
         axis: true,
         showCopyright: false,
@@ -47,6 +48,22 @@ export function GraphCreator() {
         pan: { enabled: true, needShift: false },
         zoom: { factorX: 1.25, factorY: 1.25, wheel: true, needShift: false }
       });
+
+      // Add click event handler to create points
+      board.on('down', (e: any) => {
+        if (e.button === 0) { // Only on left click
+            const coords = board.getUsrCoordsOfMouse(e);
+            const point = board.create('point', [coords[0], coords[1]], {
+                name: `(${coords[0].toFixed(2)}, ${coords[1].toFixed(2)})`,
+                size: 3,
+                face: 'o',
+                color: '#84cc16' // A distinct lime green color
+            });
+            setUserPoints(prevPoints => [...prevPoints, point]);
+        }
+      });
+
+      boardRef.current = board;
     }
     return () => {
       if (boardRef.current) {
@@ -55,6 +72,16 @@ export function GraphCreator() {
       }
     };
   }, []);
+
+  const clearUserPoints = () => {
+    const board = boardRef.current;
+    if (board) {
+      board.suspendUpdate();
+      userPoints.forEach(p => board.removeObject(p));
+      board.unsuspendUpdate();
+      setUserPoints([]);
+    }
+  };
 
   // Update plots when functions change
   useEffect(() => {
@@ -118,7 +145,12 @@ export function GraphCreator() {
         </div>
 
         <div className="space-y-3">
-          <Label>Functions</Label>
+          <div className="flex justify-between items-center">
+            <Label>Functions</Label>
+            <Button onClick={clearUserPoints} variant="ghost" size="sm" disabled={userPoints.length === 0}>
+                <Eraser className="mr-2 h-4 w-4" /> Clear Points
+            </Button>
+          </div>
           <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
             {functions.map((f, index) => (
               <div key={f.id} className="flex items-center gap-2">
