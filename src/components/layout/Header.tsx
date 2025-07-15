@@ -2,6 +2,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { User, Home, Maximize, Minimize, Bookmark } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
@@ -19,21 +20,28 @@ export function Header() {
   return (
     <header className="py-4 px-4 md:px-8 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between">
-        <div className="flex flex-col">
-          <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-3">
+          <Image
+            src="/favicon/favicon.ico"
+            alt="Luminael Logo"
+            width={48}
+            height={48}
+            className="rounded-md"
+          />
+          <div className="flex flex-col">
             <h1 className="text-2xl font-headline font-bold text-foreground">
               Luminael
             </h1>
-          </Link>
-          <a
-            href="https://synappse.vercel.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-semibold text-[#6A0DAD]"
-          >
-            BY SYNAPPSE
-          </a>
-        </div>
+            <a
+              href="https://synappse.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-semibold text-[#6A0DAD]"
+            >
+              BY SYNAPPSE
+            </a>
+          </div>
+        </Link>
         <div className="flex items-center gap-2 sm:gap-4">
           {loading ? (
             <Skeleton className="h-10 w-24 rounded-md" />
