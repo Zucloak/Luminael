@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight } from 'lucide-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { languages } from '@/lib/languages';
 
 export function Translator() {
   const [inputText, setInputText] = useState('');
@@ -50,21 +51,11 @@ export function Translator() {
               <SelectValue placeholder="Source Language" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="es">Spanish</SelectItem>
-              <SelectItem value="fr">French</SelectItem>
-              <SelectItem value="de">German</SelectItem>
-              <SelectItem value="it">Italian</SelectItem>
-              <SelectItem value="pt">Portuguese</SelectItem>
-              <SelectItem value="ru">Russian</SelectItem>
-              <SelectItem value="ja">Japanese</SelectItem>
-              <SelectItem value="ko">Korean</SelectItem>
-              <SelectItem value="zh-CN">Chinese (Simplified)</SelectItem>
-              <SelectItem value="pt">Portuguese</SelectItem>
-              <SelectItem value="ru">Russian</SelectItem>
-              <SelectItem value="ja">Japanese</SelectItem>
-              <SelectItem value="ko">Korean</SelectItem>
-              <SelectItem value="zh-CN">Chinese (Simplified)</SelectItem>
+              {languages.map((lang) => (
+                <SelectItem key={lang.value} value={lang.value}>
+                  {lang.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <ArrowRight className="h-6 w-6" />
@@ -73,16 +64,11 @@ export function Translator() {
               <SelectValue placeholder="Target Language" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="es">Spanish</SelectItem>
-              <SelectItem value="fr">French</SelectItem>
-              <SelectItem value="de">German</SelectItem>
-              <SelectItem value="it">Italian</SelectItem>
-              <SelectItem value="pt">Portuguese</SelectItem>
-              <SelectItem value="ru">Russian</SelectItem>
-              <SelectItem value="ja">Japanese</SelectItem>
-              <SelectItem value="ko">Korean</SelectItem>
-              <SelectItem value="zh-CN">Chinese (Simplified)</SelectItem>
+              {languages.map((lang) => (
+                <SelectItem key={lang.value} value={lang.value}>
+                  {lang.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

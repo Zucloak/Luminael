@@ -5,16 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { languages } from '@/lib/languages';
 
 export function Dictionary() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [lang, setLang] = useState('en');
   const [definitions, setDefinitions] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async () => {
     if (!searchTerm) return;
     try {
-      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${searchTerm}`);
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${lang}/${searchTerm}`);
       if (!response.ok) {
         throw new Error('Word not found');
       }
@@ -45,6 +48,18 @@ export function Dictionary() {
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
+          <Select value={lang} onValueChange={setLang}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Language" />
+            </SelectTrigger>
+            <SelectContent>
+              {languages.map((lang) => (
+                <SelectItem key={lang.value} value={lang.value}>
+                  {lang.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button type="button" onClick={handleSearch}>Search</Button>
         </div>
         <ScrollArea className="h-72 w-full rounded-md border p-4">
