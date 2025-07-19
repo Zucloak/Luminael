@@ -4,6 +4,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import { cn } from '@/lib/utils';
 
 interface MarkdownRendererProps {
@@ -21,7 +22,7 @@ export function MarkdownRenderer({ children, className }: MarkdownRendererProps)
     <div className={cn("markdown-renderer-wrapper", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
-        rehypePlugins={[[rehypeKatex, { output: 'htmlAndMathml', throwOnError: false }]]}
+        rehypePlugins={[rehypeRaw, [rehypeKatex, { output: 'htmlAndMathml', throwOnError: false }]]}
       >
         {children}
       </ReactMarkdown>

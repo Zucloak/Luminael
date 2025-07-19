@@ -20,6 +20,23 @@
     --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
+
+    .cursor {
+      display: inline-block;
+      width: 1px;
+      height: 1.5rem;
+      background-color: currentColor;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      from, to {
+        background-color: transparent;
+      }
+      50% {
+        background-color: currentColor;
+      }
+    }
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 10% 3.9%;

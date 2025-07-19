@@ -8,11 +8,17 @@ import nerdamer from 'nerdamer';
 import 'nerdamer/Solve'; // Load the Solve add-on
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 
+type FractionToken = {
+  type: 'fraction';
+  numerator: Token[];
+  denominator: Token[];
+};
+
 type Token = {
   type: 'num' | 'op' | 'func' | 'group' | 'const' | 'special';
   display: string;
   expr: string;
-};
+} | FractionToken;
 
 const createToken = (type: Token['type'], display: string, expr?: string): Token => ({
   type,
@@ -23,35 +29,48 @@ const createToken = (type: Token['type'], display: string, expr?: string): Token
 export function Calculator() {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [cursorContext, setCursorContext] = useState<any[]>(['root']);
   const [isShiftActive, setIsShiftActive] = useState(false);
+  const [result, setResult] = useState<string>('');
 
-  const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): string => {
-    const displayTokens = currentTokens.map(t => t.display);
-    displayTokens.splice(cursorIndex, 0, '│'); // Using a vertical bar for the cursor
-    return displayTokens.join(' ');
+  const tokensToDisplay = (currentTokens: Token[], cursorIndex: number, isSubLevel: boolean = false): string => {
+    let displayParts: string[] = [];
+    currentTokens.forEach((token, index) => {
+      if (index === cursorIndex && !isSubLevel) {
+        displayParts.push('<span class="cursor"></span>');
+      }
+      if (token.type === 'fraction') {
+        const numeratorStr = tokensToDisplay(token.numerator, -1, true);
+        const denominatorStr = tokensToDisplay(token.denominator, -1, true);
+        displayParts.push(`\\frac{${numeratorStr}}{${denominatorStr}}`);
+      } else {
+        displayParts.push(token.display);
+      }
+    });
+    if (cursorIndex === currentTokens.length && !isSubLevel) {
+      displayParts.push('<span class="cursor"></span>');
+    }
+    return displayParts.join(' ');
   };
   const tokensToExpression = (currentTokens: Token[]): string => {
-    let expr = '';
-    for (const token of currentTokens) {
-      if (token.display.startsWith('\\frac')) {
-        // This is a naive implementation and will not work for nested fractions.
-        // A proper parser would be needed for a robust solution.
-        const content = token.display.replace('\\frac{', '').replace('}', '');
-        const parts = content.split('{');
-        const numerator = parts[0];
-        const denominator = parts[1].replace('}', '');
-        expr += `(${numerator})/(${denominator})`;
-      } else {
-        expr += token.expr;
+    return currentTokens.map(token => {
+      if (token.type === 'fraction') {
+        const numeratorExpr = tokensToExpression(token.numerator);
+        const denominatorExpr = tokensToExpression(token.denominator);
+        return `(${numeratorExpr})/(${denominatorExpr})`;
       }
-    }
-    return expr;
+      return token.expr;
+    }).join('');
   };
 
   const handleInput = (token: Token) => {
     setTokens(prev => {
-      const newTokens = [...prev];
-      newTokens.splice(cursorPosition, 0, token);
+      const newTokens = JSON.parse(JSON.stringify(prev)); // Deep copy
+      let currentLevel = newTokens;
+      for (let i = 1; i < cursorContext.length; i++) {
+        currentLevel = currentLevel[cursorContext[i]];
+      }
+      currentLevel.splice(cursorPosition, 0, token);
       return newTokens;
     });
     setCursorPosition(prev => prev + 1);
@@ -61,13 +80,18 @@ export function Calculator() {
   const handleClear = () => {
     setTokens([]);
     setCursorPosition(0);
+    setResult('');
   };
 
   const handleBackspace = () => {
     if (cursorPosition > 0) {
       setTokens(prev => {
-        const newTokens = [...prev];
-        newTokens.splice(cursorPosition - 1, 1);
+        const newTokens = JSON.parse(JSON.stringify(prev)); // Deep copy
+        let currentLevel = newTokens;
+        for (let i = 1; i < cursorContext.length; i++) {
+          currentLevel = currentLevel[cursorContext[i]];
+        }
+        currentLevel.splice(cursorPosition - 1, 1);
         return newTokens;
       });
       setCursorPosition(prev => prev - 1);
@@ -75,22 +99,40 @@ export function Calculator() {
   };
 
   const moveCursor = (direction: 'left' | 'right' | 'up' | 'down') => {
-    setCursorPosition(prev => {
-      switch (direction) {
-        case 'left':
-          return Math.max(0, prev - 1);
-        case 'right':
-          return Math.min(tokens.length, prev + 1);
-        case 'up':
-          // Placeholder for up navigation
-          return prev;
-        case 'down':
-          // Placeholder for down navigation
-          return prev;
-        default:
-          return prev;
+    let currentTokens = tokens;
+    for (let i = 1; i < cursorContext.length; i++) {
+      currentTokens = currentTokens[cursorContext[i]];
+    }
+
+    if (direction === 'left') {
+      if (cursorPosition > 0) {
+        setCursorPosition(prev => prev - 1);
+      } else if (cursorContext.length > 1) {
+        const newContext = cursorContext.slice(0, -2);
+        setCursorContext(newContext);
+        setCursorPosition(newContext[newContext.length - 1]);
       }
-    });
+    } else if (direction === 'right') {
+      const currentToken = currentTokens[cursorPosition];
+      if (currentToken && currentToken.type === 'fraction') {
+        setCursorContext([...cursorContext, cursorPosition, 'numerator']);
+        setCursorPosition(0);
+      } else if (cursorPosition < currentTokens.length) {
+        setCursorPosition(prev => prev + 1);
+      }
+    } else if (direction === 'up') {
+      if (cursorContext[cursorContext.length - 1] === 'denominator') {
+        const newContext = [...cursorContext.slice(0, -1), 'numerator'];
+        setCursorContext(newContext);
+        setCursorPosition(0);
+      }
+    } else if (direction === 'down') {
+      if (cursorContext[cursorContext.length - 1] === 'numerator') {
+        const newContext = [...cursorContext.slice(0, -1), 'denominator'];
+        setCursorContext(newContext);
+        setCursorPosition(0);
+      }
+    }
   };
 
   const handleCalculate = () => {
@@ -107,9 +149,9 @@ export function Calculator() {
     try {
       const result = evaluate(expression);
       const formatted = format(result, { notation: 'fixed', precision: 10 }).replace(/(\.0+|(?:\.\d*?[1-9])0*)$/, (match, p1) => p1.includes('.') ? p1.replace(/0+$/, '') : match);
-      setTokens([createToken('num', formatted)]);
+      setResult(formatted);
     } catch (error) {
-      setTokens([createToken('special', 'Error')]);
+      setResult('Error');
     }
   };
 
@@ -142,9 +184,22 @@ export function Calculator() {
 
   return (
     <Card className="w-full max-w-xs mx-auto shadow-lg border-0 bg-background">
+      <style>{`
+        @keyframes blink {
+          50% {
+            opacity: 0;
+          }
+        }
+        .calculator-display .katex-render:has(span:contains('❚')) {
+          animation: blink 1s step-start infinite;
+        }
+      `}</style>
       <CardContent className="p-2 space-y-2">
-        <div className="bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-20 flex items-center justify-end overflow-x-auto">
+        <div className="calculator-display bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-12 flex items-center justify-end overflow-x-auto">
           <MarkdownRenderer>{`\$${tokensToDisplay(tokens, cursorPosition)}\$`}</MarkdownRenderer>
+        </div>
+        <div className="calculator-display bg-muted text-muted-foreground rounded-lg p-3 text-right text-2xl font-mono break-all h-12 flex items-center justify-end overflow-x-auto">
+          <MarkdownRenderer>{result}</MarkdownRenderer>
         </div>
 
         <div className="grid grid-cols-5 gap-1.5">
@@ -169,7 +224,7 @@ export function Calculator() {
           <Button onClick={() => handleInput(createToken('group', ')'))} className={btnOp}>)</Button>
 
           {/* Row 3 */}
-          <Button onClick={() => handleInput(createToken('func', '\\frac{}{}'))} className={btnOp}>a b/c</Button>
+          <Button onClick={() => handleInput({type: 'fraction', numerator: [], denominator: []})} className={btnOp}>a b/c</Button>
           <Button onClick={() => handleInput(createToken('op', '!', '!'))} className={btnOp}>x!</Button>
           <Button onClick={handleClear} className={btnClear}>C</Button>
           <Button onClick={handleBackspace} className={btnClear}>⌫</Button>
