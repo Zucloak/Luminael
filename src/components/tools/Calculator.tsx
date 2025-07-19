@@ -105,10 +105,11 @@ export function Calculator() {
       if (Array.isArray(currentTokens) && typeof context === 'number') {
         currentTokens = currentTokens[context];
       } else if (typeof currentTokens === 'object' && 'type' in currentTokens && currentTokens.type === 'fraction') {
+        const fractionToken = currentTokens as FractionToken;
         if (context === 'numerator') {
-          currentTokens = currentTokens.numerator;
+          currentTokens = fractionToken.numerator;
         } else if (context === 'denominator') {
-          currentTokens = currentTokens.denominator;
+          currentTokens = fractionToken.denominator;
         }
       }
     }
