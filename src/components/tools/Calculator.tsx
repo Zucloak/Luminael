@@ -67,11 +67,23 @@ export function Calculator() {
   const handleInput = (token: Token) => {
     setTokens(prev => {
       const newTokens = deepCopyTokens(prev);
-      let currentLevel = newTokens;
+      let currentLevel: Token[] | Token = newTokens;
       for (let i = 1; i < cursorContext.length; i++) {
-        currentLevel = currentLevel[cursorContext[i]];
+        const context = cursorContext[i];
+        if (Array.isArray(currentLevel) && typeof context === 'number') {
+          currentLevel = currentLevel[context];
+        } else if (typeof currentLevel === 'object' && 'type' in currentLevel && currentLevel.type === 'fraction') {
+          if (context === 'numerator') {
+            currentLevel = currentLevel.numerator;
+          } else if (context === 'denominator') {
+            currentLevel = currentLevel.denominator;
+          }
+        }
       }
-      currentLevel.splice(cursorPosition, 0, token);
+
+      if (Array.isArray(currentLevel)) {
+        currentLevel.splice(cursorPosition, 0, token);
+      }
       return newTokens;
     });
     setCursorPosition(prev => prev + 1);
@@ -88,11 +100,23 @@ export function Calculator() {
     if (cursorPosition > 0) {
       setTokens(prev => {
         const newTokens = deepCopyTokens(prev);
-        let currentLevel = newTokens;
+        let currentLevel: Token[] | Token = newTokens;
         for (let i = 1; i < cursorContext.length; i++) {
-          currentLevel = currentLevel[cursorContext[i]];
+          const context = cursorContext[i];
+          if (Array.isArray(currentLevel) && typeof context === 'number') {
+            currentLevel = currentLevel[context];
+          } else if (typeof currentLevel === 'object' && 'type' in currentLevel && currentLevel.type === 'fraction') {
+            if (context === 'numerator') {
+              currentLevel = currentLevel.numerator;
+            } else if (context === 'denominator') {
+              currentLevel = currentLevel.denominator;
+            }
+          }
         }
-        currentLevel.splice(cursorPosition - 1, 1);
+
+        if (Array.isArray(currentLevel)) {
+          currentLevel.splice(cursorPosition - 1, 1);
+        }
         return newTokens;
       });
       setCursorPosition(prev => prev - 1);
