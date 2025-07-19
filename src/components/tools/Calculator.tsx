@@ -25,24 +25,72 @@ export function Calculator() {
   const [isShiftActive, setIsShiftActive] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
 
-  const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): string => {
-    const displayTokens = currentTokens.map(t => t.display);
-    displayTokens.splice(cursorIndex, 0, '<span class="cursor">|</span>');
-    return displayTokens.join(' ');
+  const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): (string | JSX.Element)[] => {
+    const displayTokens: (string | JSX.Element)[] = currentTokens.map(t => t.display);
+    displayTokens.splice(cursorIndex, 0, <span className="cursor" />);
+    return displayTokens;
   };
-  const tokensToExpression = (currentTokens: Token[]): string => currentTokens.map(t => t.expr).join('');
+  const tokensToExpression = (currentTokens: Token[]): string => {
+    let expr = '';
+    for (const token of currentTokens) {
+      if (token.display.startsWith('\\frac')) {
+        // This is a naive implementation and will not work for nested fractions.
+        // A proper parser would be needed for a robust solution.
+        const content = token.display.replace('\\frac{', '').replace('}', '');
+        const parts = content.split('{');
+        const numerator = parts[0];
+        const denominator = parts[1].replace('}', '');
+        expr += `(${numerator})/(${denominator})`;
+      } else {
+        expr += token.expr;
+      }
+    }
+    return expr;
+  };
 
   const handleInput = (token: Token) => {
-    setTokens(prev => [...prev, token]);
+    setTokens(prev => {
+      const newTokens = [...prev];
+      newTokens.splice(cursorPosition, 0, token);
+      return newTokens;
+    });
+    setCursorPosition(prev => prev + 1);
     if (isShiftActive) setIsShiftActive(false);
   };
 
   const handleClear = () => setTokens([]);
-  const handleBackspace = () => setTokens(prev => prev.slice(0, -1));
+  const handleBackspace = () => {
+    if (cursorPosition > 0) {
+      setTokens(prev => {
+        const newTokens = [...prev];
+        newTokens.splice(cursorPosition - 1, 1);
+        return newTokens;
+      });
+      setCursorPosition(prev => prev - 1);
+    }
+  };
+
+  const moveCursor = (direction: 'left' | 'right') => {
+    setCursorPosition(prev => {
+      if (direction === 'left') {
+        return Math.max(0, prev - 1);
+      } else {
+        return Math.min(tokens.length, prev + 1);
+      }
+    });
+  };
 
   const handleCalculate = () => {
-    const expression = tokensToExpression(tokens);
+    let expression = tokensToExpression(tokens);
     if (expression.length === 0) return;
+
+    // Add closing parentheses for functions if they are missing
+    const openParenCount = (expression.match(/\(/g) || []).length;
+    const closeParenCount = (expression.match(/\)/g) || []).length;
+    if (openParenCount > closeParenCount) {
+      expression += ')'.repeat(openParenCount - closeParenCount);
+    }
+
     try {
       const result = evaluate(expression);
       const formatted = format(result, { notation: 'fixed', precision: 10 }).replace(/(\.0+|(?:\.\d*?[1-9])0*)$/, (match, p1) => p1.includes('.') ? p1.replace(/0+$/, '') : match);
@@ -92,9 +140,19 @@ export function Calculator() {
         }
       `}</style>
       <CardContent className="p-2 space-y-2">
-        <div className="bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-20 flex items-center justify-end overflow-x-auto" dangerouslySetInnerHTML={{ __html: tokensToDisplay(tokens, cursorPosition) }} />
+        <div className="bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-20 flex items-center justify-end overflow-x-auto">
+          {tokensToDisplay(tokens, cursorPosition).map((item, index) => (
+            <React.Fragment key={index}>{item}</React.Fragment>
+          ))}
+        </div>
 
         <div className="grid grid-cols-5 gap-1.5">
+          {/* Navigation Row */}
+          <Button onClick={() => moveCursor('left')} className={btnOp}>←</Button>
+          <Button onClick={() => moveCursor('right')} className={btnOp}>→</Button>
+          <Button onClick={() => moveCursor('up')} className={btnOp}>↑</Button>
+          <Button onClick={() => moveCursor('down')} className={btnOp}>↓</Button>
+          <div></div>
           {/* Row 1 */}
           <Button onClick={() => setIsShiftActive(!isShiftActive)} className={btnShift}>Shift</Button>
           {renderButton('sin', 'sin⁻¹', () => handleInput(createToken('func', 'sin(')), () => handleInput(createToken('func', 'asin(')), btnOp)}
@@ -110,18 +168,18 @@ export function Calculator() {
           <Button onClick={() => handleInput(createToken('group', ')'))} className={btnOp}>)</Button>
 
           {/* Row 3 */}
-          <Button onClick={() => handleInput(createToken('op', '\\frac{', '/'))} className={btnOp}>a b/c</Button>
+          <Button onClick={() => handleInput(createToken('func', '\\frac{}{}'))} className={btnOp}>a b/c</Button>
           <Button onClick={() => handleInput(createToken('op', '!', '!'))} className={btnOp}>x!</Button>
           <Button onClick={handleClear} className={btnClear}>C</Button>
           <Button onClick={handleBackspace} className={btnClear}>⌫</Button>
-          <Button onClick={() => handleInput(createToken('op', '÷', '/'))} className={btnOp}>÷</Button>
+          {renderButton('SOLVE', 'CALC', handleSolve, handleCalculate, btnEquals)}
 
           {/* Row 4 */}
           <Button onClick={() => handleInput(createToken('num', '7'))} className={btnNum}>7</Button>
           <Button onClick={() => handleInput(createToken('num', '8'))} className={btnNum}>8</Button>
           <Button onClick={() => handleInput(createToken('num', '9'))} className={btnNum}>9</Button>
           <Button onClick={() => handleInput(createToken('op', '×', '*'))} className={btnOp}>×</Button>
-          {renderButton('SOLVE', 'CALC', handleSolve, handleCalculate, btnEquals)}
+          <Button onClick={() => handleInput(createToken('op', '÷', '/'))} className={btnOp}>÷</Button>
 
           {/* Row 5 */}
           <Button onClick={() => handleInput(createToken('num', '4'))} className={btnNum}>4</Button>
