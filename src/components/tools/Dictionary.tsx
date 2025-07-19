@@ -52,16 +52,16 @@ export function Dictionary() {
             definitions.map((def, index) => (
               <div key={index} className="mb-4">
                 <h3 className="text-lg font-bold">{def.word}</h3>
-                {def.phonetics.map((phonetic, i) => (
+                {def.phonetics.map((phonetic: { text: string; audio: string }, i: number) => (
                   <div key={i} className="flex items-center space-x-2">
                     <p className="text-sm text-muted-foreground">{phonetic.text}</p>
                     {phonetic.audio && <audio controls src={phonetic.audio} className="h-8" />}
                   </div>
                 ))}
-                {def.meanings.map((meaning, i) => (
+                {def.meanings.map((meaning: { partOfSpeech: string, definitions: any[] }, i: number) => (
                   <div key={i} className="mt-2">
                     <h4 className="font-semibold">{meaning.partOfSpeech}</h4>
-                    {meaning.definitions.map((d, j) => (
+                    {meaning.definitions.map((d: { definition: string }, j: number) => (
                       <p key={j} className="text-sm ml-4">- {d.definition}</p>
                     ))}
                   </div>
