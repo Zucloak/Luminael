@@ -99,9 +99,22 @@ export function Calculator() {
   };
 
   const moveCursor = (direction: 'left' | 'right' | 'up' | 'down') => {
-    let currentTokens = tokens;
+    let currentTokens: Token[] | Token = tokens;
     for (let i = 1; i < cursorContext.length; i++) {
-      currentTokens = currentTokens[cursorContext[i]];
+      const context = cursorContext[i];
+      if (Array.isArray(currentTokens) && typeof context === 'number') {
+        currentTokens = currentTokens[context];
+      } else if (typeof currentTokens === 'object' && 'type' in currentTokens && currentTokens.type === 'fraction') {
+        if (context === 'numerator') {
+          currentTokens = currentTokens.numerator;
+        } else if (context === 'denominator') {
+          currentTokens = currentTokens.denominator;
+        }
+      }
+    }
+
+    if (!Array.isArray(currentTokens)) {
+      return;
     }
 
     if (direction === 'left') {
