@@ -7,6 +7,7 @@ import { evaluate, format } from 'mathjs';
 import nerdamer from 'nerdamer';
 import 'nerdamer/Solve'; // Load the Solve add-on
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
+import { deepCopyTokens } from '@/lib/deep-copy';
 
 type FractionToken = {
   type: 'fraction';
@@ -37,7 +38,7 @@ export function Calculator() {
     let displayParts: string[] = [];
     currentTokens.forEach((token, index) => {
       if (index === cursorIndex && !isSubLevel) {
-        displayParts.push('<span class="cursor"></span>');
+        displayParts.push('<span class="cursor">|</span>');
       }
       if (token.type === 'fraction') {
         const numeratorStr = tokensToDisplay(token.numerator, -1, true);
@@ -65,7 +66,7 @@ export function Calculator() {
 
   const handleInput = (token: Token) => {
     setTokens(prev => {
-      const newTokens = JSON.parse(JSON.stringify(prev)); // Deep copy
+      const newTokens = deepCopyTokens(prev);
       let currentLevel = newTokens;
       for (let i = 1; i < cursorContext.length; i++) {
         currentLevel = currentLevel[cursorContext[i]];
@@ -86,7 +87,7 @@ export function Calculator() {
   const handleBackspace = () => {
     if (cursorPosition > 0) {
       setTokens(prev => {
-        const newTokens = JSON.parse(JSON.stringify(prev)); // Deep copy
+        const newTokens = deepCopyTokens(prev);
         let currentLevel = newTokens;
         for (let i = 1; i < cursorContext.length; i++) {
           currentLevel = currentLevel[cursorContext[i]];
@@ -123,8 +124,9 @@ export function Calculator() {
         setCursorPosition(prev => prev - 1);
       } else if (cursorContext.length > 1) {
         const newContext = cursorContext.slice(0, -2);
+        const parentIndex = cursorContext[cursorContext.length - 2];
         setCursorContext(newContext);
-        setCursorPosition(newContext[newContext.length - 1]);
+        setCursorPosition(parentIndex);
       }
     } else if (direction === 'right') {
       const currentToken = currentTokens[cursorPosition];
@@ -209,11 +211,13 @@ export function Calculator() {
         }
       `}</style>
       <CardContent className="p-2 space-y-2">
-        <div className="calculator-display bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-12 flex items-center justify-end overflow-x-auto">
-          <MarkdownRenderer>{`\$${tokensToDisplay(tokens, cursorPosition)}\$`}</MarkdownRenderer>
-        </div>
-        <div className="calculator-display bg-muted text-muted-foreground rounded-lg p-3 text-right text-2xl font-mono break-all h-12 flex items-center justify-end overflow-x-auto">
-          <MarkdownRenderer>{result}</MarkdownRenderer>
+        <div className="calculator-display bg-muted text-muted-foreground rounded-lg p-3 text-right font-mono break-all h-24 flex flex-col justify-between">
+          <div className="text-3xl overflow-x-auto">
+            <MarkdownRenderer>{`\$${tokensToDisplay(tokens, cursorPosition)}\$`}</MarkdownRenderer>
+          </div>
+          <div className="text-2xl text-muted-foreground/80 overflow-x-auto">
+            <MarkdownRenderer>{result}</MarkdownRenderer>
+          </div>
         </div>
 
         <div className="grid grid-cols-5 gap-1.5">

@@ -22,6 +22,19 @@
     --destructive-foreground: 0 0% 98%;
 
     .cursor {
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      from, to {
+        color: transparent;
+      }
+      50% {
+        color: currentColor;
+      }
+    }
+
+    .cursor {
       display: inline-block;
       width: 1px;
       height: 1.5rem;
