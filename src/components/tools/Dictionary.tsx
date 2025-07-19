@@ -16,21 +16,45 @@ export function Dictionary() {
 
   const handleSearch = async () => {
     if (!searchTerm) return;
-    try {
-      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${lang}/${searchTerm}`);
-      if (!response.ok) {
-        throw new Error('Word not found');
+
+    if (lang === 'tl') {
+      const subDialects = ['ceb', 'ilo', 'hil', 'war', 'pam', 'bik', 'pag', 'mrw', 'mdh', 'tsg', 'krj', 'akl'];
+      const allDefinitions = [];
+      for (const dialect of subDialects) {
+        try {
+          const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dialect}/${searchTerm}`);
+          if (response.ok) {
+            const data = await response.json();
+            allDefinitions.push(...data.map(def => ({ ...def, dialect })));
+          }
+        } catch (err) {
+          // Ignore errors for individual dialects
+        }
       }
-      const data = await response.json();
-      setDefinitions(data);
-      setError(null);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+      if (allDefinitions.length > 0) {
+        setDefinitions(allDefinitions);
+        setError(null);
       } else {
-        setError('An unknown error occurred');
+        setError('Word not found in any Filipino dialect');
+        setDefinitions([]);
       }
-      setDefinitions([]);
+    } else {
+      try {
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${lang}/${searchTerm}`);
+        if (!response.ok) {
+          throw new Error('Word not found');
+        }
+        const data = await response.json();
+        setDefinitions(data);
+        setError(null);
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('An unknown error occurred');
+        }
+        setDefinitions([]);
+      }
     }
   };
 
@@ -68,7 +92,7 @@ export function Dictionary() {
             {definitions.length > 0 ? (
               definitions.map((def, index) => (
                 <div key={index} className="mb-4">
-                  <h3 className="text-lg font-bold">{def.word}</h3>
+                  <h3 className="text-lg font-bold">{def.word} {def.dialect && <span className="text-sm text-muted-foreground">({def.dialect})</span>}</h3>
                   {def.phonetics.map((phonetic: { text: string; audio: string }, i: number) => (
                     <div key={i} className="flex items-center space-x-2">
                       <p className="text-sm text-muted-foreground">{phonetic.text}</p>
