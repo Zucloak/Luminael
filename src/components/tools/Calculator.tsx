@@ -26,41 +26,11 @@ export function Calculator() {
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): string[] => {
-    let displayParts: string[] = [];
-    currentTokens.forEach((token, index) => {
-      if (index === cursorIndex) {
-        displayParts.push('|');
-      }
-      if (token.type === 'func' && token.display.startsWith('\\frac')) {
-        displayParts.push('\\frac{}{}');
-      } else if (token.type === 'func' && token.display.startsWith('\\sqrt')) {
-        displayParts.push('\\sqrt{}');
-      } else {
-        displayParts.push(token.display);
-      }
-    });
-    if (cursorIndex === currentTokens.length) {
-      displayParts.push('|');
-    }
-    return displayParts;
+    const displayTokens: string[] = currentTokens.map(t => t.display);
+    displayTokens.splice(cursorIndex, 0, '|');
+    return displayTokens;
   };
-  const tokensToExpression = (currentTokens: Token[]): string => {
-    let expr = '';
-    for (const token of currentTokens) {
-      if (token.display.startsWith('\\frac')) {
-        // This is a naive implementation and will not work for nested fractions.
-        // A proper parser would be needed for a robust solution.
-        const content = token.display.replace('\\frac{', '').replace('}', '');
-        const parts = content.split('{');
-        const numerator = parts[0];
-        const denominator = parts[1].replace('}', '');
-        expr += `(${numerator})/(${denominator})`;
-      } else {
-        expr += token.expr;
-      }
-    }
-    return expr;
-  };
+  const tokensToExpression = (currentTokens: Token[]): string => currentTokens.map(t => t.expr).join('');
 
   const handleInput = (token: Token) => {
     setTokens(prev => {
@@ -183,7 +153,7 @@ export function Calculator() {
           <Button onClick={() => handleInput(createToken('group', ')'))} className={btnOp}>)</Button>
 
           {/* Row 3 */}
-          <Button onClick={() => handleInput(createToken('func', '\\frac{}{}'))} className={btnOp}>a b/c</Button>
+          <Button onClick={() => handleInput(createToken('op', '⁄', '/'))} className={btnOp}>a b/c</Button>
           <Button onClick={() => handleInput(createToken('op', '!', '!'))} className={btnOp}>x!</Button>
           <Button onClick={handleClear} className={btnClear}>C</Button>
           <Button onClick={handleBackspace} className={btnClear}>⌫</Button>
