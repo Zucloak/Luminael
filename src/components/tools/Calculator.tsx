@@ -27,7 +27,7 @@ export function Calculator() {
 
   const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): string => {
     const displayTokens = currentTokens.map(t => t.display);
-    displayTokens.splice(cursorIndex, 0, '|');
+    displayTokens.splice(cursorIndex, 0, '<span class="cursor">|</span>');
     return displayTokens.join(' ');
   };
   const tokensToExpression = (currentTokens: Token[]): string => currentTokens.map(t => t.expr).join('');
@@ -92,9 +92,7 @@ export function Calculator() {
         }
       `}</style>
       <CardContent className="p-2 space-y-2">
-        <div className="bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-20 flex items-center justify-end overflow-x-auto">
-          <MarkdownRenderer>{`\$${tokensToDisplay(tokens, cursorPosition).replace('|', '<span class="cursor">|</span>')}\$`}</MarkdownRenderer>
-        </div>
+        <div className="bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-20 flex items-center justify-end overflow-x-auto" dangerouslySetInnerHTML={{ __html: tokensToDisplay(tokens, cursorPosition) }} />
 
         <div className="grid grid-cols-5 gap-1.5">
           {/* Row 1 */}
