@@ -1,4 +1,6 @@
-export function deepCopyTokens(tokens) {
+import { Token } from "@/components/tools/Calculator";
+
+export function deepCopyTokens(tokens: Token[]): Token[] {
   return tokens.map(token => {
     if (token.type === 'fraction') {
       return {

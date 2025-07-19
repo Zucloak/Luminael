@@ -15,7 +15,7 @@ type FractionToken = {
   denominator: Token[];
 };
 
-type Token = {
+export type Token = {
   type: 'num' | 'op' | 'func' | 'group' | 'const' | 'special';
   display: string;
   expr: string;
