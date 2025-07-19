@@ -64,7 +64,7 @@ export function Dictionary() {
         </div>
         <ScrollArea className="h-72 w-full rounded-md border p-4 mt-4">
           <div className="mt-4 p-4 bg-muted rounded-md min-h-[100px]">
-            {error && <p className="text-red-500">{error}. You can try searching on <a href={`https://en.wiktionary.org/wiki/${searchTerm}`} target="_blank" rel="noopener noreferrer" className="underline">Wiktionary</a>.</p>}
+            {error && <p className="text-red-500 text-center">{error}.<br/>You can try searching on <a href={`https://en.wiktionary.org/wiki/${searchTerm}`} target="_blank" rel="noopener noreferrer" className="underline font-bold">Wiktionary</a>.</p>}
             {definitions.length > 0 ? (
               definitions.map((def, index) => (
                 <div key={index} className="mb-4">
@@ -90,6 +90,7 @@ export function Dictionary() {
             )}
           </div>
         </ScrollArea>
+        <p className="text-xs text-muted-foreground mt-2 text-center">Dictionary support for some languages may be limited.</p>
       </CardContent>
     </Card>
   );
