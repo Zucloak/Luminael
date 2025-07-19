@@ -88,6 +88,7 @@ export function Translator() {
                 Translate <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
         </div>
+        <p className="text-xs text-muted-foreground mt-2 text-center">Translation quality may vary for some languages.</p>
       </CardContent>
     </Card>
   );

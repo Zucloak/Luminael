@@ -64,7 +64,7 @@ export function Dictionary() {
         </div>
         <ScrollArea className="h-72 w-full rounded-md border p-4 mt-4">
           <div className="mt-4 p-4 bg-muted rounded-md min-h-[100px]">
-            {error && <p className="text-red-500">{error}</p>}
+            {error && <p className="text-red-500">{error}. You can try searching on <a href={`https://en.wiktionary.org/wiki/${searchTerm}`} target="_blank" rel="noopener noreferrer" className="underline">Wiktionary</a>.</p>}
             {definitions.length > 0 ? (
               definitions.map((def, index) => (
                 <div key={index} className="mb-4">
