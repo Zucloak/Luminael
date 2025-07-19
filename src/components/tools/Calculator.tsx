@@ -20,7 +20,7 @@ type Token = {
   expr: string;
 } | FractionToken;
 
-const createToken = (type: Token['type'], display: string, expr?: string): Token => ({
+const createToken = (type: 'num' | 'op' | 'func' | 'group' | 'const' | 'special', display: string, expr?: string): Token => ({
   type,
   display,
   expr: expr ?? display,
