@@ -70,13 +70,14 @@ export function Calculator() {
     }
   };
 
-  const moveCursor = (direction: 'left' | 'right') => {
+  const moveCursor = (direction: 'left' | 'right' | 'up' | 'down') => {
     setCursorPosition(prev => {
       if (direction === 'left') {
         return Math.max(0, prev - 1);
-      } else {
+      } else if (direction === 'right') {
         return Math.min(tokens.length, prev + 1);
       }
+      return prev;
     });
   };
 
