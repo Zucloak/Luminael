@@ -26,9 +26,23 @@ export function Calculator() {
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): string[] => {
-    const displayTokens: string[] = currentTokens.map(t => t.display);
-    displayTokens.splice(cursorIndex, 0, '|');
-    return displayTokens;
+    let displayParts: string[] = [];
+    currentTokens.forEach((token, index) => {
+      if (index === cursorIndex) {
+        displayParts.push('|');
+      }
+      if (token.type === 'func' && token.display.startsWith('\\frac')) {
+        displayParts.push('\\frac{}{}');
+      } else if (token.type === 'func' && token.display.startsWith('\\sqrt')) {
+        displayParts.push('\\sqrt{}');
+      } else {
+        displayParts.push(token.display);
+      }
+    });
+    if (cursorIndex === currentTokens.length) {
+      displayParts.push('|');
+    }
+    return displayParts;
   };
   const tokensToExpression = (currentTokens: Token[]): string => {
     let expr = '';
@@ -164,7 +178,7 @@ export function Calculator() {
           {/* Row 2 */}
           <Button onClick={() => handleInput(createToken('func', '\\sqrt{', 'sqrt('))} className={btnOp}>√</Button>
           {renderButton('log', '10^', () => handleInput(createToken('func', 'log(')), () => handleInput(createToken('op', '10^')), btnOp)}
-          {renderButton('ln', 'e^', () => handleInput(createToken('func', 'log(')), () => handleInput(createToken('op', 'e^')), btnOp)}
+          {renderButton('ln', 'e^', () => handleInput(createToken('func', 'ln(', 'log(')), () => handleInput(createToken('op', 'e^')), btnOp)}
           <Button onClick={() => handleInput(createToken('group', '('))} className={btnOp}>(</Button>
           <Button onClick={() => handleInput(createToken('group', ')'))} className={btnOp}>)</Button>
 
