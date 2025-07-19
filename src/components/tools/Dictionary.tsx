@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function Dictionary() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,32 +47,34 @@ export function Dictionary() {
           />
           <Button type="button" onClick={handleSearch}>Search</Button>
         </div>
-        <div className="mt-4 p-4 bg-muted rounded-md min-h-[100px]">
-          {error && <p className="text-red-500">{error}</p>}
-          {definitions.length > 0 ? (
-            definitions.map((def, index) => (
-              <div key={index} className="mb-4">
-                <h3 className="text-lg font-bold">{def.word}</h3>
-                {def.phonetics.map((phonetic: { text: string; audio: string }, i: number) => (
-                  <div key={i} className="flex items-center space-x-2">
-                    <p className="text-sm text-muted-foreground">{phonetic.text}</p>
-                    {phonetic.audio && <audio controls src={phonetic.audio} className="h-8" />}
-                  </div>
-                ))}
-                {def.meanings.map((meaning: { partOfSpeech: string, definitions: any[] }, i: number) => (
-                  <div key={i} className="mt-2">
-                    <h4 className="font-semibold">{meaning.partOfSpeech}</h4>
-                    {meaning.definitions.map((d: { definition: string }, j: number) => (
-                      <p key={j} className="text-sm ml-4">- {d.definition}</p>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground">Definitions will appear here...</p>
-          )}
-        </div>
+        <ScrollArea className="h-72 w-full rounded-md border p-4">
+          <div className="mt-4 p-4 bg-muted rounded-md min-h-[100px]">
+            {error && <p className="text-red-500">{error}</p>}
+            {definitions.length > 0 ? (
+              definitions.map((def, index) => (
+                <div key={index} className="mb-4">
+                  <h3 className="text-lg font-bold">{def.word}</h3>
+                  {def.phonetics.map((phonetic: { text: string; audio: string }, i: number) => (
+                    <div key={i} className="flex items-center space-x-2">
+                      <p className="text-sm text-muted-foreground">{phonetic.text}</p>
+                      {phonetic.audio && <audio controls src={phonetic.audio} className="h-8" />}
+                    </div>
+                  ))}
+                  {def.meanings.map((meaning: { partOfSpeech: string, definitions: any[] }, i: number) => (
+                    <div key={i} className="mt-2">
+                      <h4 className="font-semibold">{meaning.partOfSpeech}</h4>
+                      {meaning.definitions.map((d: { definition: string }, j: number) => (
+                        <p key={j} className="text-sm ml-4">- {d.definition}</p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">Definitions will appear here...</p>
+            )}
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );

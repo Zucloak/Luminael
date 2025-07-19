@@ -55,6 +55,16 @@ export function Translator() {
               <SelectItem value="fr">French</SelectItem>
               <SelectItem value="de">German</SelectItem>
               <SelectItem value="it">Italian</SelectItem>
+              <SelectItem value="pt">Portuguese</SelectItem>
+              <SelectItem value="ru">Russian</SelectItem>
+              <SelectItem value="ja">Japanese</SelectItem>
+              <SelectItem value="ko">Korean</SelectItem>
+              <SelectItem value="zh-CN">Chinese (Simplified)</SelectItem>
+              <SelectItem value="pt">Portuguese</SelectItem>
+              <SelectItem value="ru">Russian</SelectItem>
+              <SelectItem value="ja">Japanese</SelectItem>
+              <SelectItem value="ko">Korean</SelectItem>
+              <SelectItem value="zh-CN">Chinese (Simplified)</SelectItem>
             </SelectContent>
           </Select>
           <ArrowRight className="h-6 w-6" />
@@ -68,6 +78,11 @@ export function Translator() {
               <SelectItem value="fr">French</SelectItem>
               <SelectItem value="de">German</SelectItem>
               <SelectItem value="it">Italian</SelectItem>
+              <SelectItem value="pt">Portuguese</SelectItem>
+              <SelectItem value="ru">Russian</SelectItem>
+              <SelectItem value="ja">Japanese</SelectItem>
+              <SelectItem value="ko">Korean</SelectItem>
+              <SelectItem value="zh-CN">Chinese (Simplified)</SelectItem>
             </SelectContent>
           </Select>
         </div>
