@@ -25,9 +25,9 @@ export function Calculator() {
   const [isShiftActive, setIsShiftActive] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
 
-  const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): (string | JSX.Element)[] => {
-    const displayTokens: (string | JSX.Element)[] = currentTokens.map(t => t.display);
-    displayTokens.splice(cursorIndex, 0, <span className="cursor" />);
+  const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): string[] => {
+    const displayTokens: string[] = currentTokens.map(t => t.display);
+    displayTokens.splice(cursorIndex, 0, '|');
     return displayTokens;
   };
   const tokensToExpression = (currentTokens: Token[]): string => {
@@ -92,6 +92,8 @@ export function Calculator() {
       expression += ')'.repeat(openParenCount - closeParenCount);
     }
 
+    console.log("Expression to evaluate:", expression);
+
     try {
       const result = evaluate(expression);
       const formatted = format(result, { notation: 'fixed', precision: 10 }).replace(/(\.0+|(?:\.\d*?[1-9])0*)$/, (match, p1) => p1.includes('.') ? p1.replace(/0+$/, '') : match);
@@ -142,9 +144,7 @@ export function Calculator() {
       `}</style>
       <CardContent className="p-2 space-y-2">
         <div className="bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-20 flex items-center justify-end overflow-x-auto">
-          {tokensToDisplay(tokens, cursorPosition).map((item, index) => (
-            <React.Fragment key={index}>{item}</React.Fragment>
-          ))}
+          <MarkdownRenderer>{`\$${tokensToDisplay(tokens, cursorPosition).join(' ')}\$`}</MarkdownRenderer>
         </div>
 
         <div className="grid grid-cols-5 gap-1.5">
@@ -164,7 +164,7 @@ export function Calculator() {
           {/* Row 2 */}
           <Button onClick={() => handleInput(createToken('func', '\\sqrt{', 'sqrt('))} className={btnOp}>√</Button>
           {renderButton('log', '10^', () => handleInput(createToken('func', 'log(')), () => handleInput(createToken('op', '10^')), btnOp)}
-          {renderButton('ln', 'e^', () => handleInput(createToken('func', 'ln(')), () => handleInput(createToken('op', 'e^')), btnOp)}
+          {renderButton('ln', 'e^', () => handleInput(createToken('func', 'log(')), () => handleInput(createToken('op', 'e^')), btnOp)}
           <Button onClick={() => handleInput(createToken('group', '('))} className={btnOp}>(</Button>
           <Button onClick={() => handleInput(createToken('group', ')'))} className={btnOp}>)</Button>
 
