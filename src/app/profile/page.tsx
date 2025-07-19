@@ -293,36 +293,6 @@ export default function ProfilePage() {
                     className="hidden"
                 />
 
-                {/* Feature Settings Section */}
-                <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                        <Wrench className="h-5 w-5 text-primary" /> Feature Settings
-                    </h3>
-                    <div className="p-4 rounded-md border bg-muted/30 space-y-3">
-                        <div className="flex items-center justify-between space-x-2">
-                            <Label htmlFor="utility-tools-toggle" className="flex flex-col space-y-1">
-                                <span>Enable Utility Tools</span>
-                                <span className="font-normal leading-snug text-muted-foreground">
-                                Access beta features like a graphing tool, scientific calculator, and more.
-                                </span>
-                            </Label>
-                            <Switch
-                                id="utility-tools-toggle"
-                                checked={!!user?.utilityToolsEnabled}
-                                onCheckedChange={(checked) => {
-                                    saveUser({ utilityToolsEnabled: checked });
-                                    toast({
-                                        title: "Settings Updated",
-                                        description: `Utility Tools have been ${checked ? 'enabled' : 'disabled'}. The page will reload to apply changes.`,
-                                    });
-                                    // A small delay to allow the toast to be seen before reload
-                                    setTimeout(() => window.location.reload(), 1500);
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-                {/* End Feature Settings Section */}
 
 
                 <div className="space-y-4">

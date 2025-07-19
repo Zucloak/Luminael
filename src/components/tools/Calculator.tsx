@@ -8,19 +8,13 @@ import nerdamer from 'nerdamer';
 import 'nerdamer/Solve'; // Load the Solve add-on
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 
-type FractionToken = {
-  type: 'fraction';
-  numerator: Token[];
-  denominator: Token[];
-};
-
-export type Token = {
+type Token = {
   type: 'num' | 'op' | 'func' | 'group' | 'const' | 'special';
   display: string;
   expr: string;
-} | FractionToken;
+};
 
-const createToken = (type: 'num' | 'op' | 'func' | 'group' | 'const' | 'special', display: string, expr?: string): Token => ({
+const createToken = (type: Token['type'], display: string, expr?: string): Token => ({
   type,
   display,
   expr: expr ?? display,
@@ -28,119 +22,33 @@ const createToken = (type: 'num' | 'op' | 'func' | 'group' | 'const' | 'special'
 
 export function Calculator() {
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [cursorPosition, setCursorPosition] = useState(0);
   const [isShiftActive, setIsShiftActive] = useState(false);
-  const [result, setResult] = useState<string>('');
+  const [cursorPosition, setCursorPosition] = useState(0);
 
-  const tokensToDisplay = (currentTokens: Token[], cursorIndex: number, isSubLevel: boolean = false): string => {
-    let displayParts: string[] = [];
-    currentTokens.forEach((token, index) => {
-      if (index === cursorIndex && !isSubLevel) {
-        displayParts.push('<span class="cursor">|</span>');
-      }
-      if (token.type === 'fraction') {
-        const numeratorStr = tokensToDisplay(token.numerator, -1, true);
-        const denominatorStr = tokensToDisplay(token.denominator, -1, true);
-        displayParts.push(`\\frac{${numeratorStr}}{${denominatorStr}}`);
-      } else {
-        displayParts.push(token.display);
-      }
-    });
-    if (cursorIndex === currentTokens.length && !isSubLevel) {
-      displayParts.push('<span class="cursor"></span>');
-    }
-    return displayParts.join(' ');
+  const tokensToDisplay = (currentTokens: Token[], cursorIndex: number): string => {
+    const displayTokens = currentTokens.map(t => t.display);
+    displayTokens.splice(cursorIndex, 0, '|');
+    return displayTokens.join(' ');
   };
-  const tokensToExpression = (currentTokens: Token[]): string => {
-    return currentTokens.map(token => {
-      if (token.type === 'fraction') {
-        const numeratorExpr = tokensToExpression(token.numerator);
-        const denominatorExpr = tokensToExpression(token.denominator);
-        return `(${numeratorExpr})/(${denominatorExpr})`;
-      }
-      return token.expr;
-    }).join('');
-  };
+  const tokensToExpression = (currentTokens: Token[]): string => currentTokens.map(t => t.expr).join('');
 
   const handleInput = (token: Token) => {
-    if (token.type === 'fraction') {
-      // For fractions, we need to insert a more complex structure
-      setTokens(prev => {
-        const newTokens = [...prev];
-        newTokens.splice(cursorPosition, 0, token);
-        return newTokens;
-      });
-      // We don't increment the cursor position here, as we want to place the cursor in the numerator
-    } else {
-      setTokens(prev => {
-        const newTokens = [...prev];
-        newTokens.splice(cursorPosition, 0, token);
-        return newTokens;
-      });
-      setCursorPosition(prev => prev + 1);
-    }
+    setTokens(prev => [...prev, token]);
     if (isShiftActive) setIsShiftActive(false);
   };
 
-  const handleClear = () => {
-    setTokens([]);
-    setCursorPosition(0);
-    setResult('');
-  };
-
-  const handleBackspace = () => {
-    if (cursorPosition > 0) {
-      setTokens(prev => {
-        const newTokens = [...prev];
-        newTokens.splice(cursorPosition - 1, 1);
-        return newTokens;
-      });
-      setCursorPosition(prev => prev - 1);
-    }
-  };
-
-  const moveCursor = (direction: 'left' | 'right' | 'up' | 'down') => {
-    const tokenAtCursor = tokens[cursorPosition];
-    const tokenBeforeCursor = tokens[cursorPosition - 1];
-
-    if (direction === 'right' && tokenAtCursor && tokenAtCursor.type === 'fraction') {
-      // Move into the numerator of the fraction
-      // This is a simplified approach. A full implementation would require a recursive function.
-    } else if (direction === 'left' && tokenBeforeCursor && tokenBeforeCursor.type === 'fraction') {
-      // Move out of the fraction
-    } else if (direction === 'up' && tokenAtCursor && tokenAtCursor.type === 'fraction') {
-      // Move to the numerator
-    } else if (direction === 'down' && tokenAtCursor && tokenAtCursor.type === 'fraction') {
-      // Move to the denominator
-    } else {
-      setCursorPosition(prev => {
-        if (direction === 'left') {
-          return Math.max(0, prev - 1);
-        } else if (direction === 'right') {
-          return Math.min(tokens.length, prev + 1);
-        }
-        return prev;
-      });
-    }
-  };
+  const handleClear = () => setTokens([]);
+  const handleBackspace = () => setTokens(prev => prev.slice(0, -1));
 
   const handleCalculate = () => {
-    let expression = tokensToExpression(tokens);
+    const expression = tokensToExpression(tokens);
     if (expression.length === 0) return;
-
-    // Add closing parentheses for functions if they are missing
-    const openParenCount = (expression.match(/\(/g) || []).length;
-    const closeParenCount = (expression.match(/\)/g) || []).length;
-    if (openParenCount > closeParenCount) {
-      expression += ')'.repeat(openParenCount - closeParenCount);
-    }
-
     try {
       const result = evaluate(expression);
       const formatted = format(result, { notation: 'fixed', precision: 10 }).replace(/(\.0+|(?:\.\d*?[1-9])0*)$/, (match, p1) => p1.includes('.') ? p1.replace(/0+$/, '') : match);
-      setResult(formatted);
+      setTokens([createToken('num', formatted)]);
     } catch (error) {
-      setResult('Error');
+      setTokens([createToken('special', 'Error')]);
     }
   };
 
@@ -179,27 +87,16 @@ export function Calculator() {
             opacity: 0;
           }
         }
-        .calculator-display .katex-render:has(span:contains('❚')) {
+        .cursor {
           animation: blink 1s step-start infinite;
         }
       `}</style>
       <CardContent className="p-2 space-y-2">
-        <div className="calculator-display bg-muted text-muted-foreground rounded-lg p-3 text-right font-mono break-all h-24 flex flex-col justify-between">
-          <div className="text-3xl overflow-x-auto">
-            <MarkdownRenderer>{`\$${tokensToDisplay(tokens, cursorPosition)}\$`}</MarkdownRenderer>
-          </div>
-          <div className="text-2xl text-muted-foreground/80 overflow-x-auto">
-            <MarkdownRenderer>{result}</MarkdownRenderer>
-          </div>
+        <div className="bg-muted text-muted-foreground rounded-lg p-3 text-right text-3xl font-mono break-all h-20 flex items-center justify-end overflow-x-auto">
+          <MarkdownRenderer>{`\$${tokensToDisplay(tokens, cursorPosition).replace('|', '<span class="cursor">|</span>')}\$`}</MarkdownRenderer>
         </div>
 
         <div className="grid grid-cols-5 gap-1.5">
-          {/* Navigation Row */}
-          <Button onClick={() => moveCursor('left')} className={btnOp}>←</Button>
-          <Button onClick={() => moveCursor('right')} className={btnOp}>→</Button>
-          <Button onClick={() => moveCursor('up')} className={btnOp}>↑</Button>
-          <Button onClick={() => moveCursor('down')} className={btnOp}>↓</Button>
-          <div></div>
           {/* Row 1 */}
           <Button onClick={() => setIsShiftActive(!isShiftActive)} className={btnShift}>Shift</Button>
           {renderButton('sin', 'sin⁻¹', () => handleInput(createToken('func', 'sin(')), () => handleInput(createToken('func', 'asin(')), btnOp)}
@@ -215,18 +112,18 @@ export function Calculator() {
           <Button onClick={() => handleInput(createToken('group', ')'))} className={btnOp}>)</Button>
 
           {/* Row 3 */}
-          <Button onClick={() => handleInput({type: 'fraction', numerator: [], denominator: []})} className={btnOp}>a b/c</Button>
+          <Button onClick={() => handleInput(createToken('op', '\\frac{', '/'))} className={btnOp}>a b/c</Button>
           <Button onClick={() => handleInput(createToken('op', '!', '!'))} className={btnOp}>x!</Button>
           <Button onClick={handleClear} className={btnClear}>C</Button>
           <Button onClick={handleBackspace} className={btnClear}>⌫</Button>
-          {renderButton('SOLVE', 'CALC', handleSolve, handleCalculate, btnEquals)}
+          <Button onClick={() => handleInput(createToken('op', '÷', '/'))} className={btnOp}>÷</Button>
 
           {/* Row 4 */}
           <Button onClick={() => handleInput(createToken('num', '7'))} className={btnNum}>7</Button>
           <Button onClick={() => handleInput(createToken('num', '8'))} className={btnNum}>8</Button>
           <Button onClick={() => handleInput(createToken('num', '9'))} className={btnNum}>9</Button>
           <Button onClick={() => handleInput(createToken('op', '×', '*'))} className={btnOp}>×</Button>
-          <Button onClick={() => handleInput(createToken('op', '÷', '/'))} className={btnOp}>÷</Button>
+          {renderButton('SOLVE', 'CALC', handleSolve, handleCalculate, btnEquals)}
 
           {/* Row 5 */}
           <Button onClick={() => handleInput(createToken('num', '4'))} className={btnNum}>4</Button>
