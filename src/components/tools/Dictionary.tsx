@@ -31,7 +31,8 @@ export function Dictionary() {
         }
         const extract = pages[pageId].extract;
         const audioMatches = extract.match(/<source src="(.*?)"/g);
-        const phonetics = audioMatches ? audioMatches.map((match: string) => ({ audio: match.replace(/<source src="|"|type="video\/ogg"/g, '') })) : [];
+        const phonetics = audioMatches ? audioMatches.map((match: string) => ({ audio: "https:" + match.replace(/<source src="|"|type="video\/ogg"/g, '') })) : [];
+        console.log(phonetics);
         setDefinitions([{ word: searchTerm, meanings: [{ definitions: [{ definition: extract }] }], lang: lang, phonetics: phonetics }]);
         setError(null);
       } catch (err) {
