@@ -30,8 +30,23 @@ export function Dictionary() {
           throw new Error('Word not found');
         }
         const extract = pages[pageId].extract;
-        const audioMatches = extract.match(/<source src="(.*?)"/g);
-        const phonetics = audioMatches ? audioMatches.map((match: string) => ({ audio: "https:" + match.replace(/<source src="|"|type="video\/ogg"/g, '') })) : [];
+        const pageTitle = pages[pageId].title;
+
+        const mediaResponse = await fetch(`https://${lang}.wiktionary.org/w/api.php?action=query&format=json&prop=images&titles=${pageTitle}&origin=*`);
+        const mediaData = await mediaResponse.json();
+        const mediaPages = mediaData.query.pages;
+        const mediaPageId = Object.keys(mediaPages)[0];
+        const images = mediaPages[mediaPageId].images;
+        const audioFiles = images ? images.filter((image: any) => image.title.endsWith('.ogg') || image.title.endsWith('.mp3')) : [];
+
+        const phonetics = await Promise.all(audioFiles.map(async (file: any) => {
+          const fileResponse = await fetch(`https://${lang}.wiktionary.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url&titles=${file.title}&origin=*`);
+          const fileData = await fileResponse.json();
+          const filePages = fileData.query.pages;
+          const filePageId = Object.keys(filePages)[0];
+          return { audio: filePages[filePageId].imageinfo[0].url };
+        }));
+
         console.log(phonetics);
         setDefinitions([{ word: searchTerm, meanings: [{ definitions: [{ definition: extract }] }], lang: lang, phonetics: phonetics }]);
         setError(null);
