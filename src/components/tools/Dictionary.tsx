@@ -30,7 +30,9 @@ export function Dictionary() {
           throw new Error('Word not found');
         }
         const extract = pages[pageId].extract;
-        setDefinitions([{ word: searchTerm, meanings: [{ definitions: [{ definition: extract }] }], lang: lang }]);
+        const audioMatches = extract.match(/<source src="(.*?)"/g);
+        const phonetics = audioMatches ? audioMatches.map((match: string) => ({ audio: match.replace(/<source src="|"|type="video\/ogg"/g, '') })) : [];
+        setDefinitions([{ word: searchTerm, meanings: [{ definitions: [{ definition: extract }] }], lang: lang, phonetics: phonetics }]);
         setError(null);
       } catch (err) {
         if (err instanceof Error) {
@@ -96,7 +98,14 @@ export function Dictionary() {
                 <div key={index} className="mb-4">
                   <h3 className="text-lg font-bold">{def.word}</h3>
                   {def.lang && def.lang !== 'en' ? (
-                    <div dangerouslySetInnerHTML={{ __html: def.meanings[0].definitions[0].definition }} />
+                    <>
+                      {def.phonetics.map((phonetic: { audio: string }, i: number) => (
+                        <div key={i} className="flex items-center space-x-2">
+                          {phonetic.audio && <audio controls src={phonetic.audio} className="h-8" />}
+                        </div>
+                      ))}
+                      <div dangerouslySetInnerHTML={{ __html: def.meanings[0].definitions[0].definition }} />
+                    </>
                   ) : (
                     <>
                       {def.phonetics.map((phonetic: { text: string; audio: string }, i: number) => (
