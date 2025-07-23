@@ -38,7 +38,7 @@ export function MusicPlayer() {
   }, [isPlaying]);
 
   useEffect(() => {
-    if (audioRef.current) {
+    if (audioRef.current && currentSong) {
       audioRef.current.src = currentSong.url;
       if (isPlaying) {
         audioRef.current.play().catch(e => console.error("Playback error:", e));
