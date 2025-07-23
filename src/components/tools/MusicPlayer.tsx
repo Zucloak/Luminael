@@ -4,10 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import ReactPlayer from 'react-player';
 import { Input } from '@/components/ui/input';
-import getYouTubeTitle from 'get-youtube-title';
-import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library, Upload, Download } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const preInstalledSongs = [
     { title: 'Ambient Electronic Music for study', url: '/music/SoundHelix-Song-1.mp3' },
@@ -22,54 +23,51 @@ export function MusicPlayer() {
   const [isShuffled, setIsShuffled] = useState(false);
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
-  const [showPreInstalled, setShowPreInstalled] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const playerRef = useRef<ReactPlayer>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentSong = playlist[currentSongIndex];
 
   useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Playback error:", e));
-      } else {
-        audioRef.current.pause();
-      }
-    }
     eventBus.dispatch('music-player-state-change', { isPlaying });
   }, [isPlaying]);
 
-  useEffect(() => {
-    if (audioRef.current && currentSong) {
-      audioRef.current.src = currentSong.url;
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Playback error:", e));
-      }
-    }
-  }, [currentSong]);
-
-  const handleAddSong = async () => {
+  const handleAddSong = () => {
     if (newSongUrl.trim() !== '') {
-      let title = newSongUrl;
-      if (newSongUrl.includes('youtube.com') || newSongUrl.includes('youtu.be')) {
-        const videoId = newSongUrl.split('v=')[1] || newSongUrl.split('/').pop();
-        if (videoId) {
-            title = await new Promise((resolve) => {
-                getYouTubeTitle(videoId, (err: any, title: any) => {
-                    if (err) {
-                        console.error(err);
-                        resolve(newSongUrl);
-                    }
-                    resolve(title);
-                });
-            });
-        }
-      }
       const newSong = {
-        title: title,
+        title: newSongUrl,
         url: newSongUrl,
       };
       setPlaylist([...playlist, newSong]);
       setNewSongUrl('');
+    }
+  };
+
+  const handleExportPlaylist = () => {
+    const json = JSON.stringify(playlist, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'playlist.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportPlaylist = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const json = e.target?.result as string;
+          const newPlaylist = JSON.parse(json);
+          setPlaylist(newPlaylist);
+        } catch (error) {
+          console.error('Error parsing playlist file:', error);
+        }
+      };
+      reader.readAsText(file);
     }
   };
 
@@ -164,9 +162,6 @@ export function MusicPlayer() {
             </Button>
         </div>
         <div className="flex justify-center items-center gap-4">
-            <Button onClick={() => setShowPreInstalled(!showPreInstalled)} variant="ghost" size="icon">
-                <Library className="h-6 w-6" />
-            </Button>
           <Button onClick={toggleShuffle} variant={isShuffled ? "secondary" : "ghost"} size="icon">
             <Shuffle className="h-6 w-6" />
           </Button>
@@ -183,48 +178,90 @@ export function MusicPlayer() {
             <Repeat className="h-6 w-6" />
           </Button>
         </div>
-        {showPreInstalled && (
+        <Tabs defaultValue="queue" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="queue">Queue</TabsTrigger>
+            <TabsTrigger value="pre-installed">Library</TabsTrigger>
+            <TabsTrigger value="playlist">Playlist</TabsTrigger>
+          </TabsList>
+          <TabsContent value="queue">
             <ScrollArea className="h-40 w-full rounded-md border p-2">
-                <ul>
-                    {preInstalledSongs.map((song, index) => (
-                        <li
-                            key={index}
-                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted`}
-                            onClick={() => {
-                                setPlaylist([...playlist, song]);
-                            }}
-                        >
-                            <span>{song.title}</span>
-                            <Button variant="ghost" size="icon">
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        </li>
-                    ))}
-                </ul>
+              <ul>
+                {playlist.map((song, index) => (
+                  <li
+                    key={index}
+                    className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${index === currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                    onClick={() => setCurrentSongIndex(index)}
+                  >
+                    <span>{song.title}</span>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(index)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
             </ScrollArea>
-        )}
-        <ScrollArea className="h-40 w-full rounded-md border p-2">
-          <ul>
-            {playlist.map((song, index) => (
-              <li
-                key={index}
-                className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${index === currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                onClick={() => setCurrentSongIndex(index)}
-              >
-                <span>{song.title}</span>
-                <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(index)}>
-                  <X className="h-4 w-4" />
+          </TabsContent>
+          <TabsContent value="pre-installed">
+            <ScrollArea className="h-40 w-full rounded-md border p-2">
+              <ul>
+                {preInstalledSongs.map((song, index) => (
+                  <li
+                    key={index}
+                    className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted`}
+                    onClick={() => {
+                      setPlaylist([...playlist, song]);
+                    }}
+                  >
+                    <span>{song.title}</span>
+                    <Button variant="ghost" size="icon">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent value="playlist">
+            <div className="flex items-center gap-2">
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".json"
+                    onChange={handleImportPlaylist}
+                />
+                <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="h-4 w-4" />
                 </Button>
-              </li>
-            ))}
-          </ul>
-        </ScrollArea>
-        <audio
-          ref={audioRef}
-          src={currentSong?.url}
-          loop={isLooping}
-          onEnded={playNext}
-        />
+                <Button variant="outline" size="icon" onClick={handleExportPlaylist}>
+                    <Download className="h-4 w-4" />
+                </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
+        <div className="hidden">
+          <ReactPlayer
+            ref={playerRef}
+            url={currentSong?.url}
+            playing={isPlaying}
+            loop={isLooping}
+            onEnded={playNext}
+            onReady={(player) => {
+                if (player && player.getInternalPlayer() && typeof player.getInternalPlayer().getVideoData === 'function') {
+                    const title = player.getInternalPlayer().getVideoData().title;
+                    if (title) {
+                        const newPlaylist = [...playlist];
+                        const newCurrentSong = { ...currentSong, title: title };
+                        newPlaylist[currentSongIndex] = newCurrentSong;
+                        setPlaylist(newPlaylist);
+                    }
+                }
+            }}
+            width="0"
+            height="0"
+          />
+        </div>
       </CardContent>
     </Card>
   );
