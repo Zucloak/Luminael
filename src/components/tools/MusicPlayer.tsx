@@ -96,7 +96,7 @@ export function MusicPlayer() {
       setCurrentSongIndex(0);
     } else {
       // Restore the original order
-      const originalPlaylist = [...songs];
+      const originalPlaylist = [...preInstalledSongs];
       const currentSongTitle = playlist[currentSongIndex].title;
       const originalIndex = originalPlaylist.findIndex(song => song.title === currentSongTitle);
       setPlaylist(originalPlaylist);
