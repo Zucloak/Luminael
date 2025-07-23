@@ -4,8 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import ReactPlayer from 'react-player';
 import { Input } from '@/components/ui/input';
+import getYouTubeTitle from 'get-youtube-title';
 import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
 
@@ -23,7 +23,6 @@ export function MusicPlayer() {
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
   const [showPreInstalled, setShowPreInstalled] = useState(false);
-  const playerRef = useRef<ReactPlayer>(null);
 
   const currentSong = playlist[currentSongIndex];
 
@@ -31,10 +30,25 @@ export function MusicPlayer() {
     eventBus.dispatch('music-player-state-change', { isPlaying });
   }, [isPlaying]);
 
-  const handleAddSong = () => {
+  const handleAddSong = async () => {
     if (newSongUrl.trim() !== '') {
+      let title = newSongUrl;
+      if (newSongUrl.includes('youtube.com') || newSongUrl.includes('youtu.be')) {
+        const videoId = newSongUrl.split('v=')[1] || newSongUrl.split('/').pop();
+        if (videoId) {
+            title = await new Promise((resolve) => {
+                getYouTubeTitle(videoId, (err: any, title: any) => {
+                    if (err) {
+                        console.error(err);
+                        resolve(newSongUrl);
+                    }
+                    resolve(title);
+                });
+            });
+        }
+      }
       const newSong = {
-        title: newSongUrl,
+        title: title,
         url: newSongUrl,
       };
       setPlaylist([...playlist, newSong]);
@@ -188,23 +202,12 @@ export function MusicPlayer() {
             ))}
           </ul>
         </ScrollArea>
-        <div className="hidden">
-          <ReactPlayer
-            ref={playerRef}
-            url={currentSong?.url}
-            playing={isPlaying}
-            loop={isLooping}
-            onEnded={playNext}
-            onReady={(player) => {
-              const newPlaylist = [...playlist];
-              const newCurrentSong = { ...currentSong, title: player.getInternalPlayer().videoTitle };
-              newPlaylist[currentSongIndex] = newCurrentSong;
-              setPlaylist(newPlaylist);
-            }}
-            width="0"
-            height="0"
-          />
-        </div>
+        <audio
+          src={currentSong?.url}
+          autoPlay={isPlaying}
+          loop={isLooping}
+          onEnded={playNext}
+        />
       </CardContent>
     </Card>
   );
