@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import ReactPlayer from 'react-player';
 import { Input } from '@/components/ui/input';
 import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
@@ -22,29 +23,13 @@ export function MusicPlayer() {
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
   const [showPreInstalled, setShowPreInstalled] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const playerRef = useRef<ReactPlayer>(null);
 
   const currentSong = playlist[currentSongIndex];
 
   useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Playback error:", e));
-      } else {
-        audioRef.current.pause();
-      }
-    }
     eventBus.dispatch('music-player-state-change', { isPlaying });
   }, [isPlaying]);
-
-  useEffect(() => {
-    if (audioRef.current && currentSong) {
-      audioRef.current.src = currentSong.url;
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Playback error:", e));
-      }
-    }
-  }, [currentSong]);
 
   const handleAddSong = () => {
     if (newSongUrl.trim() !== '') {
@@ -203,12 +188,23 @@ export function MusicPlayer() {
             ))}
           </ul>
         </ScrollArea>
-        <audio
-          ref={audioRef}
-          src={currentSong?.url}
-          loop={isLooping}
-          onEnded={playNext}
-        />
+        <div className="hidden">
+          <ReactPlayer
+            ref={playerRef}
+            url={currentSong?.url}
+            playing={isPlaying}
+            loop={isLooping}
+            onEnded={playNext}
+            onReady={(player) => {
+              const newPlaylist = [...playlist];
+              const newCurrentSong = { ...currentSong, title: player.getInternalPlayer().videoTitle };
+              newPlaylist[currentSongIndex] = newCurrentSong;
+              setPlaylist(newPlaylist);
+            }}
+            width="0"
+            height="0"
+          />
+        </div>
       </CardContent>
     </Card>
   );
