@@ -23,12 +23,29 @@ export function MusicPlayer() {
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
   const [showPreInstalled, setShowPreInstalled] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const currentSong = playlist[currentSongIndex];
 
   useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.error("Playback error:", e));
+      } else {
+        audioRef.current.pause();
+      }
+    }
     eventBus.dispatch('music-player-state-change', { isPlaying });
   }, [isPlaying]);
+
+  useEffect(() => {
+    if (audioRef.current && currentSong) {
+      audioRef.current.src = currentSong.url;
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.error("Playback error:", e));
+      }
+    }
+  }, [currentSong]);
 
   const handleAddSong = async () => {
     if (newSongUrl.trim() !== '') {
@@ -203,8 +220,8 @@ export function MusicPlayer() {
           </ul>
         </ScrollArea>
         <audio
+          ref={audioRef}
           src={currentSong?.url}
-          autoPlay={isPlaying}
           loop={isLooping}
           onEnded={playNext}
         />
