@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import ReactPlayer from 'react-player/lazy';
 import { Input } from '@/components/ui/input';
 import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
@@ -22,7 +21,6 @@ export function MusicPlayer() {
   const [isShuffled, setIsShuffled] = useState(false);
   const [playlist, setPlaylist] = useState(songs);
   const [newSongUrl, setNewSongUrl] = useState('');
-  const playerRef = useRef<ReactPlayer>(null);
 
   const currentSong = playlist[currentSongIndex];
 
@@ -155,17 +153,12 @@ export function MusicPlayer() {
             ))}
           </ul>
         </ScrollArea>
-        <div className='hidden'>
-            <ReactPlayer
-                ref={playerRef}
-                url={currentSong?.url}
-                playing={isPlaying}
-                loop={isLooping}
-                onEnded={playNext}
-                width="0"
-                height="0"
-            />
-        </div>
+        <audio
+          src={currentSong?.url}
+          autoPlay={isPlaying}
+          loop={isLooping}
+          onEnded={playNext}
+        />
       </CardContent>
     </Card>
   );
