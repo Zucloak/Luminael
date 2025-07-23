@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import ReactPlayer from 'react-player';
 import { Input } from '@/components/ui/input';
 import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library, Upload, Download } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
@@ -23,7 +22,6 @@ export function MusicPlayer() {
   const [isShuffled, setIsShuffled] = useState(false);
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
-  const playerRef = useRef<ReactPlayer>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentSong = playlist[currentSongIndex];
@@ -240,28 +238,12 @@ export function MusicPlayer() {
             </div>
           </TabsContent>
         </Tabs>
-        <div className="hidden">
-          <ReactPlayer
-            ref={playerRef}
-            url={currentSong?.url}
-            playing={isPlaying}
-            loop={isLooping}
-            onEnded={playNext}
-            onReady={(player) => {
-                if (player && player.getInternalPlayer() && typeof player.getInternalPlayer().getVideoData === 'function') {
-                    const title = player.getInternalPlayer().getVideoData().title;
-                    if (title) {
-                        const newPlaylist = [...playlist];
-                        const newCurrentSong = { ...currentSong, title: title };
-                        newPlaylist[currentSongIndex] = newCurrentSong;
-                        setPlaylist(newPlaylist);
-                    }
-                }
-            }}
-            width="0"
-            height="0"
-          />
-        </div>
+        <audio
+          src={currentSong?.url}
+          autoPlay={isPlaying}
+          loop={isLooping}
+          onEnded={playNext}
+        />
       </CardContent>
     </Card>
   );
