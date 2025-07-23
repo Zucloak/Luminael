@@ -5,28 +5,46 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
 
-const songs = [
-  { title: 'Ambient Electronic Music for study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
-  { title: 'Upbeat Energetic Pop Rock', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
-  { title: 'Relaxing Acoustic Guitar', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
+const preInstalledSongs = [
+    { title: 'Ambient Electronic Music for study', url: '/music/SoundHelix-Song-1.mp3' },
+    { title: 'Upbeat Energetic Pop Rock', url: '/music/SoundHelix-Song-2.mp3' },
+    { title: 'Relaxing Acoustic Guitar', url: '/music/SoundHelix-Song-3.mp3' },
 ];
 
 export function MusicPlayer() {
-  const [currentSongIndex, setCurrentSongIndex] = useState(0);
+  const [currentSongIndex, setCurrentSongIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [isShuffled, setIsShuffled] = useState(false);
-  const [playlist, setPlaylist] = useState(songs);
+  const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
+  const [showPreInstalled, setShowPreInstalled] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const currentSong = playlist[currentSongIndex];
 
   useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.error("Playback error:", e));
+      } else {
+        audioRef.current.pause();
+      }
+    }
     eventBus.dispatch('music-player-state-change', { isPlaying });
   }, [isPlaying]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.src = currentSong.url;
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.error("Playback error:", e));
+      }
+    }
+  }, [currentSong]);
 
   const handleAddSong = () => {
     if (newSongUrl.trim() !== '') {
@@ -37,6 +55,12 @@ export function MusicPlayer() {
       setPlaylist([...playlist, newSong]);
       setNewSongUrl('');
     }
+  };
+
+  const handleRemoveSong = (index: number) => {
+    const newPlaylist = [...playlist];
+    newPlaylist.splice(index, 1);
+    setPlaylist(newPlaylist);
   };
 
   const togglePlayPause = () => {
@@ -124,6 +148,9 @@ export function MusicPlayer() {
             </Button>
         </div>
         <div className="flex justify-center items-center gap-4">
+            <Button onClick={() => setShowPreInstalled(!showPreInstalled)} variant="ghost" size="icon">
+                <Library className="h-6 w-6" />
+            </Button>
           <Button onClick={toggleShuffle} variant={isShuffled ? "secondary" : "ghost"} size="icon">
             <Shuffle className="h-6 w-6" />
           </Button>
@@ -140,22 +167,45 @@ export function MusicPlayer() {
             <Repeat className="h-6 w-6" />
           </Button>
         </div>
+        {showPreInstalled && (
+            <ScrollArea className="h-40 w-full rounded-md border p-2">
+                <ul>
+                    {preInstalledSongs.map((song, index) => (
+                        <li
+                            key={index}
+                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted`}
+                            onClick={() => {
+                                setPlaylist([...playlist, song]);
+                            }}
+                        >
+                            <span>{song.title}</span>
+                            <Button variant="ghost" size="icon">
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </li>
+                    ))}
+                </ul>
+            </ScrollArea>
+        )}
         <ScrollArea className="h-40 w-full rounded-md border p-2">
           <ul>
             {playlist.map((song, index) => (
               <li
                 key={index}
-                className={`p-2 rounded-md cursor-pointer ${index === currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${index === currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
                 onClick={() => setCurrentSongIndex(index)}
               >
-                {song.title}
+                <span>{song.title}</span>
+                <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(index)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </li>
             ))}
           </ul>
         </ScrollArea>
         <audio
+          ref={audioRef}
           src={currentSong?.url}
-          autoPlay={isPlaying}
           loop={isLooping}
           onEnded={playNext}
         />
