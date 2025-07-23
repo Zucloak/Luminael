@@ -1,9 +1,10 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages } from 'lucide-react';
+import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, Music, Disc } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { eventBus } from '@/lib/event-bus';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,10 +18,24 @@ import { Calculator } from '../tools/Calculator';
 import { GraphCreator } from '../tools/GraphCreator';
 import { Dictionary } from '../tools/Dictionary';
 import { Translator } from '../tools/Translator';
+import { MusicPlayer } from '../tools/MusicPlayer';
 
 export function UtilityToolbar() {
+  const [isPlaying, setIsPlaying] = useState(false);
   const controls = useAnimation();
   const dragControls = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleStateChange = (data: any) => {
+      setIsPlaying(data.isPlaying);
+    };
+
+    eventBus.on('music-player-state-change', handleStateChange);
+
+    return () => {
+      eventBus.off('music-player-state-change', handleStateChange);
+    };
+  }, []);
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const viewportWidth = window.innerWidth;
@@ -53,7 +68,11 @@ export function UtilityToolbar() {
             className="rounded-full h-14 w-14 shadow-xl border flex items-center justify-center"
             aria-label="Open Utility Tools"
           >
-            <Wrench className="h-7 w-7 text-primary" />
+            {isPlaying ? (
+              <Disc className="h-7 w-7 text-primary animate-spin" />
+            ) : (
+              <Wrench className="h-7 w-7 text-primary" />
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
@@ -105,6 +124,18 @@ export function UtilityToolbar() {
             </DialogTrigger>
             <DialogContent className="max-w-xl p-0 border-0">
               <Translator />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Music className="mr-2 h-4 w-4" />
+                <span>Music Player</span>
+              </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent className="max-w-md p-0 border-0">
+              <MusicPlayer />
             </DialogContent>
           </Dialog>
 
