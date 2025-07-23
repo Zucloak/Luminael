@@ -4,7 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat } from 'lucide-react';
+import ReactPlayer from 'react-player/lazy';
+import { Input } from '@/components/ui/input';
+import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
 
 const songs = [
@@ -19,29 +21,25 @@ export function MusicPlayer() {
   const [isLooping, setIsLooping] = useState(false);
   const [isShuffled, setIsShuffled] = useState(false);
   const [playlist, setPlaylist] = useState(songs);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [newSongUrl, setNewSongUrl] = useState('');
+  const playerRef = useRef<ReactPlayer>(null);
 
   const currentSong = playlist[currentSongIndex];
 
   useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Playback error:", e));
-      } else {
-        audioRef.current.pause();
-      }
-    }
     eventBus.dispatch('music-player-state-change', { isPlaying });
-  }, [isPlaying, currentSongIndex]);
+  }, [isPlaying]);
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.src = currentSong.url;
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Playback error:", e));
-      }
+  const handleAddSong = () => {
+    if (newSongUrl.trim() !== '') {
+      const newSong = {
+        title: newSongUrl,
+        url: newSongUrl,
+      };
+      setPlaylist([...playlist, newSong]);
+      setNewSongUrl('');
     }
-  }, [currentSong]);
+  };
 
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying);
@@ -116,6 +114,17 @@ export function MusicPlayer() {
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+            <Input
+                type="text"
+                placeholder="Enter song URL (e.g., YouTube)"
+                value={newSongUrl}
+                onChange={(e) => setNewSongUrl(e.target.value)}
+            />
+            <Button variant="ghost" size="icon" onClick={handleAddSong}>
+                <Plus className="h-6 w-6" />
+            </Button>
+        </div>
         <div className="flex justify-center items-center gap-4">
           <Button onClick={toggleShuffle} variant={isShuffled ? "secondary" : "ghost"} size="icon">
             <Shuffle className="h-6 w-6" />
@@ -146,12 +155,17 @@ export function MusicPlayer() {
             ))}
           </ul>
         </ScrollArea>
-        <audio
-          ref={audioRef}
-          src={currentSong.url}
-          onEnded={playNext}
-          loop={isLooping}
-        />
+        <div className='hidden'>
+            <ReactPlayer
+                ref={playerRef}
+                url={currentSong?.url}
+                playing={isPlaying}
+                loop={isLooping}
+                onEnded={playNext}
+                width="0"
+                height="0"
+            />
+        </div>
       </CardContent>
     </Card>
   );
