@@ -132,7 +132,7 @@ export function MusicPlayer() {
         <div className="text-center">
           <div className="marquee">
             <p className="text-lg font-semibold">
-              {currentSong.title.length > 30 ? <span>{currentSong.title}</span> : currentSong.title}
+              {currentSong ? (currentSong.title.length > 30 ? <span>{currentSong.title}</span> : currentSong.title) : 'No song selected'}
             </p>
           </div>
         </div>
