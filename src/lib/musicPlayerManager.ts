@@ -137,6 +137,9 @@ class MusicPlayerManager {
     }
 
     private saveState() {
+        if (typeof window === 'undefined') {
+            return;
+        }
         try {
             const serializedState = JSON.stringify(this.getState());
             localStorage.setItem('musicPlayerState', serializedState);
@@ -146,6 +149,9 @@ class MusicPlayerManager {
     }
 
     private loadState() {
+        if (typeof window === 'undefined') {
+            return;
+        }
         try {
             const serializedState = localStorage.getItem('musicPlayerState');
             if (serializedState) {
