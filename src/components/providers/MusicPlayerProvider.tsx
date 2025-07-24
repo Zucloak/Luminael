@@ -10,7 +10,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         const handleStateChange = (state: any) => {
-            setPlayerState(state);
+            setPlayerState({ ...state });
         };
         eventBus.on('player-state-change', handleStateChange);
         return () => {
