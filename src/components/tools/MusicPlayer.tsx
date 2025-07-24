@@ -11,7 +11,6 @@ import { eventBus } from '@/lib/event-bus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from '@/components/ui/slider';
 import { savePlayerState, loadPlayerState } from '@/lib/musicPlayerManager';
-import { getMediaTitle } from '@/lib/mediaUtils';
 
 const preInstalledSongs = [
     { title: 'Ambient Electronic Music for study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
@@ -64,11 +63,10 @@ export function MusicPlayer() {
     eventBus.dispatch('music-player-state-change', { isPlaying });
   }, [isPlaying]);
 
-  const handleAddSong = async () => {
+  const handleAddSong = () => {
     if (newSongUrl.trim() !== '') {
-      const title = await getMediaTitle(newSongUrl);
       const newSong = {
-        title: title,
+        title: newSongUrl,
         url: newSongUrl,
       };
       const newPlaylist = [...playlist, newSong];
@@ -287,7 +285,9 @@ export function MusicPlayer() {
           />
         </div>
         <div style={{ display: 'none' }}>
-          {hasWindow && <ReactPlayer
+          {hasWindow &&
+          // @ts-ignore
+          <ReactPlayer
             url={currentSong?.url}
             playing={isPlaying}
             loop={isLooping}
