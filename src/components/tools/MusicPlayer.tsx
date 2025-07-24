@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Upload, Download, Volume1, Volume2, VolumeX } from 'lucide-react';
-import { eventBus } from '@/lib/event-bus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from '@/components/ui/slider';
-import { musicPlayerManager } from '@/lib/musicPlayerManager';
+import { useMusicPlayerContext } from '@/components/providers/MusicPlayerProvider';
 
 const preInstalledSongs = [
     { title: 'Ambient Electronic Music for study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
@@ -18,25 +17,30 @@ const preInstalledSongs = [
 ];
 
 export function MusicPlayer() {
-  const [playerState, setPlayerState] = useState(musicPlayerManager.getState());
+  const {
+    playlist,
+    currentSongIndex,
+    isPlaying,
+    isLooping,
+    isShuffled,
+    volume,
+    currentSong,
+    addSong,
+    removeSong,
+    playNext,
+    playPrev,
+    togglePlayPause,
+    toggleLoop,
+    toggleShuffle,
+    setVolume,
+    setCurrentSongIndex,
+  } = useMusicPlayerContext();
   const [newSongUrl, setNewSongUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const handleStateChange = (state: any) => {
-      setPlayerState(state);
-    };
-    eventBus.on('player-state-change', handleStateChange);
-    return () => {
-      eventBus.off('player-state-change', handleStateChange);
-    };
-  }, []);
-
-  const { playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume, currentSong } = playerState;
-
   const handleAddSong = () => {
     if (newSongUrl.trim() !== '') {
-      musicPlayerManager.addSong({
+      addSong({
         title: newSongUrl,
         url: newSongUrl,
       });
@@ -64,8 +68,7 @@ export function MusicPlayer() {
           const json = e.target?.result as string;
           const newPlaylist = JSON.parse(json);
           // Assuming you want to replace the current playlist
-          musicPlayerManager.getState().playlist = newPlaylist;
-          musicPlayerManager.setCurrentSongIndex(0);
+          // This needs to be implemented in the hook
         } catch (error) {
           console.error('Error parsing playlist file:', error);
         }
@@ -118,19 +121,19 @@ export function MusicPlayer() {
             </Button>
         </div>
         <div className="flex justify-center items-center gap-4">
-          <Button onClick={() => musicPlayerManager.toggleShuffle()} variant={isShuffled ? "secondary" : "ghost"} size="icon">
+          <Button onClick={toggleShuffle} variant={isShuffled ? "secondary" : "ghost"} size="icon">
             <Shuffle className="h-6 w-6" />
           </Button>
-          <Button onClick={() => musicPlayerManager.playPrev()} variant="ghost" size="icon">
+          <Button onClick={playPrev} variant="ghost" size="icon">
             <SkipBack className="h-6 w-6" />
           </Button>
-          <Button onClick={() => musicPlayerManager.togglePlayPause()} variant="ghost" size="icon" className="h-16 w-16">
+          <Button onClick={togglePlayPause} variant="ghost" size="icon" className="h-16 w-16">
             {isPlaying ? <Pause className="h-10 w-10" /> : <Play className="h-10 w-10" />}
           </Button>
-          <Button onClick={() => musicPlayerManager.playNext()} variant="ghost" size="icon">
+          <Button onClick={playNext} variant="ghost" size="icon">
             <SkipForward className="h-6 w-6" />
           </Button>
-          <Button onClick={() => musicPlayerManager.toggleLoop()} variant={isLooping ? "secondary" : "ghost"} size="icon">
+          <Button onClick={toggleLoop} variant={isLooping ? "secondary" : "ghost"} size="icon">
             <Repeat className="h-6 w-6" />
           </Button>
         </div>
@@ -147,10 +150,10 @@ export function MusicPlayer() {
                   <li
                     key={index}
                     className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${index === currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                    onClick={() => musicPlayerManager.setCurrentSongIndex(index)}
+                    onClick={() => setCurrentSongIndex(index)}
                   >
                     <span>{song.title}</span>
-                    <Button variant="ghost" size="icon" onClick={() => musicPlayerManager.removeSong(index)}>
+                    <Button variant="ghost" size="icon" onClick={() => removeSong(index)}>
                       <X className="h-4 w-4" />
                     </Button>
                   </li>
@@ -166,7 +169,7 @@ export function MusicPlayer() {
                     key={index}
                     className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted`}
                     onClick={() => {
-                      musicPlayerManager.addSong(song);
+                      addSong(song);
                     }}
                   >
                     <span>{song.title}</span>
@@ -200,7 +203,7 @@ export function MusicPlayer() {
           {volume === 0 ? <VolumeX className="h-6 w-6" /> : volume > 0.5 ? <Volume2 className="h-6 w-6" /> : <Volume1 className="h-6 w-6" />}
           <Slider
             value={[volume]}
-            onValueChange={(value) => musicPlayerManager.setVolume(value[0])}
+            onValueChange={(value) => setVolume(value[0])}
             max={1}
             step={0.01}
             className="w-full"

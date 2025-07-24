@@ -35,15 +35,15 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
       </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
-        <AppProviders>
-          <MusicPlayerProvider>
+        <MusicPlayerProvider>
+          <AppProviders>
             <Header />
             <MainContent>
               {children}
             </MainContent>
             <ConditionalUtilityToolbar />
-          </MusicPlayerProvider>
-        </AppProviders>
+          </AppProviders>
+        </MusicPlayerProvider>
         <Toaster />
       </body>
     </html>
