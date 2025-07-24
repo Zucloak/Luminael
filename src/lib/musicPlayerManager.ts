@@ -64,11 +64,18 @@ class MusicPlayerManager {
         eventBus.dispatch('player-state-change', this.getState());
     }
 
+    private isTogglingPlayPause = false;
+
     public togglePlayPause() {
+        if (this.isTogglingPlayPause) {
+            return;
+        }
+        this.isTogglingPlayPause = true;
+        this.isPlaying = !this.isPlaying;
+        this.saveState();
+        eventBus.dispatch('player-state-change', this.getState());
         setTimeout(() => {
-            this.isPlaying = !this.isPlaying;
-            this.saveState();
-            eventBus.dispatch('player-state-change', this.getState());
+            this.isTogglingPlayPause = false;
         }, 100);
     }
 
