@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import ReactPlayer from 'react-player';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library, Upload, Download } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from '@/hooks/use-toast';
 
 const preInstalledSongs = [
     { title: 'Ambient Electronic Music for study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
@@ -24,34 +24,19 @@ export function MusicPlayer() {
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const [hasWindow, setHasWindow] = useState(false);
 
   const currentSong = playlist[currentSongIndex];
 
   useEffect(() => {
-    eventBus.dispatch('music-player-state-change', { isPlaying });
-  }, [isPlaying]);
+    if (typeof window !== "undefined") {
+      setHasWindow(true);
+    }
+  }, []);
 
   useEffect(() => {
-    if (audioRef.current && currentSong) {
-      if (isPlaying) {
-        audioRef.current.play().catch(error => {
-          console.error("Error playing audio:", error);
-          if (audioContextRef.current?.state === 'suspended') {
-            toast({
-              title: "Audio Blocked",
-              description: "Please enable audio in your browser to play music.",
-              variant: "destructive",
-            });
-          }
-        });
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isPlaying, currentSong]);
+    eventBus.dispatch('music-player-state-change', { isPlaying });
+  }, [isPlaying]);
 
   const handleAddSong = () => {
     if (newSongUrl.trim() !== '') {
@@ -98,24 +83,7 @@ export function MusicPlayer() {
     setPlaylist(newPlaylist);
   };
 
-  const createAudioContext = () => {
-    if (!audioContextRef.current) {
-      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
-      audioContextRef.current = context;
-      if (audioRef.current) {
-        if (!sourceRef.current) {
-          sourceRef.current = context.createMediaElementSource(audioRef.current);
-          sourceRef.current.connect(context.destination);
-        }
-      }
-    }
-  };
-
   const togglePlayPause = () => {
-    createAudioContext();
-    if (audioContextRef.current?.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
     setIsPlaying(!isPlaying);
   };
 
@@ -278,13 +246,16 @@ export function MusicPlayer() {
             </div>
           </TabsContent>
         </Tabs>
-        <audio
-          ref={audioRef}
-          src={currentSong?.url}
-          loop={isLooping}
-          onEnded={playNext}
-          crossOrigin="anonymous"
-        />
+        <div style={{ display: 'none' }}>
+          {hasWindow && <ReactPlayer
+            url={currentSong?.url}
+            playing={isPlaying}
+            loop={isLooping}
+            onEnded={playNext}
+            width="0"
+            height="0"
+          />}
+        </div>
       </CardContent>
     </Card>
   );

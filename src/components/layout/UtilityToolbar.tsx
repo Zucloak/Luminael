@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Calculator } from '../tools/Calculator';
 import { GraphCreator } from '../tools/GraphCreator';
 import { Dictionary } from '../tools/Dictionary';
@@ -87,6 +87,10 @@ export function UtilityToolbar() {
               </DropdownMenuItem>
             </DialogTrigger>
             <DialogContent className="max-w-2xl p-0 border-0">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Graph Creator</DialogTitle>
+                <DialogDescription>Create and customize graphs.</DialogDescription>
+              </DialogHeader>
               <GraphCreator />
             </DialogContent>
           </Dialog>
@@ -99,6 +103,10 @@ export function UtilityToolbar() {
               </DropdownMenuItem>
             </DialogTrigger>
             <DialogContent className="max-w-sm p-0 border-0">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Calculator</DialogTitle>
+                <DialogDescription>A simple calculator.</DialogDescription>
+              </DialogHeader>
               <Calculator />
             </DialogContent>
           </Dialog>
@@ -111,6 +119,10 @@ export function UtilityToolbar() {
               </DropdownMenuItem>
             </DialogTrigger>
             <DialogContent className="max-w-lg p-0 border-0">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Dictionary</DialogTitle>
+                <DialogDescription>Look up word definitions.</DialogDescription>
+              </DialogHeader>
               <Dictionary />
             </DialogContent>
           </Dialog>
@@ -123,6 +135,10 @@ export function UtilityToolbar() {
               </DropdownMenuItem>
             </DialogTrigger>
             <DialogContent className="max-w-xl p-0 border-0">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Translator</DialogTitle>
+                <DialogDescription>Translate text between languages.</DialogDescription>
+              </DialogHeader>
               <Translator />
             </DialogContent>
           </Dialog>
@@ -135,6 +151,10 @@ export function UtilityToolbar() {
               </DropdownMenuItem>
             </DialogTrigger>
             <DialogContent className="max-w-md p-0 border-0">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Music Player</DialogTitle>
+                <DialogDescription>Play music from YouTube and other sources.</DialogDescription>
+              </DialogHeader>
               <MusicPlayer />
             </DialogContent>
           </Dialog>
