@@ -27,13 +27,16 @@ export function MusicPlayer() {
   const [newSongUrl, setNewSongUrl] = useState('');
   const [volume, setVolume] = useState(0.8);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [hasWindow, setHasWindow] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const currentSong = playlist[currentSongIndex];
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setHasWindow(true);
       const savedState = loadPlayerState();
       if (savedState) {
         setPlaylist(savedState.playlist || []);
@@ -47,7 +50,7 @@ export function MusicPlayer() {
   }, []);
 
   useEffect(() => {
-    if (hasWindow) {
+    if (typeof window !== "undefined") {
       savePlayerState({
         playlist,
         currentSongIndex,
@@ -57,7 +60,7 @@ export function MusicPlayer() {
         volume,
       });
     }
-  }, [playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume, hasWindow]);
+  }, [playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume]);
 
   useEffect(() => {
     eventBus.dispatch('music-player-state-change', { isPlaying });
@@ -285,7 +288,7 @@ export function MusicPlayer() {
           />
         </div>
         <div style={{ display: 'none' }}>
-          {hasWindow && <ReactPlayer
+          {isClient && <ReactPlayer
             {...{
               url: currentSong?.url,
               playing: isPlaying,
