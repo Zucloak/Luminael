@@ -248,7 +248,7 @@ export function MusicPlayer() {
         </Tabs>
         <div style={{ display: 'none' }}>
           {hasWindow && <ReactPlayer
-            url={currentSong?.url}
+            src={currentSong?.url}
             playing={isPlaying}
             loop={isLooping}
             onEnded={playNext}
