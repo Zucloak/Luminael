@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library, Upload, Download } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library, Upload, Download, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from '@/components/ui/slider';
+import { savePlayerState, loadPlayerState } from '@/lib/musicPlayerManager';
+import { getMediaTitle } from '@/lib/mediaUtils';
 
 const preInstalledSongs = [
     { title: 'Ambient Electronic Music for study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
@@ -23,6 +26,7 @@ export function MusicPlayer() {
   const [isShuffled, setIsShuffled] = useState(false);
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
+  const [volume, setVolume] = useState(0.8);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasWindow, setHasWindow] = useState(false);
 
@@ -31,20 +35,46 @@ export function MusicPlayer() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       setHasWindow(true);
+      const savedState = loadPlayerState();
+      if (savedState) {
+        setPlaylist(savedState.playlist || []);
+        setCurrentSongIndex(savedState.currentSongIndex || -1);
+        setIsPlaying(savedState.isPlaying || false);
+        setIsLooping(savedState.isLooping || false);
+        setIsShuffled(savedState.isShuffled || false);
+        setVolume(savedState.volume || 0.8);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (hasWindow) {
+      savePlayerState({
+        playlist,
+        currentSongIndex,
+        isPlaying,
+        isLooping,
+        isShuffled,
+        volume,
+      });
+    }
+  }, [playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume, hasWindow]);
 
   useEffect(() => {
     eventBus.dispatch('music-player-state-change', { isPlaying });
   }, [isPlaying]);
 
-  const handleAddSong = () => {
+  const handleAddSong = async () => {
     if (newSongUrl.trim() !== '') {
+      const title = await getMediaTitle(newSongUrl);
       const newSong = {
-        title: newSongUrl,
+        title: title,
         url: newSongUrl,
       };
-      setPlaylist([...playlist, newSong]);
+      const newPlaylist = [...playlist, newSong];
+      setPlaylist(newPlaylist);
+      setCurrentSongIndex(newPlaylist.length - 1);
+      setIsPlaying(true);
       setNewSongUrl('');
     }
   };
@@ -246,11 +276,22 @@ export function MusicPlayer() {
             </div>
           </TabsContent>
         </Tabs>
+        <div className="flex items-center gap-2">
+          {volume === 0 ? <VolumeX className="h-6 w-6" /> : volume > 0.5 ? <Volume2 className="h-6 w-6" /> : <Volume1 className="h-6 w-6" />}
+          <Slider
+            value={[volume]}
+            onValueChange={(value) => setVolume(value[0])}
+            max={1}
+            step={0.01}
+            className="w-full"
+          />
+        </div>
         <div style={{ display: 'none' }}>
           {hasWindow && <ReactPlayer
-            src={currentSong?.url}
+            url={currentSong?.url}
             playing={isPlaying}
             loop={isLooping}
+            volume={volume}
             onEnded={playNext}
             width="0"
             height="0"
