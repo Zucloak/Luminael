@@ -26,12 +26,13 @@ export function MusicPlayer() {
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
   const [volume, setVolume] = useState(0.8);
-  const playerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isClient, setIsClient] = useState(false);
+  const [hasWindow, setHasWindow] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
+    if (typeof window !== "undefined") {
+      setHasWindow(true);
+    }
   }, []);
 
   const currentSong = playlist[currentSongIndex];
@@ -289,22 +290,15 @@ export function MusicPlayer() {
           />
         </div>
         <div style={{ display: 'none' }}>
-          {isClient && <ReactPlayer
-            {...{
-              ref: playerRef,
-              url: currentSong?.url,
-              playing: isPlaying,
-              loop: isLooping,
-              volume: volume,
-              onEnded: playNext,
-              onReady: () => {
-                if (isPlaying) {
-                  playerRef.current?.getInternalPlayer()?.play();
-                }
-              },
-              width: "0",
-              height: "0"
-            } as any}
+          {hasWindow && <ReactPlayer
+            key={currentSongIndex}
+            url={currentSong?.url}
+            playing={isPlaying}
+            loop={isLooping}
+            volume={volume}
+            onEnded={playNext}
+            width="0"
+            height="0"
           />}
         </div>
       </CardContent>
