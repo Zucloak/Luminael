@@ -26,7 +26,7 @@ export function MusicPlayer() {
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
   const [volume, setVolume] = useState(0.8);
-  const playerRef = useRef<typeof ReactPlayer>(null);
+  const playerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isClient, setIsClient] = useState(false);
 
