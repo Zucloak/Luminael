@@ -29,7 +29,24 @@ export async function GET(request: Request) {
     }
 
 
-    return new NextResponse(response.body, {
+    const readableStream = new ReadableStream({
+      start(controller) {
+        const reader = response.body!.getReader();
+        function pump() {
+          reader.read().then(({ done, value }) => {
+            if (done) {
+              controller.close();
+              return;
+            }
+            controller.enqueue(value);
+            pump();
+          });
+        }
+        pump();
+      },
+    });
+
+    return new NextResponse(readableStream, {
       status: response.status,
       statusText: response.statusText,
       headers,

@@ -71,12 +71,7 @@ export const useMusicPlayer = () => {
         setIsPlaying(true);
     };
 
-    const [hasInteracted, setHasInteracted] = useState(false);
-
     const togglePlayPause = () => {
-        if (!hasInteracted) {
-            setHasInteracted(true);
-        }
         setIsPlaying(!isPlaying);
     };
 
@@ -105,7 +100,6 @@ export const useMusicPlayer = () => {
         isShuffled,
         volume,
         currentSong: playlist[currentSongIndex],
-        hasInteracted,
         addSong,
         removeSong,
         playNext,

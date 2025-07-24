@@ -10,20 +10,12 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     const musicPlayer = useMusicPlayer();
     const [error, setError] = useState<string | null>(null);
 
-    const handlePlay = () => {
-        setError(null);
-    };
-
     const handleError = (e: any) => {
         console.error("Playback Error:", e);
         setError("Error during playback. Please check the console for details.");
     };
 
-    const isPreinstalled = musicPlayer.currentSong && musicPlayer.currentSong.url.includes('soundhelix.com');
-
-    const urlToPlay = isPreinstalled
-        ? musicPlayer.currentSong?.url
-        : musicPlayer.currentSong ? `/api/audio?url=${encodeURIComponent(musicPlayer.currentSong.url)}` : undefined;
+    const urlToPlay = musicPlayer.currentSong ? `/api/audio?url=${encodeURIComponent(musicPlayer.currentSong.url)}` : undefined;
 
     return (
         <MusicPlayerContext.Provider value={musicPlayer}>
@@ -32,11 +24,10 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
             <div style={{ display: 'none' }}>
                 <ReactPlayer
                     url={urlToPlay}
-                    playing={musicPlayer.isPlaying && musicPlayer.hasInteracted}
+                    playing={musicPlayer.isPlaying}
                     loop={musicPlayer.isLooping}
                     volume={musicPlayer.volume}
                     onEnded={musicPlayer.playNext}
-                    onPlay={handlePlay}
                     onError={handleError}
                     playsinline
                     width="0"
