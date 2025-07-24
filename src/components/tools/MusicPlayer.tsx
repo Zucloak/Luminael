@@ -285,16 +285,16 @@ export function MusicPlayer() {
           />
         </div>
         <div style={{ display: 'none' }}>
-          {hasWindow &&
-          // @ts-ignore
-          <ReactPlayer
-            url={currentSong?.url}
-            playing={isPlaying}
-            loop={isLooping}
-            volume={volume}
-            onEnded={playNext}
-            width="0"
-            height="0"
+          {hasWindow && <ReactPlayer
+            {...{
+              url: currentSong?.url,
+              playing: isPlaying,
+              loop: isLooping,
+              volume: volume,
+              onEnded: playNext,
+              width: "0",
+              height: "0"
+            } as any}
           />}
         </div>
       </CardContent>
