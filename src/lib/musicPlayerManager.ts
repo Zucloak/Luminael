@@ -65,9 +65,11 @@ class MusicPlayerManager {
     }
 
     public togglePlayPause() {
-        this.isPlaying = !this.isPlaying;
-        this.saveState();
-        eventBus.dispatch('player-state-change', this.getState());
+        setTimeout(() => {
+            this.isPlaying = !this.isPlaying;
+            this.saveState();
+            eventBus.dispatch('player-state-change', this.getState());
+        }, 100);
     }
 
     public toggleLoop() {
