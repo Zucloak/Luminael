@@ -26,6 +26,7 @@ export function MusicPlayer() {
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
   const [volume, setVolume] = useState(0.8);
+  const playerRef = useRef<ReactPlayer>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -289,15 +290,19 @@ export function MusicPlayer() {
         </div>
         <div style={{ display: 'none' }}>
           {isClient && <ReactPlayer
-            {...{
-              url: currentSong?.url,
-              playing: isPlaying,
-              loop: isLooping,
-              volume: volume,
-              onEnded: playNext,
-              width: "0",
-              height: "0"
-            } as any}
+            ref={playerRef}
+            url={currentSong?.url}
+            playing={isPlaying}
+            loop={isLooping}
+            volume={volume}
+            onEnded={playNext}
+            onReady={() => {
+              if (isPlaying) {
+                playerRef.current?.getInternalPlayer()?.play();
+              }
+            }}
+            width="0"
+            height="0"
           />}
         </div>
       </CardContent>
