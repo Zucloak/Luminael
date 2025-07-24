@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       return new NextResponse('Failed to fetch audio', { status: response.status });
     }
 
-    const headers = new Headers();
+    const headers = new Headers(response.headers);
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     } else if (fileExtension === 'ogg') {
         headers.set('Content-Type', 'audio/ogg');
     }
+
 
     return new NextResponse(response.body, {
       status: response.status,
