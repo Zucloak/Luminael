@@ -292,7 +292,7 @@ export function MusicPlayer() {
         <div style={{ display: 'none' }}>
           {hasWindow && <ReactPlayer
             key={currentSongIndex}
-            url={currentSong?.url}
+            src={currentSong?.url}
             playing={isPlaying}
             loop={isLooping}
             volume={volume}
