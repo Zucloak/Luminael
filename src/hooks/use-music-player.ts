@@ -72,7 +72,9 @@ export const useMusicPlayer = () => {
     };
 
     const togglePlayPause = () => {
-        setIsPlaying(!isPlaying);
+        if (playlist.length > 0) {
+            setIsPlaying(!isPlaying);
+        }
     };
 
     const toggleLoop = () => {
