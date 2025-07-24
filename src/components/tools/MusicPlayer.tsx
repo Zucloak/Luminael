@@ -1,16 +1,15 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import ReactPlayer from 'react-player';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library, Upload, Download, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Upload, Download, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from '@/components/ui/slider';
-import { savePlayerState, loadPlayerState } from '@/lib/musicPlayerManager';
+import { musicPlayerManager } from '@/lib/musicPlayerManager';
 
 const preInstalledSongs = [
     { title: 'Ambient Electronic Music for study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
@@ -19,65 +18,28 @@ const preInstalledSongs = [
 ];
 
 export function MusicPlayer() {
-  const [currentSongIndex, setCurrentSongIndex] = useState(-1);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLooping, setIsLooping] = useState(false);
-  const [isShuffled, setIsShuffled] = useState(false);
-  const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
+  const [playerState, setPlayerState] = useState(musicPlayerManager.getState());
   const [newSongUrl, setNewSongUrl] = useState('');
-  const [volume, setVolume] = useState(0.8);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [hasWindow, setHasWindow] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setHasWindow(true);
-    }
+    const handleStateChange = (state: any) => {
+      setPlayerState(state);
+    };
+    eventBus.subscribe('player-state-change', handleStateChange);
+    return () => {
+      eventBus.unsubscribe('player-state-change', handleStateChange);
+    };
   }, []);
 
-  const currentSong = playlist[currentSongIndex];
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedState = loadPlayerState();
-      if (savedState) {
-        setPlaylist(savedState.playlist || []);
-        setCurrentSongIndex(savedState.currentSongIndex || -1);
-        setIsPlaying(savedState.isPlaying || false);
-        setIsLooping(savedState.isLooping || false);
-        setIsShuffled(savedState.isShuffled || false);
-        setVolume(savedState.volume || 0.8);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      savePlayerState({
-        playlist,
-        currentSongIndex,
-        isPlaying,
-        isLooping,
-        isShuffled,
-        volume,
-      });
-    }
-  }, [playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume]);
-
-  useEffect(() => {
-    eventBus.dispatch('music-player-state-change', { isPlaying });
-  }, [isPlaying]);
+  const { playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume, currentSong } = playerState;
 
   const handleAddSong = () => {
     if (newSongUrl.trim() !== '') {
-      const newSong = {
+      musicPlayerManager.addSong({
         title: newSongUrl,
         url: newSongUrl,
-      };
-      const newPlaylist = [...playlist, newSong];
-      setPlaylist(newPlaylist);
-      setCurrentSongIndex(newPlaylist.length - 1);
-      setIsPlaying(true);
+      });
       setNewSongUrl('');
     }
   };
@@ -101,59 +63,14 @@ export function MusicPlayer() {
         try {
           const json = e.target?.result as string;
           const newPlaylist = JSON.parse(json);
-          setPlaylist(newPlaylist);
+          // Assuming you want to replace the current playlist
+          musicPlayerManager.getState().playlist = newPlaylist;
+          musicPlayerManager.setCurrentSongIndex(0);
         } catch (error) {
           console.error('Error parsing playlist file:', error);
         }
       };
       reader.readAsText(file);
-    }
-  };
-
-  const handleRemoveSong = (index: number) => {
-    const newPlaylist = [...playlist];
-    newPlaylist.splice(index, 1);
-    setPlaylist(newPlaylist);
-  };
-
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const playNext = () => {
-    setCurrentSongIndex((prevIndex) => (prevIndex + 1) % playlist.length);
-  };
-
-  const playPrev = () => {
-    setCurrentSongIndex((prevIndex) => (prevIndex - 1 + playlist.length) % playlist.length);
-  };
-
-  const toggleLoop = () => {
-    setIsLooping(!isLooping);
-  };
-
-  const toggleShuffle = () => {
-    const newIsShuffled = !isShuffled;
-    setIsShuffled(newIsShuffled);
-
-    if (newIsShuffled) {
-      // Shuffle the playlist, but keep the current song at the top
-      const newPlaylist = [...playlist];
-      const currentSong = newPlaylist.splice(currentSongIndex, 1)[0];
-      for (let i = newPlaylist.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newPlaylist[i], newPlaylist[j]] = [newPlaylist[j], newPlaylist[i]];
-      }
-      newPlaylist.unshift(currentSong);
-      setPlaylist(newPlaylist);
-      setCurrentSongIndex(0);
-    } else {
-      // Restore the original order
-      const originalPlaylist = [...preInstalledSongs];
-      const currentSongTitle = playlist[currentSongIndex].title;
-      const originalIndex = originalPlaylist.findIndex(song => song.title === currentSongTitle);
-      setPlaylist(originalPlaylist);
-      setCurrentSongIndex(originalIndex);
     }
   };
 
@@ -201,19 +118,19 @@ export function MusicPlayer() {
             </Button>
         </div>
         <div className="flex justify-center items-center gap-4">
-          <Button onClick={toggleShuffle} variant={isShuffled ? "secondary" : "ghost"} size="icon">
+          <Button onClick={() => musicPlayerManager.toggleShuffle()} variant={isShuffled ? "secondary" : "ghost"} size="icon">
             <Shuffle className="h-6 w-6" />
           </Button>
-          <Button onClick={playPrev} variant="ghost" size="icon">
+          <Button onClick={() => musicPlayerManager.playPrev()} variant="ghost" size="icon">
             <SkipBack className="h-6 w-6" />
           </Button>
-          <Button onClick={togglePlayPause} variant="ghost" size="icon" className="h-16 w-16">
+          <Button onClick={() => musicPlayerManager.togglePlayPause()} variant="ghost" size="icon" className="h-16 w-16">
             {isPlaying ? <Pause className="h-10 w-10" /> : <Play className="h-10 w-10" />}
           </Button>
-          <Button onClick={playNext} variant="ghost" size="icon">
+          <Button onClick={() => musicPlayerManager.playNext()} variant="ghost" size="icon">
             <SkipForward className="h-6 w-6" />
           </Button>
-          <Button onClick={toggleLoop} variant={isLooping ? "secondary" : "ghost"} size="icon">
+          <Button onClick={() => musicPlayerManager.toggleLoop()} variant={isLooping ? "secondary" : "ghost"} size="icon">
             <Repeat className="h-6 w-6" />
           </Button>
         </div>
@@ -230,10 +147,10 @@ export function MusicPlayer() {
                   <li
                     key={index}
                     className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${index === currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                    onClick={() => setCurrentSongIndex(index)}
+                    onClick={() => musicPlayerManager.setCurrentSongIndex(index)}
                   >
                     <span>{song.title}</span>
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(index)}>
+                    <Button variant="ghost" size="icon" onClick={() => musicPlayerManager.removeSong(index)}>
                       <X className="h-4 w-4" />
                     </Button>
                   </li>
@@ -249,7 +166,7 @@ export function MusicPlayer() {
                     key={index}
                     className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted`}
                     onClick={() => {
-                      setPlaylist([...playlist, song]);
+                      musicPlayerManager.addSong(song);
                     }}
                   >
                     <span>{song.title}</span>
@@ -283,23 +200,11 @@ export function MusicPlayer() {
           {volume === 0 ? <VolumeX className="h-6 w-6" /> : volume > 0.5 ? <Volume2 className="h-6 w-6" /> : <Volume1 className="h-6 w-6" />}
           <Slider
             value={[volume]}
-            onValueChange={(value) => setVolume(value[0])}
+            onValueChange={(value) => musicPlayerManager.setVolume(value[0])}
             max={1}
             step={0.01}
             className="w-full"
           />
-        </div>
-        <div style={{ display: 'none' }}>
-          {hasWindow && <ReactPlayer
-            key={currentSongIndex}
-            src={currentSong?.url}
-            playing={isPlaying}
-            loop={isLooping}
-            volume={volume}
-            onEnded={playNext}
-            width="0"
-            height="0"
-          />}
         </div>
       </CardContent>
     </Card>

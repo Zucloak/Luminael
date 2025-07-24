@@ -8,6 +8,7 @@ import { AppProviders } from '@/components/providers/AppProviders';
 import { Header } from '@/components/layout/Header';
 import { MainContent } from '@/components/layout/MainContent';
 import { ConditionalUtilityToolbar } from '@/components/layout/ConditionalUtilityToolbar';
+import { MusicPlayerProvider } from '@/components/providers/MusicPlayerProvider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -35,11 +36,13 @@ export default function RootLayout({
       </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
         <AppProviders>
-          <Header />
-          <MainContent>
-            {children}
-          </MainContent>
-          <ConditionalUtilityToolbar />
+          <MusicPlayerProvider>
+            <Header />
+            <MainContent>
+              {children}
+            </MainContent>
+            <ConditionalUtilityToolbar />
+          </MusicPlayerProvider>
         </AppProviders>
         <Toaster />
       </body>
