@@ -8,13 +8,10 @@ const MusicPlayerContext = createContext<ReturnType<typeof useMusicPlayer> | nul
 
 export const MusicPlayerProvider = ({ children }: { children: React.ReactNode }) => {
     const musicPlayer = useMusicPlayer();
-    const [hasInteracted, setHasInteracted] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const handlePlay = () => {
-        if (!hasInteracted) {
-            setHasInteracted(true);
-        }
+        console.log("Audio playback started.");
         setError(null);
     };
 
@@ -32,7 +29,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
             <div style={{ display: 'none' }}>
                 <ReactPlayer
                     url={proxiedUrl}
-                    playing={musicPlayer.isPlaying && hasInteracted}
+                    playing={musicPlayer.isPlaying}
                     loop={musicPlayer.isLooping}
                     volume={musicPlayer.volume}
                     onEnded={musicPlayer.playNext}
