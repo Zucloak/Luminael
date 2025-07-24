@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Library, Upload, Download } from 'lucide-react';
 import { eventBus } from '@/lib/event-bus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from '@/hooks/use-toast';
 
 const preInstalledSongs = [
-    { title: 'Ambient Electronic Music for study', url: '/music/SoundHelix-Song-1.mp3' },
-    { title: 'Upbeat Energetic Pop Rock', url: '/music/SoundHelix-Song-2.mp3' },
-    { title: 'Relaxing Acoustic Guitar', url: '/music/SoundHelix-Song-3.mp3' },
+    { title: 'Ambient Electronic Music for study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+    { title: 'Upbeat Energetic Pop Rock', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+    { title: 'Relaxing Acoustic Guitar', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
 ];
 
 export function MusicPlayer() {
@@ -23,12 +24,34 @@ export function MusicPlayer() {
   const [playlist, setPlaylist] = useState<{title: string, url: string}[]>([]);
   const [newSongUrl, setNewSongUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
 
   const currentSong = playlist[currentSongIndex];
 
   useEffect(() => {
     eventBus.dispatch('music-player-state-change', { isPlaying });
   }, [isPlaying]);
+
+  useEffect(() => {
+    if (audioRef.current && currentSong) {
+      if (isPlaying) {
+        audioRef.current.play().catch(error => {
+          console.error("Error playing audio:", error);
+          if (audioContextRef.current?.state === 'suspended') {
+            toast({
+              title: "Audio Blocked",
+              description: "Please enable audio in your browser to play music.",
+              variant: "destructive",
+            });
+          }
+        });
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying, currentSong]);
 
   const handleAddSong = () => {
     if (newSongUrl.trim() !== '') {
@@ -75,7 +98,24 @@ export function MusicPlayer() {
     setPlaylist(newPlaylist);
   };
 
+  const createAudioContext = () => {
+    if (!audioContextRef.current) {
+      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = context;
+      if (audioRef.current) {
+        if (!sourceRef.current) {
+          sourceRef.current = context.createMediaElementSource(audioRef.current);
+          sourceRef.current.connect(context.destination);
+        }
+      }
+    }
+  };
+
   const togglePlayPause = () => {
+    createAudioContext();
+    if (audioContextRef.current?.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
     setIsPlaying(!isPlaying);
   };
 
@@ -239,10 +279,11 @@ export function MusicPlayer() {
           </TabsContent>
         </Tabs>
         <audio
+          ref={audioRef}
           src={currentSong?.url}
-          autoPlay={isPlaying}
           loop={isLooping}
           onEnded={playNext}
+          crossOrigin="anonymous"
         />
       </CardContent>
     </Card>
