@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import ReactPlayer from 'react-player';
 import { musicPlayerManager } from '@/lib/musicPlayerManager';
 import { eventBus } from '@/lib/event-bus';
 
@@ -18,22 +17,5 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         };
     }, []);
 
-    const { currentSong, isPlaying, isLooping, volume } = playerState;
-
-    return (
-        <>
-            {children}
-            <div style={{ display: 'none' }}>
-                <ReactPlayer
-                    url={currentSong?.url}
-                    playing={isPlaying}
-                    loop={isLooping}
-                    volume={volume}
-                    onEnded={() => musicPlayerManager.playNext()}
-                    width="0"
-                    height="0"
-                />
-            </div>
-        </>
-    );
+    return <>{children}</>;
 }

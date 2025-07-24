@@ -26,9 +26,9 @@ export function MusicPlayer() {
     const handleStateChange = (state: any) => {
       setPlayerState(state);
     };
-    eventBus.subscribe('player-state-change', handleStateChange);
+    eventBus.on('player-state-change', handleStateChange);
     return () => {
-      eventBus.unsubscribe('player-state-change', handleStateChange);
+      eventBus.off('player-state-change', handleStateChange);
     };
   }, []);
 

@@ -1,3 +1,4 @@
+import { Howl } from 'howler';
 import { eventBus } from './event-bus';
 
 class MusicPlayerManager {
@@ -8,6 +9,7 @@ class MusicPlayerManager {
     private isLooping: boolean = false;
     private isShuffled: boolean = false;
     private volume: number = 0.8;
+    private sound: Howl | null = null;
 
     private constructor() {
         this.loadState();
@@ -24,7 +26,7 @@ class MusicPlayerManager {
         this.playlist.push(song);
         if (!this.isPlaying) {
             this.currentSongIndex = this.playlist.length - 1;
-            this.isPlaying = true;
+            this.play();
         }
         this.saveState();
         eventBus.dispatch('playlist-change', this.playlist);
@@ -37,8 +39,10 @@ class MusicPlayerManager {
             if (this.playlist.length === 0) {
                 this.currentSongIndex = -1;
                 this.isPlaying = false;
+                this.sound?.stop();
             } else if (this.currentSongIndex >= this.playlist.length) {
                 this.currentSongIndex = 0;
+                this.play();
             }
         }
         this.saveState();
@@ -52,19 +56,20 @@ class MusicPlayerManager {
         } else {
             this.currentSongIndex = (this.currentSongIndex + 1) % this.playlist.length;
         }
-        this.isPlaying = true;
-        this.saveState();
-        eventBus.dispatch('player-state-change', this.getState());
+        this.play();
     }
 
     public playPrev() {
         this.currentSongIndex = (this.currentSongIndex - 1 + this.playlist.length) % this.playlist.length;
-        this.isPlaying = true;
-        this.saveState();
-        eventBus.dispatch('player-state-change', this.getState());
+        this.play();
     }
 
     public togglePlayPause() {
+        if (this.isPlaying) {
+            this.sound?.pause();
+        } else {
+            this.sound?.play();
+        }
         this.isPlaying = !this.isPlaying;
         this.saveState();
         eventBus.dispatch('player-state-change', this.getState());
@@ -72,6 +77,7 @@ class MusicPlayerManager {
 
     public toggleLoop() {
         this.isLooping = !this.isLooping;
+        this.sound?.loop(this.isLooping);
         this.saveState();
         eventBus.dispatch('player-state-change', this.getState());
     }
@@ -84,15 +90,14 @@ class MusicPlayerManager {
 
     public setVolume(volume: number) {
         this.volume = volume;
+        this.sound?.volume(volume);
         this.saveState();
         eventBus.dispatch('player-state-change', this.getState());
     }
 
     public setCurrentSongIndex(index: number) {
         this.currentSongIndex = index;
-        this.isPlaying = true;
-        this.saveState();
-        eventBus.dispatch('player-state-change', this.getState());
+        this.play();
     }
 
     public getState() {
@@ -105,6 +110,30 @@ class MusicPlayerManager {
             volume: this.volume,
             currentSong: this.playlist[this.currentSongIndex],
         };
+    }
+
+    private play() {
+        if (this.sound) {
+            this.sound.unload();
+        }
+        const song = this.playlist[this.currentSongIndex];
+        if (song) {
+            this.sound = new Howl({
+                src: [song.url],
+                html5: true,
+                volume: this.volume,
+                loop: this.isLooping,
+                onend: () => {
+                    if (!this.isLooping) {
+                        this.playNext();
+                    }
+                },
+            });
+            this.sound.play();
+            this.isPlaying = true;
+            this.saveState();
+            eventBus.dispatch('player-state-change', this.getState());
+        }
     }
 
     private saveState() {
