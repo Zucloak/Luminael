@@ -51,7 +51,7 @@ export const useMusicPlayer = () => {
         if (index === currentSongIndex) {
             if (newPlaylist.length === 0) {
                 setCurrentSongIndex(-1);
-                setIsPlaying(false);
+                audioPlayer.pause();
             } else if (currentSongIndex >= newPlaylist.length) {
                 setCurrentSongIndex(0);
             }
