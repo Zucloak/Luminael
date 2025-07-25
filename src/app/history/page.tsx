@@ -123,7 +123,7 @@ export default function SavedQuizzesPage() {
                 </div>
             </div>
 
-            {isLoading || themeLoading ? (
+            {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    <SavedQuizSkeleton />
                    <SavedQuizSkeleton />
