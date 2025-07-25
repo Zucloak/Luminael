@@ -20,7 +20,6 @@ export function MusicPlayer() {
   const {
     playlist,
     currentSongIndex,
-    isPlaying,
     isLooping,
     isShuffled,
     volume,
