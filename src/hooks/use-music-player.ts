@@ -3,6 +3,7 @@ import ReactPlayer from 'react-player';
 import { eventBus } from '@/lib/event-bus';
 
 export const useMusicPlayer = () => {
+    const playerRef = useRef<ReactPlayer>(null);
     const [playlist, setPlaylist] = useState<{ title: string; url: string }[]>([]);
     const [currentSongIndex, setCurrentSongIndex] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -37,10 +38,14 @@ export const useMusicPlayer = () => {
     }, [playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume]);
 
     const addSong = (song: { title: string; url: string }) => {
-        setPlaylist([...playlist, song]);
+        const newPlaylist = [...playlist, song];
+        setPlaylist(newPlaylist);
         if (!isPlaying) {
-            setCurrentSongIndex(playlist.length);
-            setIsPlaying(true);
+            setCurrentSongIndex(newPlaylist.length - 1);
+            // @ts-ignore
+            playerRef.current?.getInternalPlayer()?.play().catch((error) => {
+                console.error('Error playing audio:', error);
+            });
         }
     };
 
@@ -72,29 +77,8 @@ export const useMusicPlayer = () => {
         setIsPlaying(true);
     };
 
-    const playerRef = useRef<ReactPlayer>(null);
-
-    const play = async () => {
-        if (playerRef.current) {
-            try {
-                // @ts-ignore
-                await playerRef.current.getInternalPlayer().play();
-                setIsPlaying(true);
-            } catch (error) {
-                console.error('Error playing audio:', error);
-                setIsPlaying(false);
-            }
-        }
-    };
-
     const togglePlayPause = () => {
-        if (isPlaying) {
-            // @ts-ignore
-            playerRef.current?.getInternalPlayer().pause();
-            setIsPlaying(false);
-        } else {
-            play();
-        }
+        setIsPlaying(!isPlaying);
     };
 
     const toggleLoop = () => {
@@ -132,5 +116,6 @@ export const useMusicPlayer = () => {
         toggleShuffle,
         setVolume: setVolumeState,
         setCurrentSongIndex: setCurrentSongIndexState,
+        setIsPlaying,
     };
 };

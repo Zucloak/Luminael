@@ -19,6 +19,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
                     loop={musicPlayer.isLooping}
                     volume={musicPlayer.volume}
                     onEnded={musicPlayer.playNext}
+                    onPlay={() => musicPlayer.setIsPlaying(true)}
                     width="0"
                     height="0"
                 />
