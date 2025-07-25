@@ -1,7 +1,7 @@
 
 "use client";
 
-import { createContext, useContext, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, ReactNode } from 'react';
 import { useSyncExternalStore } from 'use-sync-external-store/shim';
 
 const THEME_KEY = 'luminael_hell_bound_mode';
