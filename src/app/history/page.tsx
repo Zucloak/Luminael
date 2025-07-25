@@ -61,7 +61,7 @@ const TAG_COLORS: { [key: string]: string } = {
 };
 
 export default function SavedQuizzesPage() {
-    const { loading: themeLoading } = useTheme();
+    const { isHellBound } = useTheme();
     const [savedQuizzes, setSavedQuizzes] = useState<PastQuiz[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
