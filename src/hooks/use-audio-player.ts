@@ -41,5 +41,6 @@ export const useAudioPlayer = () => {
         isPlaying,
         togglePlayPause,
         play,
+        pause,
     };
 };
