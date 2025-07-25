@@ -197,7 +197,7 @@ export default function Home() {
                        />;
       case 'setup':
       default:
-        return <QuizSetup onQuizStart={startQuiz} isGenerating={isGenerating} isHellBound={isHellBound} onHellBoundToggle={setIsHellBound} />;
+        return <QuizSetup onQuizStart={startQuiz} isGenerating={isGenerating} isHellBound={isHellBound} onHellBoundToggle={toggleHellBound} />;
     }
   };
 
