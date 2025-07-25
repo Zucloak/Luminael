@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
+import ReactPlayer from 'react-player';
 import { eventBus } from '@/lib/event-bus';
 
-import { useAudioPlayer } from './use-audio-player';
-
 export const useMusicPlayer = () => {
-    const audioPlayer = useAudioPlayer();
     const [playlist, setPlaylist] = useState<{ title: string; url: string }[]>([]);
     const [currentSongIndex, setCurrentSongIndex] = useState(-1);
+    const [isPlaying, setIsPlaying] = useState(false);
     const [isLooping, setIsLooping] = useState(false);
     const [isShuffled, setIsShuffled] = useState(false);
     const [volume, setVolume] = useState(0.8);
@@ -17,6 +16,7 @@ export const useMusicPlayer = () => {
             const state = JSON.parse(savedState);
             setPlaylist(state.playlist || []);
             setCurrentSongIndex(state.currentSongIndex || -1);
+            setIsPlaying(state.isPlaying || false);
             setIsLooping(state.isLooping || false);
             setIsShuffled(state.isShuffled || false);
             setVolume(state.volume || 0.8);
@@ -27,20 +27,29 @@ export const useMusicPlayer = () => {
         const state = {
             playlist,
             currentSongIndex,
+            isPlaying,
             isLooping,
             isShuffled,
             volume,
         };
         localStorage.setItem('musicPlayerState', JSON.stringify(state));
         eventBus.dispatch('player-state-change', state);
-    }, [playlist, currentSongIndex, isLooping, isShuffled, volume]);
+    }, [playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume]);
 
-    const addSong = (song: { title: string; url: string }) => {
+    const addSong = (song: { title: string; url: string }, playerRef: React.RefObject<ReactPlayer>) => {
         const newPlaylist = [...playlist, song];
         setPlaylist(newPlaylist);
-        if (!audioPlayer.isPlaying) {
+        if (!isPlaying) {
             setCurrentSongIndex(newPlaylist.length - 1);
-            audioPlayer.play();
+            if (playerRef.current) {
+                // @ts-ignore
+                const promise = playerRef.current.getInternalPlayer().play();
+                if (promise !== undefined) {
+                    promise.catch((error: any) => {
+                        console.error('Error playing audio:', error);
+                    });
+                }
+            }
         }
     };
 
@@ -51,7 +60,7 @@ export const useMusicPlayer = () => {
         if (index === currentSongIndex) {
             if (newPlaylist.length === 0) {
                 setCurrentSongIndex(-1);
-                audioPlayer.pause();
+                setIsPlaying(false);
             } else if (currentSongIndex >= newPlaylist.length) {
                 setCurrentSongIndex(0);
             }
@@ -64,16 +73,16 @@ export const useMusicPlayer = () => {
         } else {
             setCurrentSongIndex((currentSongIndex + 1) % playlist.length);
         }
-        audioPlayer.play();
+        setIsPlaying(true);
     };
 
     const playPrev = () => {
         setCurrentSongIndex((currentSongIndex - 1 + playlist.length) % playlist.length);
-        audioPlayer.play();
+        setIsPlaying(true);
     };
 
     const togglePlayPause = () => {
-        audioPlayer.togglePlayPause();
+        setIsPlaying(!isPlaying);
     };
 
     const toggleLoop = () => {
@@ -90,12 +99,13 @@ export const useMusicPlayer = () => {
 
     const setCurrentSongIndexState = (index: number) => {
         setCurrentSongIndex(index);
-        audioPlayer.play();
+        setIsPlaying(true);
     };
 
     return {
         playlist,
         currentSongIndex,
+        isPlaying,
         isLooping,
         isShuffled,
         volume,
@@ -109,6 +119,5 @@ export const useMusicPlayer = () => {
         toggleShuffle,
         setVolume: setVolumeState,
         setCurrentSongIndex: setCurrentSongIndexState,
-        audioPlayer,
     };
 };
