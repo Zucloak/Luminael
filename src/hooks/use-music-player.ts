@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import ReactPlayer from 'react-player';
+import { useState, useEffect } from 'react';
 import { eventBus } from '@/lib/event-bus';
 
+import { useAudioPlayer } from './use-audio-player';
+
 export const useMusicPlayer = () => {
-    const playerRef = useRef<ReactPlayer>(null);
+    const audioPlayer = useAudioPlayer();
     const [playlist, setPlaylist] = useState<{ title: string; url: string }[]>([]);
     const [currentSongIndex, setCurrentSongIndex] = useState(-1);
-    const [isPlaying, setIsPlaying] = useState(false);
     const [isLooping, setIsLooping] = useState(false);
     const [isShuffled, setIsShuffled] = useState(false);
     const [volume, setVolume] = useState(0.8);
@@ -40,12 +40,9 @@ export const useMusicPlayer = () => {
     const addSong = (song: { title: string; url: string }) => {
         const newPlaylist = [...playlist, song];
         setPlaylist(newPlaylist);
-        if (!isPlaying) {
+        if (!audioPlayer.isPlaying) {
             setCurrentSongIndex(newPlaylist.length - 1);
-            // @ts-ignore
-            playerRef.current?.getInternalPlayer()?.play().catch((error) => {
-                console.error('Error playing audio:', error);
-            });
+            audioPlayer.play();
         }
     };
 
@@ -69,16 +66,16 @@ export const useMusicPlayer = () => {
         } else {
             setCurrentSongIndex((currentSongIndex + 1) % playlist.length);
         }
-        setIsPlaying(true);
+        audioPlayer.play();
     };
 
     const playPrev = () => {
         setCurrentSongIndex((currentSongIndex - 1 + playlist.length) % playlist.length);
-        setIsPlaying(true);
+        audioPlayer.play();
     };
 
     const togglePlayPause = () => {
-        setIsPlaying(!isPlaying);
+        audioPlayer.togglePlayPause();
     };
 
     const toggleLoop = () => {
@@ -95,18 +92,16 @@ export const useMusicPlayer = () => {
 
     const setCurrentSongIndexState = (index: number) => {
         setCurrentSongIndex(index);
-        setIsPlaying(true);
+        audioPlayer.play();
     };
 
     return {
         playlist,
         currentSongIndex,
-        isPlaying,
         isLooping,
         isShuffled,
         volume,
         currentSong: playlist[currentSongIndex],
-        playerRef,
         addSong,
         removeSong,
         playNext,
@@ -116,6 +111,6 @@ export const useMusicPlayer = () => {
         toggleShuffle,
         setVolume: setVolumeState,
         setCurrentSongIndex: setCurrentSongIndexState,
-        setIsPlaying,
+        audioPlayer,
     };
 };

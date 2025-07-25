@@ -13,13 +13,12 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
             {children}
             <div style={{ display: 'none' }}>
                 <ReactPlayer
-                    ref={musicPlayer.playerRef}
-                    url={musicPlayer.currentSong ? `/api/audio?url=${encodeURIComponent(musicPlayer.currentSong.url)}` : undefined}
-                    playing={musicPlayer.isPlaying}
+                    ref={musicPlayer.audioPlayer.playerRef}
+                    url={musicPlayer.currentSong?.url}
+                    playing={musicPlayer.audioPlayer.isPlaying}
                     loop={musicPlayer.isLooping}
                     volume={musicPlayer.volume}
                     onEnded={musicPlayer.playNext}
-                    onPlay={() => musicPlayer.setIsPlaying(true)}
                     width="0"
                     height="0"
                 />

@@ -34,6 +34,7 @@ export function MusicPlayer() {
     toggleShuffle,
     setVolume,
     setCurrentSongIndex,
+    audioPlayer,
   } = useMusicPlayerContext();
   const [newSongUrl, setNewSongUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,7 +129,7 @@ export function MusicPlayer() {
             <SkipBack className="h-6 w-6" />
           </Button>
           <Button onClick={togglePlayPause} variant="ghost" size="icon" className="h-16 w-16">
-            {isPlaying ? <Pause className="h-10 w-10" /> : <Play className="h-10 w-10" />}
+            {audioPlayer.isPlaying ? <Pause className="h-10 w-10" /> : <Play className="h-10 w-10" />}
           </Button>
           <Button onClick={playNext} variant="ghost" size="icon">
             <SkipForward className="h-6 w-6" />
