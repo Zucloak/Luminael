@@ -67,39 +67,27 @@ export const useMusicPlayer = () => {
         }
     };
 
-    const playNext = () => {
+    const playNext = (audioPlayer: ReturnType<typeof useAudioPlayer>) => {
         if (isShuffled) {
             setCurrentSongIndex(Math.floor(Math.random() * playlist.length));
         } else {
             setCurrentSongIndex((currentSongIndex + 1) % playlist.length);
         }
-        setIsPlaying(true);
+        audioPlayer.play();
     };
 
-    const playPrev = () => {
+    const playPrev = (audioPlayer: ReturnType<typeof useAudioPlayer>) => {
         setCurrentSongIndex((currentSongIndex - 1 + playlist.length) % playlist.length);
-        setIsPlaying(true);
+        audioPlayer.play();
     };
 
-    const togglePlayPause = () => {
-        setIsPlaying(!isPlaying);
-    };
 
-    const toggleLoop = () => {
-        setIsLooping(!isLooping);
-    };
 
-    const toggleShuffle = () => {
-        setIsShuffled(!isShuffled);
-    };
 
-    const setVolumeState = (newVolume: number) => {
-        setVolume(newVolume);
-    };
 
-    const setCurrentSongIndexState = (index: number) => {
+    const setCurrentSongIndexState = (index: number, audioPlayer: ReturnType<typeof useAudioPlayer>) => {
         setCurrentSongIndex(index);
-        setIsPlaying(true);
+        audioPlayer.play();
     };
 
     return {
@@ -119,5 +107,14 @@ export const useMusicPlayer = () => {
         toggleShuffle,
         setVolume: setVolumeState,
         setCurrentSongIndex: setCurrentSongIndexState,
+        toggleShuffle,
+        toggleLoop,
+        addSong,
+        removeSong,
+        playNext,
+        playPrev,
+        setCurrentSongIndex: setCurrentSongIndexState,
+        setVolume: setVolumeState,
+        togglePlayPause,
     };
 };

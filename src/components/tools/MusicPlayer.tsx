@@ -122,19 +122,19 @@ export function MusicPlayer() {
             </Button>
         </div>
         <div className="flex justify-center items-center gap-4">
-          <Button onClick={toggleShuffle} variant={isShuffled ? "secondary" : "ghost"} size="icon">
+          <Button onClick={musicPlayer.toggleShuffle} variant={isShuffled ? "secondary" : "ghost"} size="icon">
             <Shuffle className="h-6 w-6" />
           </Button>
-          <Button onClick={playPrev} variant="ghost" size="icon">
+          <Button onClick={() => musicPlayer.playPrev(audioPlayer)} variant="ghost" size="icon">
             <SkipBack className="h-6 w-6" />
           </Button>
-          <Button onClick={togglePlayPause} variant="ghost" size="icon" className="h-16 w-16">
-            {isPlaying ? <Pause className="h-10 w-10" /> : <Play className="h-10 w-10" />}
+          <Button onClick={audioPlayer.togglePlayPause} variant="ghost" size="icon" className="h-16 w-16">
+            {audioPlayer.isPlaying ? <Pause className="h-10 w-10" /> : <Play className="h-10 w-10" />}
           </Button>
-          <Button onClick={playNext} variant="ghost" size="icon">
+          <Button onClick={() => musicPlayer.playNext(audioPlayer)} variant="ghost" size="icon">
             <SkipForward className="h-6 w-6" />
           </Button>
-          <Button onClick={toggleLoop} variant={isLooping ? "secondary" : "ghost"} size="icon">
+          <Button onClick={musicPlayer.toggleLoop} variant={isLooping ? "secondary" : "ghost"} size="icon">
             <Repeat className="h-6 w-6" />
           </Button>
         </div>
@@ -151,10 +151,10 @@ export function MusicPlayer() {
                   <li
                     key={index}
                     className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${index === currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                    onClick={() => setCurrentSongIndex(index)}
+                    onClick={() => musicPlayer.setCurrentSongIndex(index, audioPlayer)}
                   >
                     <span>{song.title}</span>
-                    <Button variant="ghost" size="icon" onClick={() => removeSong(index)}>
+                    <Button variant="ghost" size="icon" onClick={() => musicPlayer.removeSong(index, audioPlayer)}>
                       <X className="h-4 w-4" />
                     </Button>
                   </li>
@@ -204,7 +204,7 @@ export function MusicPlayer() {
           {volume === 0 ? <VolumeX className="h-6 w-6" /> : volume > 0.5 ? <Volume2 className="h-6 w-6" /> : <Volume1 className="h-6 w-6" />}
           <Slider
             value={[volume]}
-            onValueChange={(value) => setVolume(value[0])}
+            onValueChange={(value) => musicPlayer.setVolume(value[0])}
             max={1}
             step={0.01}
             className="w-full"

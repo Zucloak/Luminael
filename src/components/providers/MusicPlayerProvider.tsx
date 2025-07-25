@@ -4,7 +4,9 @@ import React, { createContext, useContext, useRef } from 'react';
 import ReactPlayer from 'react-player';
 import { useMusicPlayer } from '@/hooks/use-music-player';
 
-const MusicPlayerContext = createContext<ReturnType<typeof useMusicPlayer> | null>(null);
+import { RefObject } from 'react';
+
+const MusicPlayerContext = createContext<ReturnType<typeof useMusicPlayer> & { playerRef: RefObject<ReactPlayer> } | null>(null);
 
 export const MusicPlayerProvider = ({ children }: { children: React.ReactNode }) => {
     const musicPlayer = useMusicPlayer();
@@ -29,6 +31,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
                     onEnded={handleEnded}
                     onPlay={() => musicPlayer.setIsPlaying(true)}
                     onPause={() => musicPlayer.setIsPlaying(false)}
+                    onEnded={musicPlayer.playNext}
                     onError={(e) => console.error("Playback Error:", e)}
                     playsinline
                     width="0"
