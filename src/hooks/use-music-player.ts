@@ -17,7 +17,6 @@ export const useMusicPlayer = () => {
             const state = JSON.parse(savedState);
             setPlaylist(state.playlist || []);
             setCurrentSongIndex(state.currentSongIndex || -1);
-            setIsPlaying(state.isPlaying || false);
             setIsLooping(state.isLooping || false);
             setIsShuffled(state.isShuffled || false);
             setVolume(state.volume || 0.8);
@@ -28,14 +27,13 @@ export const useMusicPlayer = () => {
         const state = {
             playlist,
             currentSongIndex,
-            isPlaying,
             isLooping,
             isShuffled,
             volume,
         };
         localStorage.setItem('musicPlayerState', JSON.stringify(state));
         eventBus.dispatch('player-state-change', state);
-    }, [playlist, currentSongIndex, isPlaying, isLooping, isShuffled, volume]);
+    }, [playlist, currentSongIndex, isLooping, isShuffled, volume]);
 
     const addSong = (song: { title: string; url: string }) => {
         const newPlaylist = [...playlist, song];
