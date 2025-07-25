@@ -49,11 +49,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = { isHellBound, toggleHellBound };
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return React.createElement(ThemeContext.Provider, { value: value }, children);
 }
 
 export function useTheme() {
