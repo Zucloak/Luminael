@@ -12,9 +12,6 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     const musicPlayer = useMusicPlayer();
     const playerRef = useRef<ReactPlayer>(null);
 
-    const handleEnded = () => {
-        musicPlayer.playNext();
-    }
 
     const urlToPlay = musicPlayer.currentSong ? `/api/audio?url=${encodeURIComponent(musicPlayer.currentSong.url)}` : undefined;
 
@@ -28,10 +25,9 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
                     playing={musicPlayer.isPlaying}
                     loop={musicPlayer.isLooping}
                     volume={musicPlayer.volume}
-                    onEnded={handleEnded}
+                    onEnded={musicPlayer.playNext}
                     onPlay={() => musicPlayer.setIsPlaying(true)}
                     onPause={() => musicPlayer.setIsPlaying(false)}
-                    onEnded={musicPlayer.playNext}
                     onError={(e) => console.error("Playback Error:", e)}
                     playsinline
                     width="0"

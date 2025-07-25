@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import { eventBus } from '@/lib/event-bus';
+import { useAudioPlayer } from './use-audio-player';
 
-export const useMusicPlayer = () => {
+export const useMusicPlayer = (audioPlayer: ReturnType<typeof useAudioPlayer>) => {
     const [playlist, setPlaylist] = useState<{ title: string; url: string }[]>([]);
     const [currentSongIndex, setCurrentSongIndex] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -67,19 +68,16 @@ export const useMusicPlayer = () => {
         }
     };
 
-    const playNext = (audioPlayer: ReturnType<typeof useAudioPlayer>) => {
+
+    const playNext = () => {
         if (isShuffled) {
             setCurrentSongIndex(Math.floor(Math.random() * playlist.length));
         } else {
             setCurrentSongIndex((currentSongIndex + 1) % playlist.length);
         }
-        audioPlayer.play();
     };
 
-    const playPrev = (audioPlayer: ReturnType<typeof useAudioPlayer>) => {
-        setCurrentSongIndex((currentSongIndex - 1 + playlist.length) % playlist.length);
-        audioPlayer.play();
-    };
+
 
 
 
