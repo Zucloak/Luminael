@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -7,16 +6,7 @@ import { cn } from "@/lib/utils";
 import { Separator } from '../ui/separator';
 
 export function MainContent({ children }: { children: React.ReactNode }) {
-  const { isHellBound, loading: themeLoading } = useTheme();
-
-  // Prevents a flash of unstyled content on initial load
-  if (themeLoading) {
-    return (
-      <main className="flex-grow container mx-auto p-4 md:p-8 flex items-start lg:items-center justify-center">
-        {children}
-      </main>
-    )
-  }
+  const { isHellBound } = useTheme();
 
   return (
     <div className="theme-container min-h-screen-minus-header flex flex-col transition-colors duration-1000">
