@@ -44,7 +44,7 @@ export default function Home() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  const { isHellBound, setIsHellBound, loading: themeLoading } = useTheme();
+  const { isHellBound, toggleHellBound } = useTheme();
   const { user } = useUser();
   const { loading: apiKeyLoading } = useApiKey();
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
