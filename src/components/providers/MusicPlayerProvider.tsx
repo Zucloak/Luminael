@@ -46,11 +46,6 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
                     onReady={handleReady}
                     onError={handleError}
                     playsinline
-                    config={{
-                        file: {
-                            forceAudio: true,
-                        }
-                    }}
                 />
             </div>
         </MusicPlayerContext.Provider>
