@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import ReactPlayer from 'react-player';
 import { useMusicPlayer } from '@/hooks/use-music-player';
 
@@ -8,28 +8,17 @@ const MusicPlayerContext = createContext<ReturnType<typeof useMusicPlayer> | nul
 
 export const MusicPlayerProvider = ({ children }: { children: React.ReactNode }) => {
     const musicPlayer = useMusicPlayer();
-    const [error, setError] = useState<string | null>(null);
-
-    const handleError = (e: any) => {
-        console.error("Playback Error:", e);
-        setError("Error during playback. Please check the console for details.");
-    };
-
-    const urlToPlay = musicPlayer.currentSong ? `/api/audio?url=${encodeURIComponent(musicPlayer.currentSong.url)}` : undefined;
-
     return (
         <MusicPlayerContext.Provider value={musicPlayer}>
             {children}
-            {error && <div style={{ color: 'red', textAlign: 'center' }}>{error}</div>}
             <div style={{ display: 'none' }}>
                 <ReactPlayer
-                    url={urlToPlay}
+                    ref={musicPlayer.playerRef}
+                    url={musicPlayer.currentSong ? `/api/audio?url=${encodeURIComponent(musicPlayer.currentSong.url)}` : undefined}
                     playing={musicPlayer.isPlaying}
                     loop={musicPlayer.isLooping}
                     volume={musicPlayer.volume}
                     onEnded={musicPlayer.playNext}
-                    onError={handleError}
-                    playsinline
                     width="0"
                     height="0"
                 />

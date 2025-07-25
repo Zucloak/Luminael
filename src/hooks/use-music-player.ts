@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import ReactPlayer from 'react-player';
 import { eventBus } from '@/lib/event-bus';
 
 export const useMusicPlayer = () => {
@@ -71,8 +72,29 @@ export const useMusicPlayer = () => {
         setIsPlaying(true);
     };
 
+    const playerRef = useRef<ReactPlayer>(null);
+
+    const play = async () => {
+        if (playerRef.current) {
+            try {
+                // @ts-ignore
+                await playerRef.current.getInternalPlayer().play();
+                setIsPlaying(true);
+            } catch (error) {
+                console.error('Error playing audio:', error);
+                setIsPlaying(false);
+            }
+        }
+    };
+
     const togglePlayPause = () => {
-        setIsPlaying(!isPlaying);
+        if (isPlaying) {
+            // @ts-ignore
+            playerRef.current?.getInternalPlayer().pause();
+            setIsPlaying(false);
+        } else {
+            play();
+        }
     };
 
     const toggleLoop = () => {
@@ -100,6 +122,7 @@ export const useMusicPlayer = () => {
         isShuffled,
         volume,
         currentSong: playlist[currentSongIndex],
+        playerRef,
         addSong,
         removeSong,
         playNext,
