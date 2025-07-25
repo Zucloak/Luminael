@@ -1,60 +1,60 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, createContext, ReactNode, useContext } from 'react';
+import { createContext, useContext, useEffect, useCallback, ReactNode } from 'react';
+import { useSyncExternalStore } from 'use-sync-external-store/shim';
 
 const THEME_KEY = 'luminael_hell_bound_mode';
 
 interface ThemeContextType {
   isHellBound: boolean;
-  setIsHellBound: (value: boolean) => void;
-  loading: boolean;
+  toggleHellBound: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const subscribe = (callback: () => void) => {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+};
+
+const getSnapshot = () => {
+  try {
+    const item = window.localStorage.getItem(THEME_KEY);
+    return item ? JSON.parse(item) : false;
+  } catch (error) {
+    return false;
+  }
+};
+
+const getServerSnapshot = () => false;
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isHellBound, setIsHellBound] = useState<boolean>(false);
-  const [loading, setLoading] = useState(true);
+  const isHellBound = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  useEffect(() => {
+  const toggleHellBound = useCallback(() => {
+    const newValue = !getSnapshot();
     try {
-      const item = window.localStorage.getItem(THEME_KEY);
-      if (item) {
-        setIsHellBound(JSON.parse(item));
-      }
-    } catch (error) {
-      console.error("Failed to parse theme from localStorage", error);
-      setIsHellBound(false);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const setHellBound = useCallback((value: boolean) => {
-    try {
-      window.localStorage.setItem(THEME_KEY, JSON.stringify(value));
-      setIsHellBound(value);
+      window.localStorage.setItem(THEME_KEY, JSON.stringify(newValue));
+      // Dispatch a storage event to notify other tabs/windows
+      window.dispatchEvent(new StorageEvent('storage', { key: THEME_KEY, newValue: JSON.stringify(newValue) }));
     } catch (error) {
       console.error("Failed to save theme to localStorage", error);
     }
   }, []);
 
-  // New useEffect to apply class to body
   useEffect(() => {
-    const body = window.document.body;
-    if (isHellBound) {
-      body.classList.add('hell-bound');
-    } else {
-      body.classList.remove('hell-bound');
-    }
+    document.body.classList.toggle('hell-bound', isHellBound);
   }, [isHellBound]);
 
-  const value = { isHellBound, setIsHellBound: setHellBound, loading };
+  const value = { isHellBound, toggleHellBound };
 
-  return React.createElement(ThemeContext.Provider, { value: value }, children);
+  return (
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
-
 
 export function useTheme() {
   const context = useContext(ThemeContext);
