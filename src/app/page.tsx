@@ -49,7 +49,7 @@ export default function Home() {
   const { loading: apiKeyLoading } = useApiKey();
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
 
-  const isLoading = themeLoading || apiKeyLoading;
+  const isLoading = apiKeyLoading;
 
   useEffect(() => {
     if (isLoading) return;
