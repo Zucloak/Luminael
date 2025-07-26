@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { eventBus } from '@/lib/event-bus';
 
 export const useMusicPlayer = () => {
-    const [playlist, setPlaylist] = useState<{ title: string; url: string }[]>([]);
+    const [playlist, setPlaylist] = useState<{ title: string; url: string; streamUrl?: string }[]>([]);
     const [currentSongIndex, setCurrentSongIndex] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLooping, setIsLooping] = useState(false);
     const [isShuffled, setIsShuffled] = useState(false);
     const [volume, setVolume] = useState(0.8);
     const [hasInteracted, setHasInteracted] = useState(false);
+    const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
         const savedState = localStorage.getItem('musicPlayerState');
@@ -31,6 +32,7 @@ export const useMusicPlayer = () => {
     const handleUserInteraction = useCallback(() => {
         if (!hasInteracted) {
             setHasInteracted(true);
+            setIsReady(true);
         }
     }, [hasInteracted]);
 
@@ -40,8 +42,10 @@ export const useMusicPlayer = () => {
     }, [handleUserInteraction]);
 
     const addSong = useCallback((song: { title: string; url: string }) => {
+        const streamUrl = `/api/audio/play?url=${encodeURIComponent(song.url)}`;
+        const newSong = { ...song, streamUrl };
         setPlaylist(prev => {
-            const newPlaylist = [...prev, song];
+            const newPlaylist = [...prev, newSong];
             if (currentSongIndex === -1) {
                 setCurrentSongIndex(newPlaylist.length - 1);
                 setIsPlaying(hasInteracted);
@@ -102,6 +106,7 @@ export const useMusicPlayer = () => {
         volume,
         currentSong: playlist[currentSongIndex],
         hasInteracted,
+        isReady,
         addSong,
         removeSong,
         playNext,
@@ -112,5 +117,6 @@ export const useMusicPlayer = () => {
         setVolume,
         setCurrentSongIndex: selectSong,
         setIsPlaying,
+        setIsReady,
     };
 };

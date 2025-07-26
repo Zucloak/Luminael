@@ -10,7 +10,6 @@ const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 type MusicPlayerContextType = ReturnType<typeof useMusicPlayer> & {
     playerRef: RefObject<import('react-player')>;
-    isReady: boolean;
 };
 
 const MusicPlayerContext = createContext<MusicPlayerContextType | null>(null);
@@ -18,12 +17,15 @@ const MusicPlayerContext = createContext<MusicPlayerContextType | null>(null);
 export const MusicPlayerProvider = ({ children }: { children: React.ReactNode }) => {
     const musicPlayer = useMusicPlayer();
     const playerRef = useRef<import('react-player')>(null);
-    const [isReady, setIsReady] = React.useState(false);
 
-    const urlToPlay = musicPlayer.currentSong?.url;
+    const urlToPlay = musicPlayer.currentSong?.streamUrl || musicPlayer.currentSong?.url;
 
     const handleReady = () => {
-        setIsReady(true);
+        musicPlayer.setIsReady(true);
+    };
+
+    const handleStart = () => {
+        musicPlayer.setIsPlaying(true);
     };
 
     const handlePlay = () => {
@@ -45,7 +47,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     };
 
     return (
-        <MusicPlayerContext.Provider value={{ ...musicPlayer, playerRef, isReady }}>
+        <MusicPlayerContext.Provider value={{ ...musicPlayer, playerRef }}>
             {children}
             <div style={{ display: 'none' }}>
                 {urlToPlay && (
@@ -53,10 +55,11 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
                         key={urlToPlay}
                         ref={playerRef}
                         url={urlToPlay}
-                        playing={musicPlayer.isPlaying && musicPlayer.hasInteracted}
+                        playing={musicPlayer.isPlaying && musicPlayer.hasInteracted && musicPlayer.isReady}
                         loop={musicPlayer.isLooping}
                         volume={musicPlayer.volume}
                         onReady={handleReady}
+                        onStart={handleStart}
                         onPlay={handlePlay}
                         onPause={handlePause}
                         onEnded={musicPlayer.playNext}

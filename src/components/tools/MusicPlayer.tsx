@@ -139,14 +139,7 @@ export function MusicPlayer() {
                         <SkipBack className="h-6 w-6" />
                     </Button>
                     <Button
-                        onClick={() => {
-                            if (musicPlayer.isPlaying) {
-                                playerRef.current?.getInternalPlayer()?.pauseVideo();
-                            } else {
-                                playerRef.current?.getInternalPlayer()?.playVideo();
-                            }
-                            musicPlayer.togglePlayPause();
-                        }}
+                        onClick={musicPlayer.togglePlayPause}
                         variant="ghost"
                         size="icon"
                         className="h-16 w-16 hover:bg-primary/20 rounded-full"
