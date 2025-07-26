@@ -2,13 +2,14 @@
 
 import React, { createContext, useContext, useRef, RefObject } from 'react';
 import dynamic from 'next/dynamic';
+import type { ReactPlayerProps } from 'react-player';
 import { useMusicPlayer } from '@/hooks/use-music-player';
 import { toast } from '@/hooks/use-toast';
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 type MusicPlayerContextType = ReturnType<typeof useMusicPlayer> & {
-    playerRef: RefObject<ReactPlayer>;
+    playerRef: RefObject<import('react-player')>;
     isReady: boolean;
 };
 
@@ -16,7 +17,7 @@ const MusicPlayerContext = createContext<MusicPlayerContextType | null>(null);
 
 export const MusicPlayerProvider = ({ children }: { children: React.ReactNode }) => {
     const musicPlayer = useMusicPlayer();
-    const playerRef = useRef<ReactPlayer>(null);
+    const playerRef = useRef<import('react-player')>(null);
     const [isReady, setIsReady] = React.useState(false);
 
     const urlToPlay = musicPlayer.currentSong?.url;
