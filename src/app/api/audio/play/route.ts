@@ -15,11 +15,14 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Failed to fetch audio', { status: response.status });
     }
 
+    if (!response.body) {
+      return new NextResponse('No response body', { status: 400 });
+    }
     const headers = new Headers();
     headers.set('Content-Type', response.headers.get('Content-Type') || 'audio/mpeg');
     headers.set('Content-Length', response.headers.get('Content-Length') || '');
 
-    return new NextResponse(response.body, {
+    return new NextResponse(response.body as any, {
       status: response.status,
       statusText: response.statusText,
       headers,
