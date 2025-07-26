@@ -78,6 +78,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/use-sync-external-store": "^1.5.0",
     "autoprefixer": "^10.4.19",
     "genkit-cli": "^1.13.0",
     "postcss": "^8",
