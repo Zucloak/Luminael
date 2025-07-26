@@ -1,8 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useRef, RefObject } from 'react';
-import ReactPlayer from 'react-player';
+import dynamic from 'next/dynamic';
 import { useMusicPlayer } from '@/hooks/use-music-player';
+import { toast } from '@/hooks/use-toast';
+
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 type MusicPlayerContextType = ReturnType<typeof useMusicPlayer> & {
     playerRef: RefObject<ReactPlayer>;
@@ -32,27 +35,34 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
 
     const handleError = (error: any) => {
         console.error("ReactPlayer Error:", error);
-
-        // Fallback or retry logic can be implemented here
+        toast({
+            title: "Playback Error",
+            description: "An error occurred while trying to play the audio. Please try another song.",
+            variant: "destructive",
+        });
+        musicPlayer.setIsPlaying(false);
     };
 
     return (
         <MusicPlayerContext.Provider value={{ ...musicPlayer, playerRef, isReady }}>
             {children}
             <div style={{ display: 'none' }}>
-                <ReactPlayer
-                    ref={playerRef}
-                    url={urlToPlay}
-                    playing={musicPlayer.isPlaying && musicPlayer.hasInteracted}
-                    loop={musicPlayer.isLooping}
-                    volume={musicPlayer.volume}
-                    onReady={handleReady}
-                    onPlay={handlePlay}
-                    onPause={handlePause}
-                    onEnded={musicPlayer.playNext}
-                    onError={handleError}
-                    playsinline
-                />
+                {urlToPlay && (
+                    <ReactPlayer
+                        key={urlToPlay}
+                        ref={playerRef}
+                        url={urlToPlay}
+                        playing={musicPlayer.isPlaying && musicPlayer.hasInteracted}
+                        loop={musicPlayer.isLooping}
+                        volume={musicPlayer.volume}
+                        onReady={handleReady}
+                        onPlay={handlePlay}
+                        onPause={handlePause}
+                        onEnded={musicPlayer.playNext}
+                        onError={handleError}
+                        playsinline
+                    />
+                )}
             </div>
         </MusicPlayerContext.Provider>
     );

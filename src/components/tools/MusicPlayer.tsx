@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, X, Upload, Download, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Plus, Upload, Download, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from '@/components/ui/slider';
 import { useMusicPlayerContext } from '@/components/providers/MusicPlayerProvider';
@@ -18,7 +18,7 @@ const preInstalledSongs = [
 ];
 
 export function MusicPlayer() {
-    const musicPlayer = useMusicPlayerContext();
+    const { playerRef, ...musicPlayer } = useMusicPlayerContext();
     const [newSongUrl, setNewSongUrl] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -138,7 +138,20 @@ export function MusicPlayer() {
                     <Button onClick={musicPlayer.playPrev} variant="ghost" size="icon" aria-label="Previous Song">
                         <SkipBack className="h-6 w-6" />
                     </Button>
-                    <Button onClick={musicPlayer.togglePlayPause} variant="ghost" size="icon" className="h-16 w-16 hover:bg-primary/20 rounded-full" aria-label={musicPlayer.isPlaying ? "Pause" : "Play"}>
+                    <Button
+                        onClick={() => {
+                            if (musicPlayer.isPlaying) {
+                                playerRef.current?.getInternalPlayer()?.pauseVideo();
+                            } else {
+                                playerRef.current?.getInternalPlayer()?.playVideo();
+                            }
+                            musicPlayer.togglePlayPause();
+                        }}
+                        variant="ghost"
+                        size="icon"
+                        className="h-16 w-16 hover:bg-primary/20 rounded-full"
+                        aria-label={musicPlayer.isPlaying ? "Pause" : "Play"}
+                    >
                         {musicPlayer.isPlaying ? <Pause className="h-10 w-10 text-primary" /> : <Play className="h-10 w-10 text-primary" />}
                     </Button>
                     <Button onClick={musicPlayer.playNext} variant="ghost" size="icon" aria-label="Next Song">
@@ -160,13 +173,19 @@ export function MusicPlayer() {
                                     {musicPlayer.playlist.map((song, index) => (
                                         <li
                                             key={`${song.url}-${index}`}
-                                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${index === musicPlayer.currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                                            className={`p-2 rounded-md cursor-pointer ${index === musicPlayer.currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
                                             onClick={() => handleSelectSong(index)}
                                         >
-                                            <span className="truncate flex-shrink mr-2">{song.title}</span>
-                                            <Button variant="ghost" size="icon" onClick={(e) => handleRemoveSong(e, index)} aria-label="Remove Song" className="flex-shrink-0">
-                                                <X className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex justify-between items-center w-full">
+                                                <span className="truncate max-w-[calc(100%-32px)]">{song.title}</span>
+                                                <button
+                                                    className="flex-shrink-0"
+                                                    onClick={(e) => handleRemoveSong(e, index)}
+                                                    aria-label="Remove Song"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
