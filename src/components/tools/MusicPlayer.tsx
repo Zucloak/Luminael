@@ -22,11 +22,24 @@ export function MusicPlayer() {
     const [newSongUrl, setNewSongUrl] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleAddSongFromUrl = useCallback(() => {
+    const handleAddSongFromUrl = useCallback(async () => {
         if (newSongUrl.trim() !== '') {
-            musicPlayer.addSong({ title: newSongUrl, url: newSongUrl });
-            setNewSongUrl('');
-            toast({ title: "Song Added", description: "The song has been added to your queue." });
+            try {
+                const response = await fetch(`/api/audio/youtube-title?url=${encodeURIComponent(newSongUrl)}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch song title');
+                }
+                const { title } = await response.json();
+                musicPlayer.addSong({ title, url: newSongUrl });
+                setNewSongUrl('');
+                toast({ title: "Song Added", description: "The song has been added to your queue." });
+            } catch (error) {
+                console.error('Error adding song:', error);
+                // Fallback to adding with URL as title
+                musicPlayer.addSong({ title: newSongUrl, url: newSongUrl });
+                setNewSongUrl('');
+                toast({ title: "Song Added", description: "Could not fetch title, using URL.", variant: "destructive" });
+            }
         }
     }, [newSongUrl, musicPlayer]);
 
@@ -125,7 +138,7 @@ export function MusicPlayer() {
                     <Button onClick={musicPlayer.playPrev} variant="ghost" size="icon" aria-label="Previous Song">
                         <SkipBack className="h-6 w-6" />
                     </Button>
-                    <Button onClick={musicPlayer.togglePlayPause} variant="ghost" size="icon" className="h-16 w-16 bg-primary/20 hover:bg-primary/30 rounded-full" aria-label={musicPlayer.isPlaying ? "Pause" : "Play"}>
+                    <Button onClick={musicPlayer.togglePlayPause} variant="ghost" size="icon" className="h-16 w-16 hover:bg-primary/20 rounded-full" aria-label={musicPlayer.isPlaying ? "Pause" : "Play"}>
                         {musicPlayer.isPlaying ? <Pause className="h-10 w-10 text-primary" /> : <Play className="h-10 w-10 text-primary" />}
                     </Button>
                     <Button onClick={musicPlayer.playNext} variant="ghost" size="icon" aria-label="Next Song">
@@ -150,8 +163,8 @@ export function MusicPlayer() {
                                             className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${index === musicPlayer.currentSongIndex ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
                                             onClick={() => handleSelectSong(index)}
                                         >
-                                            <span className="truncate">{song.title}</span>
-                                            <Button variant="ghost" size="icon" onClick={(e) => handleRemoveSong(e, index)} aria-label="Remove Song">
+                                            <span className="truncate flex-shrink mr-2">{song.title}</span>
+                                            <Button variant="ghost" size="icon" onClick={(e) => handleRemoveSong(e, index)} aria-label="Remove Song" className="flex-shrink-0">
                                                 <X className="h-4 w-4" />
                                             </Button>
                                         </li>
