@@ -124,11 +124,19 @@ export function PersistentPlayer() {
         if (audio.src !== currentTrack.url) {
             setIsLoading(true);
             audio.src = currentTrack.url;
+
+            const onCanPlay = () => {
+                if (isPlaying) {
+                    audio.play().catch(e => console.error("Autoplay was prevented.", e));
+                }
+                setIsLoading(false);
+                audio.removeEventListener('canplay', onCanPlay);
+            };
+            audio.addEventListener('canplay', onCanPlay);
             audio.load();
-            audio.play().catch(e => console.error("Autoplay was prevented.", e)).finally(() => setIsLoading(false));
         }
     }
-  }, [currentTrack]);
+  }, [currentTrack, isPlaying]);
 
   const handleTimeUpdate = () => {
     if (audioRef.current && !isLoading) {
