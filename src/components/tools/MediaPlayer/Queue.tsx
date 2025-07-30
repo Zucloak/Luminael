@@ -17,12 +17,15 @@ export function Queue() {
 
   const handleAddTrack = async () => {
     if (!newTrackUrl) return;
+    console.log("Attempting to add track:", newTrackUrl);
 
     try {
       let trackData;
       if (newTrackUrl.includes('youtube.com') || newTrackUrl.includes('youtu.be')) {
         const videoId = newTrackUrl.split('v=')[1]?.split('&')[0] || newTrackUrl.split('/').pop();
-        const response = await fetch(`https://invidious.projectsegfau.lt/api/v1/videos/${videoId}`);
+        const fetchUrl = `https://invidious.nerdvpn.de/api/v1/videos/${videoId}`;
+        console.log("Fetching from URL:", fetchUrl);
+        const response = await fetch(fetchUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch video data. Status: ${response.status}`);
         }
@@ -31,7 +34,7 @@ export function Queue() {
           id: data.videoId,
           title: data.title,
           artist: data.author,
-          url: `https://invidious.projectsegfau.lt/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
+          url: `https://invidious.nerdvpn.de/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
           duration: data.lengthSeconds,
         };
       } else {

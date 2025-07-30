@@ -12,7 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Calculator } from '../tools/Calculator';
 import { GraphCreator } from '../tools/GraphCreator';
 import { Dictionary } from '../tools/Dictionary';
@@ -119,12 +125,12 @@ export function UtilityToolbar() {
                   <span>Media Player</span>
                 </DropdownMenuItem>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl p-0 border-0" aria-describedby="media-player-description">
-                <MediaPlayer />
-                <h2 id="media-player-title" className="sr-only">Media Player</h2>
-                <p id="media-player-description" className="sr-only">
+            <DialogContent className="max-w-2xl p-0 border-0">
+              <DialogTitle className="sr-only">Media Player</DialogTitle>
+              <DialogDescription className="sr-only">
                   Play and manage your audio queue. You can add local files, YouTube links, and import/export your playlists.
-                </p>
+              </DialogDescription>
+              <MediaPlayer />
               </DialogContent>
             </Dialog>
           )}
