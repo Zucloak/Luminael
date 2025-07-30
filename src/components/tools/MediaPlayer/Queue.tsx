@@ -14,6 +14,7 @@ export function Queue() {
   const { queue, addToQueue, removeFromQueue, playTrack, currentTrackIndex, loadQueue } = useMediaPlayer();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const corsProxy = 'https://cors-anywhere.herokuapp.com/';
 
   const handleAddTrack = async () => {
     if (!newTrackUrl) return;
@@ -36,7 +37,7 @@ export function Queue() {
           id: data.videoId,
           title: data.title,
           artist: data.author,
-          url: `https://vid.puffyan.us/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
+          url: `${corsProxy}https://vid.puffyan.us/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
           duration: data.lengthSeconds,
         };
       } else {
@@ -45,7 +46,7 @@ export function Queue() {
           id: newTrackUrl,
           title: newTrackUrl.split('/').pop() || 'Unknown Title',
           artist: 'Unknown Artist',
-          url: newTrackUrl,
+          url: `${corsProxy}${newTrackUrl}`,
           duration: 0, // Will be updated on load
         };
       }
