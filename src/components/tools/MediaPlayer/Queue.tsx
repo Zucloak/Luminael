@@ -49,7 +49,6 @@ export function Queue() {
     } catch (error) {
       console.error("Error adding track:", error);
       toast({
-        variant: "destructive",
         title: "Error adding track",
         description: "Could not fetch track information. Please check the link or try another one.",
       });
@@ -83,7 +82,6 @@ export function Queue() {
             loadQueue(importedQueue);
           } else {
             toast({
-                variant: "destructive",
                 title: "Invalid Playlist File",
                 description: "The selected file is not a valid Luminael playlist.",
             });
@@ -92,7 +90,6 @@ export function Queue() {
       } catch (error) {
         console.error("Error parsing queue file:", error);
         toast({
-            variant: "destructive",
             title: "Error Importing Playlist",
             description: "There was an error reading the playlist file.",
         });

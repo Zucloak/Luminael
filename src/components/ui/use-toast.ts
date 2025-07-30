@@ -1,5 +1,6 @@
 // Inspired by react-hot-toast library
 import * as React from "react"
+import { type ToastProps } from "@radix-ui/react-toast"
 
 type ToasterToast = ToastProps & {
   id: string
