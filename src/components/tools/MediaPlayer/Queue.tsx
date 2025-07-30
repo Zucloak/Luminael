@@ -125,9 +125,9 @@ export function Queue() {
           value={newTrackUrl}
           onChange={(e) => setNewTrackUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddTrack()}
-          className="bg-white/10 border-white/20 rounded-xl focus:ring-primary"
+          className="bg-background/80 border-border rounded-xl focus:ring-primary"
         />
-        <Button onClick={handleAddTrack} disabled={isAdding} className="bg-white/80 text-black hover:bg-white rounded-xl">
+        <Button onClick={handleAddTrack} disabled={isAdding} className="rounded-xl">
           {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         </Button>
       </div>
@@ -139,11 +139,11 @@ export function Queue() {
             accept=".json"
             onChange={handleImportQueue}
         />
-        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="bg-white/10 border-white/20 rounded-xl hover:bg-white/20">
+        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-xl">
           <Upload className="mr-2 h-4 w-4" />
           Import
         </Button>
-        <Button variant="outline" size="sm" onClick={handleExportQueue} disabled={queue.length === 0} className="bg-white/10 border-white/20 rounded-xl hover:bg-white/20">
+        <Button variant="outline" size="sm" onClick={handleExportQueue} disabled={queue.length === 0} className="rounded-xl">
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>
@@ -155,7 +155,7 @@ export function Queue() {
                 key={`${track.id}-${index}`}
                 className={cn(
                     "flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-colors",
-                    currentTrack?.id === track.id ? "bg-white/20" : "hover:bg-white/10"
+                    currentTrack?.id === track.id ? "bg-accent" : "hover:bg-accent/50"
                 )}
                 onClick={() => playTrack(track.id)}
             >
@@ -170,7 +170,7 @@ export function Queue() {
                     <span className="text-sm text-muted-foreground">
                         {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-:--'}
                     </span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/20" onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id)}}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/20" onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id)}}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>

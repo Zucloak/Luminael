@@ -71,6 +71,9 @@ export function PersistentPlayer() {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
+    if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [volume * 100] }), '*');
+    }
   }, [volume]);
 
   useEffect(() => {
@@ -80,11 +83,15 @@ export function PersistentPlayer() {
   }, [isLooping]);
 
   useEffect(() => {
-    if (audioRef.current && seekRequest !== null) {
-      audioRef.current.currentTime = seekRequest;
-      onSeeked();
+    if (seekRequest !== null) {
+        if (currentTrack?.sourceType === 'direct' && audioRef.current) {
+            audioRef.current.currentTime = seekRequest;
+        } else if (currentTrack?.sourceType === 'youtube' && iframeRef.current?.contentWindow) {
+            iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [seekRequest] }), '*');
+        }
+        onSeeked();
     }
-  }, [seekRequest, onSeeked]);
+  }, [seekRequest, onSeeked, currentTrack]);
 
   useEffect(() => {
     if (currentTrack?.sourceType === 'direct' && audioRef.current) {
@@ -124,7 +131,7 @@ export function PersistentPlayer() {
       {currentTrack.sourceType === 'youtube' && (
         <iframe
           ref={iframeRef}
-          src={`${currentTrack.url}?enablejsapi=1&autoplay=1`}
+          src={`${currentTrack.url}?enablejsapi=1&autoplay=1&origin=${window.location.origin}`}
           className="hidden"
           allow="autoplay"
         />

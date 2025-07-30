@@ -77,12 +77,7 @@ export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
   setVolume: (volume: number) => set({ volume }),
   seek: (time: number) => set({ currentTime: time }),
   seekTo: (time: number) => {
-    const { currentTrackIndex, queue } = get();
-    if (currentTrackIndex === null) return;
-    const currentTrack = queue[currentTrackIndex];
-    if (currentTrack.sourceType === 'direct') {
-        set({ seekRequest: time });
-    }
+    set({ seekRequest: time });
   },
   onSeeked: () => set({ seekRequest: null }),
   addToQueue: (track: Track) => set(state => ({ queue: [...state.queue, track] })),

@@ -45,7 +45,7 @@ export function Player() {
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-4 bg-black/20 backdrop-blur-lg rounded-2xl shadow-lg">
+    <div className="flex flex-col items-center space-y-4 p-4 bg-background/80 backdrop-blur-lg rounded-2xl shadow-lg border border-border">
       <div className="w-full flex items-center justify-between">
         <div className="text-sm">
             <TooltipProvider>
@@ -61,12 +61,28 @@ export function Player() {
           <p className="text-muted-foreground">{currentTrack?.artist || '---'}</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : 'hover:bg-white/10'}>
-            <Shuffle className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : 'hover:bg-white/10'}>
-            <Repeat className="h-5 w-5" />
-          </Button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : 'hover:bg-accent'}>
+                            <Shuffle className="h-5 w-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Shuffle</p>
+                    </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : 'hover:bg-accent'}>
+                            <Repeat className="h-5 w-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Loop</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         </div>
       </div>
       <div className="w-full">
@@ -75,7 +91,6 @@ export function Player() {
           max={duration || 1}
           step={1}
           onValueChange={(value) => seekTo(value[0])}
-          className="[&>span:first-child]:h-1 [&>span:first-child]:rounded-full [&>span:first-child>span]:bg-white/80 [&>span:first-child>span]:shadow-sm [&>span:first-child>span]:w-4 [&>span:first-child>span]:h-4"
         />
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>{formatTime(currentTime)}</span>
@@ -83,25 +98,25 @@ export function Player() {
         </div>
       </div>
       <div className="flex items-center justify-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={previous} disabled={!currentTrack} className="hover:bg-white/10">
+        <Button variant="ghost" size="icon" onClick={previous} disabled={!currentTrack} className="hover:bg-accent">
           <SkipBack className="h-6 w-6" />
         </Button>
-        <Button variant="default" size="lg" className="rounded-full h-16 w-16 bg-white/80 text-black shadow-lg hover:bg-white" onClick={isPlaying ? pause : play} disabled={!currentTrack}>
+        <Button variant="default" size="lg" className="rounded-full h-16 w-16" onClick={isPlaying ? pause : play} disabled={!currentTrack}>
           {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
         </Button>
-        <Button variant="ghost" size="icon" onClick={next} disabled={!currentTrack} className="hover:bg-white/10">
+        <Button variant="ghost" size="icon" onClick={next} disabled={!currentTrack} className="hover:bg-accent">
           <SkipForward className="h-6 w-6" />
         </Button>
       </div>
       <div className="w-full flex items-center justify-end space-x-2">
-        <Button variant="ghost" size="icon" onClick={() => setVolume(volume > 0 ? 0 : 0.5)} className="hover:bg-white/10">
+        <Button variant="ghost" size="icon" onClick={() => setVolume(volume > 0 ? 0 : 0.5)} className="hover:bg-accent">
             {volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </Button>
         <Slider
           value={[volume]}
           max={1}
           step={0.01}
-          className="w-24 [&>span:first-child]:h-1 [&>span:first-child]:rounded-full [&>span:first-child>span]:bg-white/80 [&>span:first-child>span]:shadow-sm [&>span:first-child>span]:w-4 [&>span:first-child>span]:h-4"
+          className="w-24"
           onValueChange={(value) => setVolume(value[0])}
         />
       </div>
