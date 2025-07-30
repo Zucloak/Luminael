@@ -89,7 +89,7 @@ export function Player() {
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : 'hover:bg-accent'}>
+                    <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'bg-accent text-primary' : 'hover:bg-accent'}>
                         <Shuffle className="h-5 w-5" />
                     </Button>
                 </TooltipTrigger>
@@ -110,7 +110,7 @@ export function Player() {
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : 'hover:bg-accent'}>
+                    <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'bg-accent text-primary' : 'hover:bg-accent'}>
                         <Repeat className="h-5 w-5" />
                     </Button>
                 </TooltipTrigger>

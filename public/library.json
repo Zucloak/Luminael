@@ -1,12 +1,23 @@
-// IMPORTANT: To add new music to the library, you must add a new entry to this JSON file.
-// The "id" should be the filename of the mp3 file in the public/music directory.
-// The "title", "artist", and "duration" fields are for display purposes.
 [
   {
-    "id": "placeholder.mp3",
-    "title": "Placeholder Song",
-    "artist": "Luminael",
-    "url": "/music/placeholder.mp3",
-    "duration": 1
+    "id": "QuizVibe.mp3",
+    "title": "QuizVibe",
+    "artist": "SYVANT",
+    "url": "/music/QuizVibe.mp3",
+    "duration": 155
+  },
+  {
+    "id": "SYVANT-Tagalog.mp3",
+    "title": "SYVANT-Tagalog",
+    "artist": "SYVANT",
+    "url": "/music/SYVANT-Tagalog.mp3",
+    "duration": 206
+  },
+  {
+    "id": "Reimagined.mp3",
+    "title": "Reimagined",
+    "artist": "SYVANT",
+    "url": "/music/Reimagined.mp3",
+    "duration": 186
   }
 ]
