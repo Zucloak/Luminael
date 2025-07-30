@@ -49,13 +49,8 @@ export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
   next: () => {
-    const { currentTrackIndex, queue, isShuffling, isLooping } = get();
+    const { currentTrackIndex, queue, isShuffling } = get();
     if (currentTrackIndex === null) return;
-
-    if (isLooping) {
-        set({ seekRequest: 0 });
-        return;
-    }
 
     if (isShuffling) {
       let nextIndex;

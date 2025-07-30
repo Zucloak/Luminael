@@ -118,7 +118,22 @@ export function PersistentPlayer() {
 
   const onStateChange = (event: any) => {
     if (event.data === 0) { // 0 = ended
-        next();
+        if (isLooping) {
+            youtubePlayerRef.current.playVideo();
+        } else {
+            next();
+        }
+    }
+    if (event.data === 1) { // 1 = playing
+        const duration = youtubePlayerRef.current.getDuration();
+        if (duration) {
+            const { queue, currentTrackIndex } = useMediaPlayer.getState();
+            if (currentTrackIndex !== null) {
+                const newQueue = [...queue];
+                newQueue[currentTrackIndex].duration = duration;
+                useMediaPlayer.setState({ queue: newQueue });
+            }
+        }
     }
   };
 

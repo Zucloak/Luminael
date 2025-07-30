@@ -1,6 +1,9 @@
+// IMPORTANT: To add new music to the library, you must add a new entry to this JSON file.
+// The "id" should be the filename of the mp3 file in the public/music directory.
+// The "title", "artist", and "duration" fields are for display purposes.
 [
   {
-    "id": "placeholder",
+    "id": "placeholder.mp3",
     "title": "Placeholder Song",
     "artist": "Luminael",
     "url": "/music/placeholder.mp3",
