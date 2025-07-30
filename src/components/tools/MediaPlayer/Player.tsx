@@ -43,8 +43,8 @@ export function Player() {
       : null;
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-4 bg-background/80 backdrop-blur-lg rounded-2xl shadow-lg border border-border">
-      <div className="w-32 h-20 rounded-lg bg-muted flex items-center justify-center">
+    <div className="flex flex-col items-center space-y-4 p-4 bg-background/80 backdrop-blur-lg rounded-2xl shadow-lg border border-border max-w-md mx-auto">
+      <div className="w-40 h-24 rounded-lg bg-muted flex items-center justify-center">
         {currentTrack?.sourceType === 'youtube' ? (
           <img
             src={`https://img.youtube.com/vi/${currentTrack.id}/hqdefault.jpg`}
