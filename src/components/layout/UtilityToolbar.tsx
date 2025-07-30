@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, Music, HelpCircle } from 'lucide-react';
+import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, Music, HelpCircle, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -132,20 +132,46 @@ export function UtilityToolbar() {
                 </DropdownMenuItem>
               </DialogTrigger>
               <DialogContent className="max-w-sm p-4 border-0">
-                <DialogTitle>
-                  Media Player
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="ml-2 h-4 w-4">
-                          <HelpCircle className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Play and manage your audio queue. You can add tracks by URL or import/export your playlists as JSON files.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <DialogTitle className="flex justify-between items-center">
+                  <span>Media Player</span>
+                  <div className="flex items-center space-x-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Import playlist</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Export playlist</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <HelpCircle className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Play and manage your audio queue. You can add tracks by URL or import/export your playlists as JSON files.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </DialogTitle>
                 <MediaPlayer />
               </DialogContent>
