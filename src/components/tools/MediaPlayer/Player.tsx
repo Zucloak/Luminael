@@ -44,7 +44,7 @@ export function Player() {
 
   return (
     <div className="flex flex-col items-center space-y-4 p-4 bg-background/80 backdrop-blur-lg rounded-2xl shadow-lg border border-border">
-      <div className="w-24 h-14 rounded-lg bg-muted flex items-center justify-center">
+      <div className="w-32 h-20 rounded-lg bg-muted flex items-center justify-center">
         {currentTrack?.sourceType === 'youtube' ? (
           <img
             src={`https://img.youtube.com/vi/${currentTrack.id}/hqdefault.jpg`}
@@ -55,7 +55,7 @@ export function Player() {
           <p className="text-muted-foreground">No track selected</p>
         )}
       </div>
-      <div className="w-full flex items-center justify-between">
+      <div className="w-full flex items-center justify-center text-center">
         <div className="text-sm">
           <TooltipProvider>
             <Tooltip>
@@ -70,18 +70,6 @@ export function Player() {
             </Tooltip>
           </TooltipProvider>
           <p className="text-muted-foreground">{currentTrack?.artist || '---'}</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={() => setVolume(volume > 0 ? 0 : 0.5)} className="hover:bg-accent">
-            {volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-          </Button>
-          <Slider
-            value={[volume]}
-            max={1}
-            step={0.01}
-            className="w-24"
-            onValueChange={(value) => setVolume(value[0])}
-          />
         </div>
       </div>
       <div className="w-full">

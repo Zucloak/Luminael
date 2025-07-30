@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { ApiKeyProvider } from "@/hooks/use-api-key";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { QuizSetupProvider } from "@/hooks/use-quiz-setup";
-import { PersistentPlayer } from "@/components/tools/MediaPlayer/PersistentPlayer";
 import { useMediaPlayer } from "@/hooks/use-media-player";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
@@ -20,7 +19,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             <ApiKeyProvider>
                 <QuizSetupProvider>
                     {children}
-                    <PersistentPlayer />
                 </QuizSetupProvider>
             </ApiKeyProvider>
         </ThemeProvider>
