@@ -8,6 +8,12 @@ import { useMediaPlayer } from '@/hooks/use-media-player';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn, cleanDuration } from '@/lib/utils';
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function Queue() {
   const [newTrackUrl, setNewTrackUrl] = useState('');
@@ -118,66 +124,96 @@ export function Queue() {
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
   return (
-    <div className="space-y-4 h-full flex flex-col p-4">
-      <div className="flex space-x-2">
-        <Input
-          placeholder="Enter a media or YouTube link"
-          value={newTrackUrl}
-          onChange={(e) => setNewTrackUrl(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddTrack()}
-          className="bg-background/80 border-border rounded-xl focus:ring-primary"
-        />
-        <Button onClick={handleAddTrack} disabled={isAdding} className="rounded-xl">
-          {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        </Button>
-      </div>
-      <div className="flex justify-end space-x-2">
-        <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept=".json"
-            onChange={handleImportQueue}
-        />
-        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-xl">
-          <Upload className="mr-2 h-4 w-4" />
-          Import
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleExportQueue} disabled={queue.length === 0} className="rounded-xl">
-          <Download className="mr-2 h-4 w-4" />
-          Export
-        </Button>
-      </div>
-      <ScrollArea className="flex-grow -mr-4">
-        <div className="space-y-2 pr-4">
-            {queue.map((track, index) => (
-            <div
-                key={`${track.id}-${index}`}
-                className={cn(
-                    "flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-colors",
-                    currentTrack?.id === track.id ? "bg-accent" : "hover:bg-accent/50"
-                )}
-                onClick={() => playTrack(track.id)}
-            >
-                <div className="flex items-center space-x-4">
-                    <span className="text-sm font-bold w-6 text-center text-muted-foreground">{index + 1}</span>
-                    <div>
-                        <p className="font-semibold truncate max-w-[250px]">{track.title}</p>
-                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">{track.artist}</p>
-                    </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <span className="text-sm text-muted-foreground">
-                        {cleanDuration(track.duration)}
-                    </span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/20" onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id)}}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
-            ))}
+    <TooltipProvider delayDuration={200}>
+      <div className="space-y-4 h-full flex flex-col p-4">
+        <div className="flex space-x-2">
+          <Input
+            placeholder="Enter a media or YouTube link"
+            value={newTrackUrl}
+            onChange={(e) => setNewTrackUrl(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddTrack()}
+            className="bg-background/80 border-border rounded-xl focus:ring-primary"
+          />
+          <Button onClick={handleAddTrack} disabled={isAdding} className="rounded-xl">
+            {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          </Button>
         </div>
-      </ScrollArea>
-    </div>
+        <div className="flex justify-end space-x-2">
+          <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept=".json"
+              onChange={handleImportQueue}
+          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-xl">
+                <Upload className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent sideOffset={10}>
+              <p>Import a playlist from a JSON file.</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" onClick={handleExportQueue} disabled={queue.length === 0} className="rounded-xl">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent sideOffset={10}>
+              <p>Export the current playlist to a JSON file.</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        <ScrollArea className="flex-grow">
+          <div className="space-y-2 pr-4 h-full">
+              {queue.map((track, index) => (
+              <div
+                  key={`${track.id}-${index}`}
+                  className={cn(
+                      "flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-colors",
+                      currentTrack?.id === track.id ? "bg-accent" : "hover:bg-accent/50"
+                  )}
+                  onClick={() => playTrack(track.id)}
+              >
+                  <div className="flex items-center space-x-4">
+                      <span className="text-sm font-bold w-6 text-center text-muted-foreground">{index + 1}</span>
+                      <div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="font-semibold truncate max-w-[250px]">{track.title}</p>
+                          </TooltipTrigger>
+                          <TooltipContent sideOffset={10}>
+                            <p>{track.title}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">{track.artist}</p>
+                      </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                      <span className="text-sm text-muted-foreground">
+                          {cleanDuration(track.duration)}
+                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/20" onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id)}}>
+                              <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent sideOffset={10}>
+                          <p>Remove from queue</p>
+                        </TooltipContent>
+                      </Tooltip>
+                  </div>
+              </div>
+              ))}
+          </div>
+        </ScrollArea>
+      </div>
+    </TooltipProvider>
   );
 }

@@ -8,7 +8,7 @@ import { Library } from './Library';
 
 export function MediaPlayer() {
   return (
-    <div className="flex flex-col h-[700px] bg-background/80 backdrop-blur-xl border border-border rounded-2xl overflow-hidden text-foreground">
+    <div className="flex flex-col h-[600px] bg-background/80 backdrop-blur-xl border border-border rounded-2xl overflow-hidden text-foreground">
       <div className="p-4">
         <Player />
       </div>

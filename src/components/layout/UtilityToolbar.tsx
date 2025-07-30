@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, Music } from 'lucide-react';
+import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, Music, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,6 +19,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Calculator } from '../tools/Calculator';
 import { GraphCreator } from '../tools/GraphCreator';
 import { Dictionary } from '../tools/Dictionary';
@@ -126,10 +132,21 @@ export function UtilityToolbar() {
                 </DropdownMenuItem>
               </DialogTrigger>
               <DialogContent className="max-w-sm p-4 border-0">
-                <DialogTitle>Media Player</DialogTitle>
-                <DialogDescription>
-                  Play and manage your audio queue. You can add tracks by URL or import/export your playlists as JSON files.
-                </DialogDescription>
+                <DialogTitle>
+                  Media Player
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="ml-2 h-4 w-4">
+                          <HelpCircle className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Play and manage your audio queue. You can add tracks by URL or import/export your playlists as JSON files.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </DialogTitle>
                 <MediaPlayer />
               </DialogContent>
             </Dialog>
