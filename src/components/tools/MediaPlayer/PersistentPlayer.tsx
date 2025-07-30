@@ -25,6 +25,13 @@ export function PersistentPlayer() {
   const [isReady, setIsReady] = useState(false);
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
+  useEffect(() => {
+    console.log("PersistentPlayer mounted");
+    return () => {
+        console.log("PersistentPlayer unmounted");
+    };
+  }, []);
+
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
       return;
