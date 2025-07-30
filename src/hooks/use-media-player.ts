@@ -6,6 +6,7 @@ export interface Track {
   artist: string;
   url: string;
   duration: number;
+  sourceType: 'youtube' | 'direct';
 }
 
 interface MediaPlayerState {

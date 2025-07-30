@@ -19,6 +19,7 @@ export function PersistentPlayer() {
   } = useMediaPlayer();
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
@@ -51,24 +52,20 @@ export function PersistentPlayer() {
   }, [handleKeyDown]);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const playAudio = async () => {
-      try {
-        await audio.play();
-      } catch (error) {
-        console.error("Autoplay was prevented.", error);
-        pause(); // If autoplay fails, set state to paused
-      }
-    };
-
-    if (isPlaying && audio.src) {
-        playAudio();
-    } else {
-      audio.pause();
+    if (currentTrack?.sourceType === 'direct' && audioRef.current) {
+        const audio = audioRef.current;
+        if (isPlaying) {
+            audio.play().catch(e => console.error("Autoplay was prevented.", e));
+        } else {
+            audio.pause();
+        }
+    } else if (currentTrack?.sourceType === 'youtube' && iframeRef.current) {
+        const player = iframeRef.current.contentWindow;
+        if(player) {
+            player.postMessage(JSON.stringify({ event: 'command', func: isPlaying ? 'playVideo' : 'pauseVideo' }), '*');
+        }
     }
-  }, [isPlaying]);
+  }, [isPlaying, currentTrack]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -90,33 +87,16 @@ export function PersistentPlayer() {
   }, [seekRequest, onSeeked]);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const loadTrack = async () => {
-      if (!currentTrack) {
-        audio.src = "";
-        return;
-      }
-      if (audio.src === currentTrack.url) return;
-
-      setIsLoading(true);
-      audio.src = currentTrack.url;
-      try {
-        await audio.load(); // Explicitly load
-        if (isPlaying) {
-            await audio.play();
+    if (currentTrack?.sourceType === 'direct' && audioRef.current) {
+        const audio = audioRef.current;
+        if (audio.src !== currentTrack.url) {
+            setIsLoading(true);
+            audio.src = currentTrack.url;
+            audio.load();
+            audio.play().catch(e => console.error("Autoplay was prevented.", e)).finally(() => setIsLoading(false));
         }
-      } catch (error) {
-          console.error("Error loading track:", error);
-          pause();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTrack();
-  }, [currentTrack?.id]);
+    }
+  }, [currentTrack]);
 
   const handleTimeUpdate = () => {
     if (audioRef.current && !isLoading) {
@@ -128,12 +108,27 @@ export function PersistentPlayer() {
       useMediaPlayer.setState({ duration: audioRef.current?.duration || 0 });
   }
 
+  if (!currentTrack) return null;
+
   return (
-    <audio
-      ref={audioRef}
-      onTimeUpdate={handleTimeUpdate}
-      onLoadedData={handleLoadedData}
-      onEnded={next}
-    />
+    <>
+      {currentTrack.sourceType === 'direct' && (
+        <audio
+          ref={audioRef}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedData={handleLoadedData}
+          onEnded={next}
+          className="hidden"
+        />
+      )}
+      {currentTrack.sourceType === 'youtube' && (
+        <iframe
+          ref={iframeRef}
+          src={`${currentTrack.url}?enablejsapi=1&autoplay=1`}
+          className="hidden"
+          allow="autoplay"
+        />
+      )}
+    </>
   );
 }

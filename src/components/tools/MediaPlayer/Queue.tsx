@@ -23,26 +23,19 @@ export function Queue() {
       let trackData;
       if (newTrackUrl.includes('youtube.com') || newTrackUrl.includes('youtu.be')) {
         const videoId = newTrackUrl.split('v=')[1]?.split('&')[0] || newTrackUrl.split('/').pop();
-        const fetchUrl = `https://vid.puffyan.us/api/v1/videos/${videoId}`;
-        console.log("Fetching from URL:", fetchUrl);
-        const response = await fetch(fetchUrl);
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Fetch failed:", { status: response.status, statusText: response.statusText, body: errorText });
-            throw new Error(`Failed to fetch video data. Status: ${response.status}`);
+        if (!videoId) {
+            throw new Error("Could not extract video ID from URL");
         }
-        const data = await response.json();
 
-        const audioResponse = await fetch(`https://vid.puffyan.us/latest_version?id=${videoId}&itag=18`);
-        const audioBlob = await audioResponse.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-
+        // We can't get metadata without an API call, so we'll just use the video ID for now
+        // A proper implementation would use the YouTube Data API for this
         trackData = {
-          id: data.videoId,
-          title: data.title,
-          artist: data.author,
-          url: audioUrl,
-          duration: data.lengthSeconds,
+          id: videoId,
+          title: `YouTube Video: ${videoId}`,
+          artist: 'YouTube',
+          url: `https://www.youtube.com/embed/${videoId}`,
+          duration: 0, // Cannot get duration without API
+          sourceType: 'youtube' as 'youtube',
         };
       } else {
         const audioResponse = await fetch(newTrackUrl);
@@ -55,6 +48,7 @@ export function Queue() {
           artist: 'Unknown Artist',
           url: audioUrl,
           duration: 0, // Will be updated on load
+          sourceType: 'direct' as 'direct',
         };
       }
       addToQueue(trackData);
@@ -63,7 +57,7 @@ export function Queue() {
         console.error("Full error object:", error);
         toast({
             title: "Error adding track",
-            description: "Could not fetch track information. The service might be down or the link is invalid.",
+            description: "Could not add track. Please check the link.",
         });
     }
   };
