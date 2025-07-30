@@ -44,7 +44,7 @@ export function Player() {
 
   return (
     <div className="flex flex-col items-center space-y-4 p-4 bg-background/80 backdrop-blur-lg rounded-2xl shadow-lg border border-border">
-      <div className="w-full aspect-video rounded-lg bg-muted flex items-center justify-center">
+      <div className="w-24 h-14 rounded-lg bg-muted flex items-center justify-center">
         {currentTrack?.sourceType === 'youtube' ? (
           <img
             src={`https://img.youtube.com/vi/${currentTrack.id}/hqdefault.jpg`}
