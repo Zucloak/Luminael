@@ -38,14 +38,14 @@ interface MediaPlayerState {
 
 export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
   isPlaying: false,
-  isShuffling: false,
-  isLooping: false,
+  isShuffling: typeof window !== 'undefined' ? localStorage.getItem('isShuffling') === 'true' : false,
+  isLooping: typeof window !== 'undefined' ? localStorage.getItem('isLooping') === 'true' : false,
   volume: 0.5,
   currentTime: 0,
   duration: 0,
   seekRequest: null,
-  currentTrackIndex: null,
-  queue: [],
+  currentTrackIndex: typeof window !== 'undefined' ? Number(localStorage.getItem('currentTrackIndex')) || null : null,
+  queue: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('queue') || '[]') : [],
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
   next: () => {
@@ -80,21 +80,36 @@ export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
         set({ currentTrackIndex: nextIndex });
     }
   },
-  toggleShuffle: () => set(state => ({ isShuffling: !state.isShuffling })),
-  toggleLoop: () => set(state => ({ isLooping: !state.isLooping })),
+  toggleShuffle: () => set(state => {
+    localStorage.setItem('isShuffling', String(!state.isShuffling));
+    return { isShuffling: !state.isShuffling };
+  }),
+  toggleLoop: () => set(state => {
+    localStorage.setItem('isLooping', String(!state.isLooping));
+    return { isLooping: !state.isLooping };
+  }),
   setVolume: (volume: number) => set({ volume }),
   seek: (time: number) => set({ currentTime: time }),
   seekTo: (time: number) => {
     set({ seekRequest: time });
   },
   onSeeked: () => set({ seekRequest: null }),
-  addToQueue: (track: Track) => set(state => ({ queue: [...state.queue, track] })),
-  removeFromQueue: (trackId: string) => set(state => ({ queue: state.queue.filter(t => t.id !== trackId) })),
+  addToQueue: (track: Track) => set(state => {
+    const newQueue = [...state.queue, track];
+    localStorage.setItem('queue', JSON.stringify(newQueue));
+    return { queue: newQueue };
+  }),
+  removeFromQueue: (trackId: string) => set(state => {
+    const newQueue = state.queue.filter(t => t.id !== trackId);
+    localStorage.setItem('queue', JSON.stringify(newQueue));
+    return { queue: newQueue };
+  }),
   reorderQueue: (fromIndex: number, toIndex: number) => {
     set(state => {
       const newQueue = [...state.queue];
       const [movedTrack] = newQueue.splice(fromIndex, 1);
       newQueue.splice(toIndex, 0, movedTrack);
+      localStorage.setItem('queue', JSON.stringify(newQueue));
       return { queue: newQueue };
     });
   },
@@ -102,8 +117,12 @@ export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
     const { queue } = get();
     const trackIndex = queue.findIndex(t => t.id === trackId);
     if (trackIndex !== -1) {
+      localStorage.setItem('currentTrackIndex', String(trackIndex));
       set({ currentTrackIndex: trackIndex, isPlaying: true });
     }
   },
-  loadQueue: (tracks: Track[]) => set({ queue: tracks }),
+  loadQueue: (tracks: Track[]) => {
+      localStorage.setItem('queue', JSON.stringify(tracks));
+      set({ queue: tracks });
+  },
 }));
