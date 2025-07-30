@@ -36,7 +36,7 @@ export function MainContent({ children }: { children: React.ReactNode }) {
             <Separator orientation="vertical" className="hidden sm:block h-4" />
             <Link href="/privacy" className="font-semibold underline hover:text-foreground">Privacy Policy</Link>
             <Separator orientation="vertical" className="hidden sm:block h-4" />
-            <a href="/whitepaper" className="underline hover:underline">Whitepaper</a>
+            <Link href="/whitepaper" className="font-semibold underline hover:text-foreground">Whitepaper</Link>
         </div>
         <p className="mt-2">
           A Prototype from <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer/CEO: Ken Mosquera
