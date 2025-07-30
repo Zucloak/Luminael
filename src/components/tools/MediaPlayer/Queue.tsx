@@ -14,7 +14,6 @@ export function Queue() {
   const { queue, addToQueue, removeFromQueue, playTrack, currentTrackIndex, loadQueue } = useMediaPlayer();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const corsProxy = 'https://cors-anywhere.herokuapp.com/';
 
   const handleAddTrack = async () => {
     if (!newTrackUrl) return;
@@ -33,20 +32,28 @@ export function Queue() {
             throw new Error(`Failed to fetch video data. Status: ${response.status}`);
         }
         const data = await response.json();
+
+        const audioResponse = await fetch(`https://vid.puffyan.us/latest_version?id=${videoId}&itag=18`);
+        const audioBlob = await audioResponse.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+
         trackData = {
           id: data.videoId,
           title: data.title,
           artist: data.author,
-          url: `${corsProxy}https://vid.puffyan.us/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
+          url: audioUrl,
           duration: data.lengthSeconds,
         };
       } else {
-        // For direct media links, we can't get much metadata without playing it
+        const audioResponse = await fetch(newTrackUrl);
+        const audioBlob = await audioResponse.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+
         trackData = {
           id: newTrackUrl,
           title: newTrackUrl.split('/').pop() || 'Unknown Title',
           artist: 'Unknown Artist',
-          url: `${corsProxy}${newTrackUrl}`,
+          url: audioUrl,
           duration: 0, // Will be updated on load
         };
       }
