@@ -23,10 +23,12 @@ export function Queue() {
       let trackData;
       if (newTrackUrl.includes('youtube.com') || newTrackUrl.includes('youtu.be')) {
         const videoId = newTrackUrl.split('v=')[1]?.split('&')[0] || newTrackUrl.split('/').pop();
-        const fetchUrl = `https://invidious.nerdvpn.de/api/v1/videos/${videoId}`;
+        const fetchUrl = `https://vid.puffyan.us/api/v1/videos/${videoId}`;
         console.log("Fetching from URL:", fetchUrl);
         const response = await fetch(fetchUrl);
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Fetch failed:", { status: response.status, statusText: response.statusText, body: errorText });
             throw new Error(`Failed to fetch video data. Status: ${response.status}`);
         }
         const data = await response.json();
@@ -34,7 +36,7 @@ export function Queue() {
           id: data.videoId,
           title: data.title,
           artist: data.author,
-          url: `https://invidious.nerdvpn.de/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
+          url: `https://vid.puffyan.us/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
           duration: data.lengthSeconds,
         };
       } else {
@@ -50,11 +52,11 @@ export function Queue() {
       addToQueue(trackData);
       setNewTrackUrl('');
     } catch (error) {
-      console.error("Error adding track:", error);
-      toast({
-        title: "Error adding track",
-        description: "Could not fetch track information. Please check the link or try another one.",
-      });
+        console.error("Full error object:", error);
+        toast({
+            title: "Error adding track",
+            description: "Could not fetch track information. The service might be down or the link is invalid.",
+        });
     }
   };
 
