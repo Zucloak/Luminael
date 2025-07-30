@@ -189,6 +189,21 @@ export function PersistentPlayer() {
           className="hidden"
         />
       )}
+      {currentTrack.sourceType === 'youtube' && (
+        <YouTube
+          videoId={currentTrack.id}
+          opts={{
+            height: '0',
+            width: '0',
+            playerVars: {
+              autoplay: isPlaying ? 1 : 0,
+            },
+          }}
+          onReady={onReady}
+          onStateChange={onStateChange}
+          className="hidden"
+        />
+      )}
     </>
   );
 }
