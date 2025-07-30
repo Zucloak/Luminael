@@ -15,7 +15,8 @@ export function PersistentPlayer() {
     next,
     previous,
     play,
-    pause
+    pause,
+    seek
   } = useMediaPlayer();
 
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -50,6 +51,30 @@ export function PersistentPlayer() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+        if (event.source !== iframeRef.current?.contentWindow) return;
+        try {
+            const data = JSON.parse(event.data);
+            if (data.event === 'onStateChange' && data.info?.playerState === 0) { // 0 = ended
+                next();
+            }
+            if (data.event === 'infoDelivery' && data.info?.currentTime) {
+                seek(data.info.currentTime);
+            }
+            if (data.event === 'infoDelivery' && data.info?.duration) {
+                useMediaPlayer.setState({ duration: data.info.duration });
+            }
+        } catch (error) {
+            // console.error("Error parsing message from iframe:", error);
+        }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => {
+        window.removeEventListener('message', handleMessage);
+    };
+  }, [next, seek]);
 
   useEffect(() => {
     if (currentTrack?.sourceType === 'direct' && audioRef.current) {
@@ -87,7 +112,7 @@ export function PersistentPlayer() {
         if (currentTrack?.sourceType === 'direct' && audioRef.current) {
             audioRef.current.currentTime = seekRequest;
         } else if (currentTrack?.sourceType === 'youtube' && iframeRef.current?.contentWindow) {
-            iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [seekRequest] }), '*');
+            iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [seekRequest, true] }), '*');
         }
         onSeeked();
     }
@@ -107,13 +132,24 @@ export function PersistentPlayer() {
 
   const handleTimeUpdate = () => {
     if (audioRef.current && !isLoading) {
-      useMediaPlayer.setState({ currentTime: audioRef.current.currentTime });
+      seek(audioRef.current.currentTime);
     }
   };
 
   const handleLoadedData = () => {
       useMediaPlayer.setState({ duration: audioRef.current?.duration || 0 });
   }
+
+  // This effect will periodically ask the YouTube player for its current time
+  useEffect(() => {
+    const interval = setInterval(() => {
+        if (currentTrack?.sourceType === 'youtube' && iframeRef.current?.contentWindow) {
+            iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'getCurrentTime', args: [] }), '*');
+            iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'getDuration', args: [] }), '*');
+        }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [currentTrack]);
 
   if (!currentTrack) return null;
 
@@ -131,7 +167,7 @@ export function PersistentPlayer() {
       {currentTrack.sourceType === 'youtube' && (
         <iframe
           ref={iframeRef}
-          src={`${currentTrack.url}?enablejsapi=1&autoplay=1&origin=${window.location.origin}`}
+          src={`${currentTrack.url}&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
           className="hidden"
           allow="autoplay"
         />
