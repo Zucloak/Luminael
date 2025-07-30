@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { useMediaPlayer } from '@/hooks/use-media-player';
 
 export function PersistentPlayer() {
@@ -19,10 +19,10 @@ export function PersistentPlayer() {
   } = useMediaPlayer();
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Don't trigger hotkeys if the user is typing in an input field
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
       return;
     }
@@ -30,18 +30,18 @@ export function PersistentPlayer() {
     switch (event.code) {
       case 'Space':
         event.preventDefault();
-        isPlaying ? pause() : play();
+        if (currentTrack) isPlaying ? pause() : play();
         break;
       case 'ArrowRight':
         event.preventDefault();
-        next();
+        if (currentTrack) next();
         break;
       case 'ArrowLeft':
         event.preventDefault();
-        previous();
+        if (currentTrack) previous();
         break;
     }
-  }, [isPlaying, play, pause, next, previous]);
+  }, [isPlaying, play, pause, next, previous, currentTrack]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -50,35 +50,38 @@ export function PersistentPlayer() {
     };
   }, [handleKeyDown]);
 
-  // Effect to control play/pause
   useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying && currentTrack) {
-        if (audioRef.current.src !== currentTrack.url) {
-            audioRef.current.src = currentTrack.url;
-        }
-        audioRef.current.play().catch(e => console.error("Autoplay was prevented.", e));
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isPlaying, currentTrack]);
+    const audio = audioRef.current;
+    if (!audio) return;
 
-  // Effect to update volume
+    const playAudio = async () => {
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error("Autoplay was prevented.", error);
+        pause(); // If autoplay fails, set state to paused
+      }
+    };
+
+    if (isPlaying && audio.src) {
+        playAudio();
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying]);
+
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
   }, [volume]);
 
-  // Effect to update loop status
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.loop = isLooping;
     }
   }, [isLooping]);
 
-  // Effect to handle seek requests
   useEffect(() => {
     if (audioRef.current && seekRequest !== null) {
       audioRef.current.currentTime = seekRequest;
@@ -86,35 +89,50 @@ export function PersistentPlayer() {
     }
   }, [seekRequest, onSeeked]);
 
-  // Effect to update the audio src when the track changes
   useEffect(() => {
-    if (audioRef.current && currentTrack) {
-      audioRef.current.src = currentTrack.url;
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Autoplay was prevented on track change.", e));
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const loadTrack = async () => {
+      if (!currentTrack) {
+        audio.src = "";
+        return;
       }
-    } else if (audioRef.current && !currentTrack) {
-        audioRef.current.src = "";
-    }
+      if (audio.src === currentTrack.url) return;
+
+      setIsLoading(true);
+      audio.src = currentTrack.url;
+      try {
+        await audio.load(); // Explicitly load
+        if (isPlaying) {
+            await audio.play();
+        }
+      } catch (error) {
+          console.error("Error loading track:", error);
+          pause();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTrack();
   }, [currentTrack?.id]);
 
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
+    if (audioRef.current && !isLoading) {
       useMediaPlayer.setState({ currentTime: audioRef.current.currentTime });
     }
   };
 
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      useMediaPlayer.setState({ duration: audioRef.current.duration });
-    }
-  };
+  const handleLoadedData = () => {
+      useMediaPlayer.setState({ duration: audioRef.current?.duration || 0 });
+  }
 
   return (
     <audio
       ref={audioRef}
       onTimeUpdate={handleTimeUpdate}
-      onLoadedMetadata={handleLoadedMetadata}
+      onLoadedData={handleLoadedData}
       onEnded={next}
     />
   );

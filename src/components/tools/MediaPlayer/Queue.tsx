@@ -7,11 +7,13 @@ import { Plus, Upload, Download, Trash2 } from 'lucide-react';
 import { useMediaPlayer } from '@/hooks/use-media-player';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useToast } from "@/components/ui/use-toast";
 
 export function Queue() {
   const [newTrackUrl, setNewTrackUrl] = useState('');
   const { queue, addToQueue, removeFromQueue, playTrack, currentTrackIndex, loadQueue } = useMediaPlayer();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleAddTrack = async () => {
     if (!newTrackUrl) return;
@@ -20,13 +22,16 @@ export function Queue() {
       let trackData;
       if (newTrackUrl.includes('youtube.com') || newTrackUrl.includes('youtu.be')) {
         const videoId = newTrackUrl.split('v=')[1]?.split('&')[0] || newTrackUrl.split('/').pop();
-        const response = await fetch(`https://invidious.io.lol/api/v1/videos/${videoId}`);
+        const response = await fetch(`https://invidious.projectsegfau.lt/api/v1/videos/${videoId}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch video data. Status: ${response.status}`);
+        }
         const data = await response.json();
         trackData = {
           id: data.videoId,
           title: data.title,
           artist: data.author,
-          url: `https://invidious.io.lol/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
+          url: `https://invidious.projectsegfau.lt/latest_version?id=${videoId}&itag=18`, // itag 18 is standard mp4
           duration: data.lengthSeconds,
         };
       } else {
@@ -43,7 +48,11 @@ export function Queue() {
       setNewTrackUrl('');
     } catch (error) {
       console.error("Error adding track:", error);
-      // Here you could add a toast notification to inform the user
+      toast({
+        variant: "destructive",
+        title: "Error adding track",
+        description: "Could not fetch track information. Please check the link or try another one.",
+      });
     }
   };
 
@@ -73,11 +82,20 @@ export function Queue() {
           if (Array.isArray(importedQueue) && importedQueue.every(t => t.id && t.title && t.url)) {
             loadQueue(importedQueue);
           } else {
-            console.error("Invalid queue file format");
+            toast({
+                variant: "destructive",
+                title: "Invalid Playlist File",
+                description: "The selected file is not a valid Luminael playlist.",
+            });
           }
         }
       } catch (error) {
         console.error("Error parsing queue file:", error);
+        toast({
+            variant: "destructive",
+            title: "Error Importing Playlist",
+            description: "There was an error reading the playlist file.",
+        });
       }
     };
     reader.readAsText(file);

@@ -18,10 +18,12 @@ import { GraphCreator } from '../tools/GraphCreator';
 import { Dictionary } from '../tools/Dictionary';
 import { Translator } from '../tools/Translator';
 import { MediaPlayer } from '../tools/MediaPlayer';
+import { useIsClient } from '@/hooks/use-is-client';
 
 export function UtilityToolbar() {
   const controls = useAnimation();
   const dragControls = React.useRef<HTMLDivElement>(null);
+  const isClient = useIsClient();
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const viewportWidth = window.innerWidth;
@@ -109,17 +111,23 @@ export function UtilityToolbar() {
             </DialogContent>
           </Dialog>
 
-          <Dialog>
-            <DialogTrigger asChild>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Music className="mr-2 h-4 w-4" />
-                <span>Media Player</span>
-              </DropdownMenuItem>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl p-0 border-0">
-              <MediaPlayer />
-            </DialogContent>
-          </Dialog>
+          {isClient && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Music className="mr-2 h-4 w-4" />
+                  <span>Media Player</span>
+                </DropdownMenuItem>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl p-0 border-0" aria-describedby="media-player-description">
+                <MediaPlayer />
+                <h2 id="media-player-title" className="sr-only">Media Player</h2>
+                <p id="media-player-description" className="sr-only">
+                  Play and manage your audio queue. You can add local files, YouTube links, and import/export your playlists.
+                </p>
+              </DialogContent>
+            </Dialog>
+          )}
 
         </DropdownMenuContent>
       </DropdownMenu>
