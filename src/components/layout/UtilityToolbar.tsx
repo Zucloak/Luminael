@@ -49,7 +49,7 @@ export function UtilityToolbar() {
   return (
     <motion.div
       ref={dragControls}
-      drag={true} // Allow dragging in any direction
+      drag={true}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
       animate={controls}
@@ -125,12 +125,12 @@ export function UtilityToolbar() {
                   <span>Media Player</span>
                 </DropdownMenuItem>
               </DialogTrigger>
-            <DialogContent className="max-w-2xl p-0 border-0">
-              <DialogTitle className="sr-only">Media Player</DialogTitle>
-              <DialogDescription className="sr-only">
+              <DialogContent className="max-w-2xl p-0 border-0">
+                <DialogTitle>Media Player</DialogTitle>
+                <DialogDescription>
                   Play and manage your audio queue. You can add local files, YouTube links, and import/export your playlists.
-              </DialogDescription>
-              <MediaPlayer />
+                </DialogDescription>
+                <MediaPlayer />
               </DialogContent>
             </Dialog>
           )}
