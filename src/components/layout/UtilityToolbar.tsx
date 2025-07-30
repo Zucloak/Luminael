@@ -125,7 +125,7 @@ export function UtilityToolbar() {
                   <span>Media Player</span>
                 </DropdownMenuItem>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl p-4 border-0">
+              <DialogContent className="max-w-sm p-4 border-0">
                 <DialogTitle>Media Player</DialogTitle>
                 <DialogDescription>
                   Play and manage your audio queue. You can add tracks by URL or import/export your playlists as JSON files.

@@ -7,12 +7,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 
 export function Library() {
   const [libraryTracks, setLibraryTracks] = useState<Track[]>([]);
   const { addToQueue, queue, currentTrackIndex } = useMediaPlayer();
-  const [newTrackUrl, setNewTrackUrl] = useState('');
 
   useEffect(() => {
     const fetchLibrary = async () => {
@@ -28,42 +26,10 @@ export function Library() {
     fetchLibrary();
   }, []);
 
-  const handleAddTrack = () => {
-    if (newTrackUrl) {
-      // Basic URL validation
-      try {
-        const url = new URL(newTrackUrl);
-        const isYouTube = url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be');
-        const track: Track = {
-          id: isYouTube ? url.searchParams.get('v') || '' : newTrackUrl,
-          title: 'New Track',
-          artist: 'Unknown Artist',
-          url: newTrackUrl,
-          duration: 0,
-          sourceType: isYouTube ? 'youtube' : 'direct',
-        };
-        addToQueue(track);
-        setNewTrackUrl('');
-      } catch (error) {
-        console.error("Invalid URL:", error);
-      }
-    }
-  };
-
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
   return (
     <ScrollArea className="h-full px-4">
-      <div className="flex space-x-2 p-2">
-        <Input
-          type="text"
-          placeholder="Add track by URL"
-          value={newTrackUrl}
-          onChange={(e) => setNewTrackUrl(e.target.value)}
-          className="bg-background/50"
-        />
-        <Button onClick={handleAddTrack}>Add</Button>
-      </div>
       <div className="space-y-2 pr-4">
         {libraryTracks.map((track, index) => (
           <div

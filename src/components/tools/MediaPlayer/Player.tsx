@@ -55,8 +55,8 @@ export function Player() {
           <p className="text-muted-foreground">No track selected</p>
         )}
       </div>
-      <div className="w-full flex items-center justify-between">
-        <div className="text-sm text-center">
+      <div className="w-full flex flex-col items-center justify-center text-center">
+        <div className="text-sm">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -71,15 +71,15 @@ export function Player() {
           </TooltipProvider>
           <p className="text-muted-foreground">{currentTrack?.artist || '---'}</p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 mt-2">
           <Button variant="ghost" size="icon" onClick={() => setVolume(volume > 0 ? 0 : 0.5)} className="hover:bg-accent">
-            {volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            {volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </Button>
           <Slider
             value={[volume]}
             max={1}
             step={0.01}
-            className="w-24"
+            className="w-20"
             onValueChange={(value) => setVolume(value[0])}
           />
         </div>
