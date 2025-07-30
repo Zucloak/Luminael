@@ -44,15 +44,17 @@ export function Player() {
 
   return (
     <div className="flex flex-col items-center space-y-4 p-4 bg-background/80 backdrop-blur-lg rounded-2xl shadow-lg border border-border">
-      {thumbnailUrl ? (
-        <div className="w-full aspect-video rounded-lg overflow-hidden">
-          <img src={thumbnailUrl} alt={currentTrack?.title} className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="w-full aspect-video rounded-lg bg-muted flex items-center justify-center">
+      <div className="w-full aspect-video rounded-lg bg-muted flex items-center justify-center">
+        {currentTrack?.sourceType === 'youtube' ? (
+          <img
+            src={`https://img.youtube.com/vi/${currentTrack.id}/hqdefault.jpg`}
+            alt={currentTrack.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
           <p className="text-muted-foreground">No track selected</p>
-        </div>
-      )}
+        )}
+      </div>
       <div className="w-full flex items-center justify-between">
         <div className="text-sm">
           <TooltipProvider>
