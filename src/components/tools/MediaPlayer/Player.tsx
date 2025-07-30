@@ -61,30 +61,16 @@ export function Player() {
           <p className="text-muted-foreground">{currentTrack?.artist || '---'}</p>
         </div>
         <div className="flex items-center space-x-2">
-            <TooltipProvider>
-                <div className="flex items-center">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : 'hover:bg-accent'}>
-                                <Shuffle className="h-5 w-5" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Shuffle</p>
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : 'hover:bg-accent'}>
-                                <Repeat className="h-5 w-5" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Loop</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </div>
-            </TooltipProvider>
+            <Button variant="ghost" size="icon" onClick={() => setVolume(volume > 0 ? 0 : 0.5)} className="hover:bg-accent">
+                {volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </Button>
+            <Slider
+              value={[volume]}
+              max={1}
+              step={0.01}
+              className="w-24"
+              onValueChange={(value) => setVolume(value[0])}
+            />
         </div>
       </div>
       <div className="w-full">
@@ -100,6 +86,18 @@ export function Player() {
         </div>
       </div>
       <div className="flex items-center justify-center space-x-4">
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : 'hover:bg-accent'}>
+                        <Shuffle className="h-5 w-5" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Shuffle</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
         <Button variant="ghost" size="icon" onClick={previous} disabled={!currentTrack} className="hover:bg-accent">
           <SkipBack className="h-6 w-6" />
         </Button>
@@ -109,18 +107,18 @@ export function Player() {
         <Button variant="ghost" size="icon" onClick={next} disabled={!currentTrack} className="hover:bg-accent">
           <SkipForward className="h-6 w-6" />
         </Button>
-      </div>
-      <div className="w-full flex items-center justify-end space-x-2">
-        <Button variant="ghost" size="icon" onClick={() => setVolume(volume > 0 ? 0 : 0.5)} className="hover:bg-accent">
-            {volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-        </Button>
-        <Slider
-          value={[volume]}
-          max={1}
-          step={0.01}
-          className="w-24"
-          onValueChange={(value) => setVolume(value[0])}
-        />
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : 'hover:bg-accent'}>
+                        <Repeat className="h-5 w-5" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Loop</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );
