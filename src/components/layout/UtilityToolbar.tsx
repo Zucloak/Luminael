@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages } from 'lucide-react';
+import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ import { Calculator } from '../tools/Calculator';
 import { GraphCreator } from '../tools/GraphCreator';
 import { Dictionary } from '../tools/Dictionary';
 import { Translator } from '../tools/Translator';
+import { MediaPlayer } from '../tools/MediaPlayer';
 
 export function UtilityToolbar() {
   const controls = useAnimation();
@@ -105,6 +106,18 @@ export function UtilityToolbar() {
             </DialogTrigger>
             <DialogContent className="max-w-xl p-0 border-0">
               <Translator />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Music className="mr-2 h-4 w-4" />
+                <span>Media Player</span>
+              </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl p-0 border-0">
+              <MediaPlayer />
             </DialogContent>
           </Dialog>
 
