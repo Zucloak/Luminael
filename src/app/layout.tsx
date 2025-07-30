@@ -8,7 +8,6 @@ import { AppProviders } from '@/components/providers/AppProviders';
 import { Header } from '@/components/layout/Header';
 import { MainContent } from '@/components/layout/MainContent';
 import { ConditionalUtilityToolbar } from '@/components/layout/ConditionalUtilityToolbar';
-import { PersistentPlayer } from '@/components/tools/MediaPlayer/PersistentPlayer';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -41,7 +40,6 @@ export default function RootLayout({
             {children}
           </MainContent>
           <ConditionalUtilityToolbar />
-          <PersistentPlayer />
         </AppProviders>
         <Toaster />
       </body>

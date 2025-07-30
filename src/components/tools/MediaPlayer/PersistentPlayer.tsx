@@ -114,6 +114,15 @@ export function PersistentPlayer() {
   const onReady = (event: any) => {
     youtubePlayerRef.current = event.target;
     setIsReady(true);
+    const duration = event.target.getDuration();
+    if (duration) {
+        const { queue, currentTrackIndex } = useMediaPlayer.getState();
+        if (currentTrackIndex !== null) {
+            const newQueue = [...queue];
+            newQueue[currentTrackIndex].duration = duration;
+            useMediaPlayer.setState({ queue: newQueue });
+        }
+    }
   };
 
   const onStateChange = (event: any) => {
