@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, Download, Trash2 } from 'lucide-react';
+import { Plus, Upload, Download, Trash2, Loader2 } from 'lucide-react';
 import { useMediaPlayer } from '@/hooks/use-media-player';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -11,12 +11,15 @@ import { useToast } from "@/components/ui/use-toast";
 
 export function Queue() {
   const [newTrackUrl, setNewTrackUrl] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
   const { queue, addToQueue, removeFromQueue, playTrack, currentTrackIndex, loadQueue } = useMediaPlayer();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleAddTrack = async () => {
-    if (!newTrackUrl) return;
+    if (!newTrackUrl || isAdding) return;
+
+    setIsAdding(true);
     console.log("Attempting to add track:", newTrackUrl);
 
     try {
@@ -27,12 +30,17 @@ export function Queue() {
             throw new Error("Could not extract video ID from URL");
         }
 
-        // We can't get metadata without an API call, so we'll just use the video ID for now
-        // A proper implementation would use the YouTube Data API for this
+        const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+        const oembedResponse = await fetch(oembedUrl);
+        if (!oembedResponse.ok) {
+            throw new Error("Failed to fetch video title");
+        }
+        const oembedData = await oembedResponse.json();
+
         trackData = {
           id: videoId,
-          title: `YouTube Video: ${videoId}`,
-          artist: 'YouTube',
+          title: oembedData.title,
+          artist: oembedData.author_name,
           url: `https://www.youtube.com/embed/${videoId}`,
           duration: 0, // Cannot get duration without API
           sourceType: 'youtube' as 'youtube',
@@ -59,6 +67,8 @@ export function Queue() {
             title: "Error adding track",
             description: "Could not add track. Please check the link.",
         });
+    } finally {
+        setIsAdding(false);
     }
   };
 
@@ -108,16 +118,17 @@ export function Queue() {
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="space-y-4 h-full flex flex-col p-4">
       <div className="flex space-x-2">
         <Input
           placeholder="Enter a media or YouTube link"
           value={newTrackUrl}
           onChange={(e) => setNewTrackUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddTrack()}
+          className="bg-white/10 border-white/20 rounded-xl focus:ring-primary"
         />
-        <Button onClick={handleAddTrack}>
-          <Plus className="h-4 w-4" />
+        <Button onClick={handleAddTrack} disabled={isAdding} className="bg-white/80 text-black hover:bg-white rounded-xl">
+          {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         </Button>
       </div>
       <div className="flex justify-end space-x-2">
@@ -128,28 +139,28 @@ export function Queue() {
             accept=".json"
             onChange={handleImportQueue}
         />
-        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="bg-white/10 border-white/20 rounded-xl hover:bg-white/20">
           <Upload className="mr-2 h-4 w-4" />
           Import
         </Button>
-        <Button variant="outline" size="sm" onClick={handleExportQueue} disabled={queue.length === 0}>
+        <Button variant="outline" size="sm" onClick={handleExportQueue} disabled={queue.length === 0} className="bg-white/10 border-white/20 rounded-xl hover:bg-white/20">
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>
       </div>
-      <ScrollArea className="flex-grow">
+      <ScrollArea className="flex-grow -mr-4">
         <div className="space-y-2 pr-4">
             {queue.map((track, index) => (
             <div
-                key={track.id}
+                key={`${track.id}-${index}`}
                 className={cn(
-                    "flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted/50",
-                    currentTrack?.id === track.id && "bg-primary/10 text-primary"
+                    "flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-colors",
+                    currentTrack?.id === track.id ? "bg-white/20" : "hover:bg-white/10"
                 )}
                 onClick={() => playTrack(track.id)}
             >
-                <div className="flex items-center space-x-3">
-                    <span className="text-sm font-bold w-6 text-center">{index + 1}</span>
+                <div className="flex items-center space-x-4">
+                    <span className="text-sm font-bold w-6 text-center text-muted-foreground">{index + 1}</span>
                     <div>
                         <p className="font-semibold truncate max-w-[250px]">{track.title}</p>
                         <p className="text-sm text-muted-foreground truncate max-w-[200px]">{track.artist}</p>
@@ -159,7 +170,7 @@ export function Queue() {
                     <span className="text-sm text-muted-foreground">
                         {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-:--'}
                     </span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id)}}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/20" onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id)}}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>

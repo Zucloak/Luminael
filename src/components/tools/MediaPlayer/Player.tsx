@@ -5,6 +5,13 @@ import { Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Volume2, VolumeX }
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useMediaPlayer } from '@/hooks/use-media-player';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 export function Player() {
   const {
@@ -23,24 +30,10 @@ export function Player() {
     toggleShuffle,
     toggleLoop,
     setVolume,
-    seek,
+    seekTo,
   } = useMediaPlayer();
 
-  const audioRef = React.useRef<HTMLAudioElement | null>(null); // Keep a ref to the global audio element if needed for seeking
-
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
-
-  const handleSeek = (value: number[]) => {
-    const newTime = value[0];
-    // We don't have direct access to the audio element anymore.
-    // The persistent player will need a way to listen to seek commands.
-    // A simple way is to have a dedicated state for seek requests.
-    // For now, we'll just update the state, and the PersistentPlayer needs to handle it.
-
-    // Let's add a seekTo function to the store.
-    const { seekTo } = useMediaPlayer.getState();
-    seekTo(newTime);
-  };
 
   const formatTime = (time: number) => {
     if (isNaN(time) || time === Infinity) {
@@ -52,17 +45,26 @@ export function Player() {
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div className="flex flex-col items-center space-y-4 p-4 bg-black/20 backdrop-blur-lg rounded-2xl shadow-lg">
       <div className="w-full flex items-center justify-between">
         <div className="text-sm">
-          <p className="font-bold truncate max-w-[300px]">{currentTrack?.title || 'No track selected'}</p>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <p className="font-bold truncate max-w-[250px]">{currentTrack?.title || 'No track selected'}</p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{currentTrack?.title || 'No track selected'}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
           <p className="text-muted-foreground">{currentTrack?.artist || '---'}</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : ''}>
+          <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : 'hover:bg-white/10'}>
             <Shuffle className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : ''}>
+          <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : 'hover:bg-white/10'}>
             <Repeat className="h-5 w-5" />
           </Button>
         </div>
@@ -72,7 +74,8 @@ export function Player() {
           value={[currentTime]}
           max={duration || 1}
           step={1}
-          onValueChange={handleSeek}
+          onValueChange={(value) => seekTo(value[0])}
+          className="[&>span:first-child]:h-1 [&>span:first-child]:rounded-full [&>span:first-child>span]:bg-white/80 [&>span:first-child>span]:shadow-sm [&>span:first-child>span]:w-4 [&>span:first-child>span]:h-4"
         />
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>{formatTime(currentTime)}</span>
@@ -80,25 +83,25 @@ export function Player() {
         </div>
       </div>
       <div className="flex items-center justify-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={previous} disabled={!currentTrack}>
+        <Button variant="ghost" size="icon" onClick={previous} disabled={!currentTrack} className="hover:bg-white/10">
           <SkipBack className="h-6 w-6" />
         </Button>
-        <Button variant="default" size="lg" className="rounded-full h-16 w-16" onClick={isPlaying ? pause : play} disabled={!currentTrack}>
+        <Button variant="default" size="lg" className="rounded-full h-16 w-16 bg-white/80 text-black shadow-lg hover:bg-white" onClick={isPlaying ? pause : play} disabled={!currentTrack}>
           {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
         </Button>
-        <Button variant="ghost" size="icon" onClick={next} disabled={!currentTrack}>
+        <Button variant="ghost" size="icon" onClick={next} disabled={!currentTrack} className="hover:bg-white/10">
           <SkipForward className="h-6 w-6" />
         </Button>
       </div>
       <div className="w-full flex items-center justify-end space-x-2">
-        <Button variant="ghost" size="icon" onClick={() => setVolume(volume > 0 ? 0 : 0.5)}>
+        <Button variant="ghost" size="icon" onClick={() => setVolume(volume > 0 ? 0 : 0.5)} className="hover:bg-white/10">
             {volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </Button>
         <Slider
           value={[volume]}
           max={1}
           step={0.01}
-          className="w-24"
+          className="w-24 [&>span:first-child]:h-1 [&>span:first-child]:rounded-full [&>span:first-child>span]:bg-white/80 [&>span:first-child>span]:shadow-sm [&>span:first-child>span]:w-4 [&>span:first-child>span]:h-4"
           onValueChange={(value) => setVolume(value[0])}
         />
       </div>
