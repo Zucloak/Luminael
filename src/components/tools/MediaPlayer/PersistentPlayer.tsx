@@ -85,6 +85,9 @@ export function PersistentPlayer() {
     if (audioRef.current) {
       audioRef.current.loop = isLooping;
     }
+    if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.setLoop(isLooping);
+    }
   }, [isLooping]);
 
   useEffect(() => {

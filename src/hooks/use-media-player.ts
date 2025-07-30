@@ -49,12 +49,20 @@ export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
   next: () => {
-    const { currentTrackIndex, queue, isShuffling } = get();
+    const { currentTrackIndex, queue, isShuffling, isLooping } = get();
     if (currentTrackIndex === null) return;
 
+    if (isLooping) {
+        set({ seekRequest: 0 });
+        return;
+    }
+
     if (isShuffling) {
-      const randomIndex = Math.floor(Math.random() * queue.length);
-      set({ currentTrackIndex: randomIndex });
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * queue.length);
+      } while (queue.length > 1 && nextIndex === currentTrackIndex);
+      set({ currentTrackIndex: nextIndex });
     } else {
       const nextIndex = (currentTrackIndex + 1) % queue.length;
       set({ currentTrackIndex: nextIndex });

@@ -62,26 +62,28 @@ export function Player() {
         </div>
         <div className="flex items-center space-x-2">
             <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : 'hover:bg-accent'}>
-                            <Shuffle className="h-5 w-5" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Shuffle</p>
-                    </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : 'hover:bg-accent'}>
-                            <Repeat className="h-5 w-5" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Loop</p>
-                    </TooltipContent>
-                </Tooltip>
+                <div className="flex items-center">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={toggleShuffle} className={isShuffling ? 'text-primary' : 'hover:bg-accent'}>
+                                <Shuffle className="h-5 w-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Shuffle</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={toggleLoop} className={isLooping ? 'text-primary' : 'hover:bg-accent'}>
+                                <Repeat className="h-5 w-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Loop</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
             </TooltipProvider>
         </div>
       </div>
