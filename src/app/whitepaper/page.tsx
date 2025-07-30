@@ -1,10 +1,4 @@
 "use client";
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Whitepaper - Luminael AI',
-  description: 'Luminael Protocol Whitepaper: Decentralized, AI-Powered Universal Learning.',
-};
 
 export default function WhitepaperPage() {
   const pageTitle = "The Luminael Protocol"; // Main page title
