@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Upload, Download, Trash2, Loader2 } from 'lucide-react';
 import { useMediaPlayer } from '@/hooks/use-media-player';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { cn, cleanDuration } from '@/lib/utils';
 import { useToast } from "@/components/ui/use-toast";
 
 export function Queue() {
@@ -168,7 +168,7 @@ export function Queue() {
                 </div>
                 <div className="flex items-center space-x-2">
                     <span className="text-sm text-muted-foreground">
-                        {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-:--'}
+                        {cleanDuration(track.duration)}
                     </span>
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/20" onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id)}}>
                         <Trash2 className="h-4 w-4" />

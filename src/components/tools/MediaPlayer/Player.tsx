@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { cleanDuration } from '@/lib/utils';
 
 
 export function Player() {
@@ -34,15 +35,6 @@ export function Player() {
   } = useMediaPlayer();
 
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
-
-  const formatTime = (time: number) => {
-    if (isNaN(time) || time === Infinity) {
-        return "0:00";
-    }
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
-  };
 
   return (
     <div className="flex flex-col items-center space-y-4 p-4 bg-background/80 backdrop-blur-lg rounded-2xl shadow-lg border border-border">
@@ -81,8 +73,8 @@ export function Player() {
           onValueChange={(value) => seekTo(value[0])}
         />
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
+          <span>{cleanDuration(currentTime)}</span>
+          <span>{cleanDuration(duration)}</span>
         </div>
       </div>
       <div className="flex items-center justify-center space-x-4">

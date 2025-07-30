@@ -44,8 +44,8 @@ export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
   currentTime: 0,
   duration: 0,
   seekRequest: null,
-  currentTrackIndex: typeof window !== 'undefined' ? Number(localStorage.getItem('currentTrackIndex')) || null : null,
-  queue: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('queue') || '[]') : [],
+  currentTrackIndex: null,
+  queue: [],
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
   next: () => {
@@ -112,6 +112,7 @@ export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
     const { queue } = get();
     const trackIndex = queue.findIndex(t => t.id === trackId);
     if (trackIndex !== -1) {
+      console.log("Setting currentTrackIndex to", trackIndex);
       localStorage.setItem('currentTrackIndex', String(trackIndex));
       set({ currentTrackIndex: trackIndex, isPlaying: true });
     }

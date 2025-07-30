@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function cleanDuration(seconds: number) {
+  if (isNaN(seconds) || seconds === Infinity) {
+    return "0:00";
+  }
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 export function replaceLatexDelimiters(text: string): string {
   if (!text || typeof text !== 'string') return "";
 
