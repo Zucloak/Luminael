@@ -31,11 +31,13 @@ import { Dictionary } from '../tools/Dictionary';
 import { Translator } from '../tools/Translator';
 import { MediaPlayer } from '../tools/MediaPlayer';
 import { useIsClient } from '@/hooks/use-is-client';
+import { useQueueActions } from '@/hooks/use-queue-actions';
 
 export function UtilityToolbar() {
   const controls = useAnimation();
   const dragControls = React.useRef<HTMLDivElement>(null);
   const isClient = useIsClient();
+  const { handleImportQueue, handleExportQueue } = useQueueActions();
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const viewportWidth = window.innerWidth;
@@ -138,7 +140,7 @@ export function UtilityToolbar() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleImportQueue || undefined}>
                             <Upload className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
@@ -150,7 +152,7 @@ export function UtilityToolbar() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExportQueue || undefined}>
                             <Download className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
