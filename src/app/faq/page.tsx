@@ -24,8 +24,8 @@ const faqs = [
         answer: "Hell Bound Mode is for when you want a true challenge. It instructs the AI to generate an extremely difficult quiz based on your content, focusing on complex topics and creating tricky distractors for multiple-choice questions. It's designed to push your understanding to its limits."
     },
     {
-        question: "Who is SYNAPPSE?",
-        answer: "SYNAPPSE is the innovative digital creation company behind Luminael AI, founded and led by Mr. Ken Mosquera, We specialize in building intelligent applications and providing top-tier digital content and design services. You can learn more at synappse.vercel.app."
+        question: "Who is SYVANT?",
+        answer: "SYVANT is the innovative digital creation company behind Luminael AI, founded and led by Mr. Ken Mosquera, We specialize in building intelligent applications and providing top-tier digital content and design services. You can learn more at syvant.vercel.app."
     },
     {
         question: "How can I save my data or move it to another device/browser?",

@@ -39,7 +39,7 @@ export function MainContent({ children }: { children: React.ReactNode }) {
             <Link href="/whitepaper" className="font-semibold underline hover:text-foreground">Whitepaper</Link>
         </div>
         <p className="mt-2">
-          A Prototype from <a href="https://synappse.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYNAPPSE</a> | Developer/CEO: Ken Mosquera
+          A Prototype from <a href="https://syvant.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">SYVANT</a> | Developer/CEO: Ken Mosquera
         </p>
         <p className="mt-1">
           &copy; 2025 Luminael AI. All Rights Reserved.

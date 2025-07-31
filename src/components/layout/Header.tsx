@@ -33,12 +33,12 @@ export function Header() {
               Luminael
             </h1>
             <a
-              href="https://synappse.vercel.app/"
+              href="https://syvant.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-semibold text-[#6A0DAD]"
             >
-              BY SYNAPPSE
+              BY SYVANT
             </a>
           </div>
         </Link>

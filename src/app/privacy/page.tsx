@@ -14,17 +14,17 @@ export default function PrivacyPolicyPage() {
 
       <section className="mb-8">
         <p>
-          Luminael AI (&quot;the Service&quot;) is provided by me, Ken Mosquera (operating as SYNAPPSE). In this policy, references to &quot;I,&quot; &quot;me,&quot; and &quot;my&quot; refer to the provider of Luminael AI. I believe you should own and control your data, always. This Privacy Policy explains my commitment to your privacy.
+          Luminael AI (&quot;the Service&quot;) is provided by me, Ken Mosquera (operating as SYVANT). In this policy, references to &quot;I,&quot; &quot;me,&quot; and &quot;my&quot; refer to the provider of Luminael AI. I believe you should own and control your data, always. This Privacy Policy explains my commitment to your privacy.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">Scope of This Policy and Relation to SYNAPPSE</h2>
+        <h2 className="text-2xl font-semibold mt-6 mb-4 font-headline">Scope of This Policy and Relation to SYVANT</h2>
         <p>
-          This Privacy Policy pertains specifically to your use of the Luminael AI application (&quot;the Service&quot;) and its data handling practices as described herein. Luminael AI is a product developed and maintained by Ken Mosquera (operating as SYNAPPSE).
+          This Privacy Policy pertains specifically to your use of the Luminael AI application (&quot;the Service&quot;) and its data handling practices as described herein. Luminael AI is a product developed and maintained by Ken Mosquera (operating as SYVANT).
         </p>
         <p>
-          While Luminael AI adheres to the principles of zero user data collection by its application servers (as detailed in this policy), please be aware that direct interactions with SYNAPPSE outside of the Luminael AI application—such as visiting the SYNAPPSE company website (synappse.vercel.app), contacting me for support via email, or other business communications—may be subject to different data handling practices. Any such practices would be covered by SYNAPPSE&apos;s own operational policies, separate from this Luminael AI product-specific policy.
+          While Luminael AI adheres to the principles of zero user data collection by its application servers (as detailed in this policy), please be aware that direct interactions with SYVANT outside of the Luminael AI application—such as visiting the SYVANT company website (syvant.vercel.app), contacting me for support via email, or other business communications—may be subject to different data handling practices. Any such practices would be covered by SYVANT&apos;s own operational policies, separate from this Luminael AI product-specific policy.
         </p>
         <p>
           For clarity: your use of the Luminael AI application remains governed by the strict privacy (no data collection by the application) principles outlined below.
@@ -111,7 +111,7 @@ export default function PrivacyPolicyPage() {
           If you have any questions about this Privacy Policy, please contact me:<br />
           <strong>Email:</strong> <a href="mailto:synpps@gmail.com">synpps@gmail.com</a><br />
           <strong>Personal Email:</strong> <a href="mailto:mosqueraken16@gmail.com">mosqueraken16@gmail.com</a><br />
-          <strong>Website:</strong> <a href="https://synappse.vercel.app" target="_blank" rel="noopener noreferrer">synappse.vercel.app</a>
+          <strong>Website:</strong> <a href="https://syvant.vercel.app" target="_blank" rel="noopener noreferrer">syvant.vercel.app</a>
         </p>
       </section>
 

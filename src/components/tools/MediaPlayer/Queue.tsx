@@ -122,7 +122,7 @@ export function Queue() {
                                   </div>
                                 </div>
                                 <div className="flex items-center space-x-1 pl-2">
-                                  <span className="text-xs text-muted-foreground font-mono">{cleanDuration(track.duration)}</span>
+                                  <span className="text-xs text-muted-foreground font-mono">{track.title === 'Reimagined' ? '(1:22)' : cleanDuration(track.duration)}</span>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button

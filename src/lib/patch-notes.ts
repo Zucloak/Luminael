@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { ShieldCheck, Zap, Rocket, Bug, Gem, Settings2, ImageUp, ListChecks, HardDriveDownload } from 'lucide-react'; // Added Settings2, ImageUp, ListChecks, HardDriveDownload
+import { ShieldCheck, Zap, Rocket, Bug, Gem, Settings2, ImageUp, ListChecks, HardDriveDownload } from 'lucide-react';
 
 export interface PatchNote {
     icon: LucideIcon;
@@ -15,6 +15,18 @@ export interface PatchVersion {
 }
 
 export const patchNotes: PatchVersion[] = [
+    {
+        version: '2.5',
+        title: '🛠️ Patch v2.5 – August 2025',
+        date: 'August 2025',
+        notes: [
+            {
+                icon: Rocket,
+                category: 'Feature',
+                text: 'Introduced utility tools: Graph Creator, Calculator, Dictionary, Translator, Media Player'
+            }
+        ]
+    },
     {
       version: '1.2.3', // Assuming next version
       title: 'Local Data Management & Continued Refinements',
