@@ -36,6 +36,38 @@ interface MediaPlayerState {
   loadQueue: (tracks: Track[]) => void;
 }
 
+const isValidTrack = (track: any): track is Track => {
+  return (
+    track &&
+    typeof track.id === 'string' &&
+    typeof track.title === 'string' &&
+    typeof track.artist === 'string' &&
+    typeof track.url === 'string' &&
+    typeof track.duration === 'number' &&
+    ['youtube', 'direct'].includes(track.sourceType)
+  );
+};
+
+const getInitialQueue = (): Track[] => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+  try {
+    const item = localStorage.getItem('queue');
+    if (!item) return [];
+    const parsed = JSON.parse(item);
+    if (Array.isArray(parsed) && parsed.every(isValidTrack)) {
+      return parsed;
+    }
+    localStorage.removeItem('queue');
+    return [];
+  } catch (error) {
+    console.error("Failed to parse queue from localStorage", error);
+    localStorage.removeItem('queue');
+    return [];
+  }
+};
+
 export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
   isPlaying: false,
   isShuffling: typeof window !== 'undefined' ? localStorage.getItem('isShuffling') === 'true' : false,
@@ -45,7 +77,7 @@ export const useMediaPlayer = create<MediaPlayerState>((set, get) => ({
   duration: 0,
   seekRequest: null,
   currentTrackIndex: null,
-  queue: [],
+  queue: getInitialQueue(),
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
   next: () => {
