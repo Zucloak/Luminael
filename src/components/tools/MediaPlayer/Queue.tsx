@@ -136,12 +136,13 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="queue">
               {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1 px-4 pb-4">
+                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1 px-4">
                   {queue.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>The queue is empty.</p></div>
                   ) : (
                     queue.map((track, index) => {
                       if (!track) return null;
+                      const truncatedTitle = track.title && track.title.length > 16 ? `${track.title.substring(0, 16)}...` : track.title;
                       return (
                         <Draggable key={track.id} draggableId={track.id} index={index}>
                           {(provided, snapshot) => (
@@ -151,7 +152,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
                               className={cn(
                                 "flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors group",
                                 currentTrack?.id === track.id ? "bg-accent" : "hover:bg-accent/50",
-                                snapshot.isDragging && "bg-accent/80 shadow-lg"
+                                snapshot.isDragging && "bg-accent/80 shadow-lg z-50"
                               )}
                               onClick={() => playTrack(track.id)}
                             >
@@ -160,9 +161,9 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
                                   <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground" />
                                 </div>
                                 <span className="text-xs font-mono w-5 text-center text-muted-foreground">{index + 1}</span>
-                                <div className="overflow-hidden">
+                                <div>
                                   <Tooltip>
-                                    <TooltipTrigger asChild><p className="text-xs font-medium truncate">{track.title || 'Untitled Track'}</p></TooltipTrigger>
+                                    <TooltipTrigger asChild><p className="text-xs font-medium">{truncatedTitle || 'Untitled Track'}</p></TooltipTrigger>
                                     <TooltipContent sideOffset={10}><p>{track.title || 'Untitled Track'}</p></TooltipContent>
                                   </Tooltip>
                                   <p className="text-xs text-muted-foreground truncate">{track.artist || 'Unknown Artist'}</p>
