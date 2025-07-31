@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload, Download, Trash2, Loader2 } from 'lucide-react';
@@ -27,7 +27,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleAddTrack = async () => {
+  const handleAddTrack = useCallback(async () => {
     if (!newTrackUrl || isAdding) return;
 
     setIsAdding(true);
@@ -81,9 +81,9 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
     } finally {
         setIsAdding(false);
     }
-  };
+  }, [newTrackUrl, isAdding, addToQueue, toast, setNewTrackUrl]);
 
-  const handleExportQueue = () => {
+  const handleExportQueue = useCallback(() => {
     if (queue.length === 0) {
         toast({
             title: "Export Failed",
@@ -100,9 +100,9 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
-  };
+  }, [queue, toast]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -134,7 +134,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
       }
     };
     reader.readAsText(file);
-  };
+  }, [loadQueue, toast]);
 
   const triggerImport = () => {
     fileInputRef.current?.click();
