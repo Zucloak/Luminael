@@ -146,7 +146,8 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
   }, [setHandleImportQueue, setHandleExportQueue, handleExportQueue]);
 
 
-  const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
+  const validQueue = Array.isArray(queue) ? queue.filter(track => track && track.id && track.title) : [];
+  const currentTrack = currentTrackIndex !== null && validQueue[currentTrackIndex] ? validQueue[currentTrackIndex] : null;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -172,8 +173,8 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
         />
         <ScrollArea className="flex-grow h-0">
           <div className="space-y-1 pr-3">
-            {Array.isArray(queue) && queue.length > 0 ? (
-              queue.filter(Boolean).map((track, index) => (
+            {validQueue.length > 0 ? (
+              validQueue.map((track, index) => (
                   <div
                     key={`${track.id}-${index}`}
                     className={cn(
