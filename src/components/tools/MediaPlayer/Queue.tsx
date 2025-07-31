@@ -148,10 +148,13 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
 
   const currentTrack = currentTrackIndex !== null && Array.isArray(queue) && queue[currentTrackIndex] ? queue[currentTrackIndex] : null;
 
+  // Final, definitive guard as per instructions.
   if (!Array.isArray(queue)) {
-    console.error("Queue is not an array, preventing render.", { queue });
-    return null;
+    console.log('Rendering queue: The queue is not a valid array.', queue);
+    return <div className="flex items-center justify-center h-full text-sm text-muted-foreground p-4"><p>No tracks in queue.</p></div>;
   }
+
+  console.log('Rendering queue:', queue);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -177,15 +180,18 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
         />
         <ScrollArea className="flex-grow h-0">
           <div className="space-y-1 pr-3">
-            {queue.length > 0 ? (
+            {queue.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                <p>The queue is empty.</p>
+              </div>
+            ) : (
               queue.map((track, index) => {
-                if (!track || typeof track.id !== 'string' || typeof track.title !== 'string') {
-                  console.error("Invalid track data detected, skipping render:", track);
-                  return null;
+                if (!track) {
+                  return null; // Defensive check for null/undefined tracks
                 }
                 return (
                   <div
-                    key={`${track.id}-${index}`}
+                    key={track.id || `track-${index}`} // More robust key
                     className={cn(
                       "flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors",
                       currentTrack?.id === track.id
@@ -202,15 +208,15 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <p className="text-xs font-medium truncate">
-                              {track.title}
+                              {track.title || 'Untitled Track'}
                             </p>
                           </TooltipTrigger>
                           <TooltipContent sideOffset={10}>
-                            <p>{track.title}</p>
+                            <p>{track.title || 'Untitled Track'}</p>
                           </TooltipContent>
                         </Tooltip>
                         <p className="text-xs text-muted-foreground truncate">
-                          {track.artist}
+                          {track.artist || 'Unknown Artist'}
                         </p>
                       </div>
                     </div>
@@ -240,10 +246,6 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
                   </div>
                 );
               })
-            ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                <p>The queue is empty.</p>
-              </div>
             )}
           </div>
         </ScrollArea>
