@@ -14,7 +14,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-export function Queue() {
+
+interface QueueProps {
+  setHandleImportQueue: (handler: () => void) => void;
+  setHandleExportQueue: (handler: () => void) => void;
+}
+
+export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps) {
   const [newTrackUrl, setNewTrackUrl] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const { queue, addToQueue, removeFromQueue, playTrack, currentTrackIndex, loadQueue } = useMediaPlayer();
@@ -78,6 +84,13 @@ export function Queue() {
   };
 
   const handleExportQueue = () => {
+    if (queue.length === 0) {
+        toast({
+            title: "Export Failed",
+            description: "Cannot export an empty playlist.",
+        });
+        return;
+    }
     const dataStr = JSON.stringify(queue, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
 
@@ -89,7 +102,7 @@ export function Queue() {
     linkElement.click();
   };
 
-  const handleImportQueue = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -99,9 +112,12 @@ export function Queue() {
         const text = e.target?.result;
         if (typeof text === 'string') {
           const importedQueue = JSON.parse(text);
-          // Basic validation
           if (Array.isArray(importedQueue) && importedQueue.every(t => t.id && t.title && t.url)) {
             loadQueue(importedQueue);
+            toast({
+                title: "Playlist Imported",
+                description: "Your playlist has been loaded successfully.",
+            });
           } else {
             toast({
                 title: "Invalid Playlist File",
@@ -120,11 +136,21 @@ export function Queue() {
     reader.readAsText(file);
   };
 
+  const triggerImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  useEffect(() => {
+    setHandleImportQueue(() => triggerImport);
+    setHandleExportQueue(() => handleExportQueue);
+  }, [setHandleImportQueue, setHandleExportQueue, handleExportQueue]);
+
+
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="space-y-4 h-full flex flex-col p-4">
+      <div className="space-y-2 h-full flex flex-col p-4">
         <div className="flex space-x-2">
           <Input
             placeholder="Enter a media or YouTube link"
@@ -137,60 +163,35 @@ export function Queue() {
             {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           </Button>
         </div>
-        <div className="flex justify-end space-x-2">
-            <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept=".json"
-                onChange={handleImportQueue}
-            />
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-xl">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Import
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent sideOffset={10}>
-                    <p>Import a playlist from a JSON file.</p>
-                </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={handleExportQueue} disabled={queue.length === 0} className="rounded-xl">
-                        <Download className="mr-2 h-4 w-4" />
-                        Export
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent sideOffset={10}>
-                    <p>Export the current playlist to a JSON file.</p>
-                </TooltipContent>
-            </Tooltip>
-        </div>
-        <ScrollArea className="flex-grow max-h-[300px]">
-          <div className="space-y-2 pr-4">
+        <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".json"
+            onChange={handleFileChange}
+        />
+        <ScrollArea className="flex-grow h-0">
+          <div className="space-y-1 pr-3">
             {Array.isArray(queue) && queue.length > 0 ? (
-              queue.map((track, index) =>
-                track && track.id ? (
+              queue.filter(Boolean).map((track, index) => (
                   <div
                     key={`${track.id}-${index}`}
                     className={cn(
-                      "flex items-center justify-between p-2 rounded-2xl cursor-pointer transition-colors",
+                      "flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors",
                       currentTrack?.id === track.id
                         ? "bg-accent"
                         : "hover:bg-accent/50"
                     )}
                     onClick={() => playTrack(track.id)}
                   >
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-bold w-6 text-center text-muted-foreground">
+                    <div className="flex items-center space-x-2 overflow-hidden">
+                      <span className="text-xs font-mono w-5 text-center text-muted-foreground">
                         {index + 1}
                       </span>
-                      <div>
+                      <div className="overflow-hidden">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <p className="font-semibold truncate max-w-[200px] text-xs">
+                            <p className="text-xs font-medium truncate">
                               {track.title}
                             </p>
                           </TooltipTrigger>
@@ -198,13 +199,13 @@ export function Queue() {
                             <p>{track.title}</p>
                           </TooltipContent>
                         </Tooltip>
-                        <p className="text-xs text-muted-foreground truncate max-w-[150px]">
+                        <p className="text-xs text-muted-foreground truncate">
                           {track.artist}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-xs text-muted-foreground">
+                    <div className="flex items-center space-x-1 pl-2">
+                      <span className="text-xs text-muted-foreground font-mono">
                         {cleanDuration(track.duration)}
                       </span>
                       <Tooltip>
@@ -212,13 +213,13 @@ export function Queue() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 rounded-full hover:bg-destructive/20"
+                            className="h-6 w-6 rounded-md hover:bg-destructive/20"
                             onClick={(e) => {
                               e.stopPropagation();
                               removeFromQueue(track.id);
                             }}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent sideOffset={10}>
@@ -227,11 +228,11 @@ export function Queue() {
                       </Tooltip>
                     </div>
                   </div>
-                ) : null
+                )
               )
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">The queue is empty.</p>
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                <p>The queue is empty.</p>
               </div>
             )}
           </div>
