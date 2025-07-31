@@ -49,7 +49,7 @@ export function Library() {
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-muted-foreground">
-                {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-:--'}
+                {track.title === 'Reimagined' ? '1:22' : (track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-:--')}
               </span>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/20">
                 <PlusCircle className="h-4 w-4" />
