@@ -146,8 +146,86 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
   }, [setHandleImportQueue, setHandleExportQueue, handleExportQueue]);
 
 
-  const validQueue = Array.isArray(queue) ? queue.filter(track => track && track.id && track.title) : [];
-  const currentTrack = currentTrackIndex !== null && validQueue[currentTrackIndex] ? validQueue[currentTrackIndex] : null;
+  const currentTrack = currentTrackIndex !== null && Array.isArray(queue) && queue[currentTrackIndex] ? queue[currentTrackIndex] : null;
+
+  const renderQueue = () => {
+    if (!Array.isArray(queue)) {
+      console.error("Queue is not an array:", queue);
+      return <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>Queue data is corrupted.</p></div>;
+    }
+
+    if (queue.length === 0) {
+      return <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>The queue is empty.</p></div>;
+    }
+
+    return queue.map((track, index) => {
+      try {
+        if (!track || typeof track.id !== 'string' || typeof track.title !== 'string') {
+          console.error("Invalid track data detected, skipping render:", track);
+          return null;
+        }
+        return (
+          <div
+            key={`${track.id}-${index}`}
+            className={cn(
+              "flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors",
+              currentTrack?.id === track.id
+                ? "bg-accent"
+                : "hover:bg-accent/50"
+            )}
+            onClick={() => playTrack(track.id)}
+          >
+            <div className="flex items-center space-x-2 overflow-hidden">
+              <span className="text-xs font-mono w-5 text-center text-muted-foreground">
+                {index + 1}
+              </span>
+              <div className="overflow-hidden">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs font-medium truncate">
+                      {track.title}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent sideOffset={10}>
+                    <p>{track.title}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <p className="text-xs text-muted-foreground truncate">
+                  {track.artist}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-1 pl-2">
+              <span className="text-xs text-muted-foreground font-mono">
+                {cleanDuration(track.duration)}
+              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-md hover:bg-destructive/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFromQueue(track.id);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={10}>
+                  <p>Remove from queue</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        );
+      } catch (error) {
+        console.error("Error rendering track:", track, error);
+        return null;
+      }
+    });
+  };
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -173,79 +251,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
         />
         <ScrollArea className="flex-grow h-0">
           <div className="space-y-1 pr-3">
-            {validQueue.length > 0 ? (
-              validQueue.map((track, index) => {
-                try {
-                  if (!track || typeof track.id !== 'string' || typeof track.title !== 'string') {
-                    console.error("Invalid track data detected, skipping render:", track);
-                    return null;
-                  }
-                  return (
-                    <div
-                      key={`${track.id}-${index}`}
-                      className={cn(
-                        "flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors",
-                        currentTrack?.id === track.id
-                          ? "bg-accent"
-                          : "hover:bg-accent/50"
-                      )}
-                      onClick={() => playTrack(track.id)}
-                    >
-                      <div className="flex items-center space-x-2 overflow-hidden">
-                        <span className="text-xs font-mono w-5 text-center text-muted-foreground">
-                          {index + 1}
-                        </span>
-                        <div className="overflow-hidden">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <p className="text-xs font-medium truncate">
-                                {track.title}
-                              </p>
-                            </TooltipTrigger>
-                            <TooltipContent sideOffset={10}>
-                              <p>{track.title}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {track.artist}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1 pl-2">
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {cleanDuration(track.duration)}
-                        </span>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 rounded-md hover:bg-destructive/20"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeFromQueue(track.id);
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent sideOffset={10}>
-                            <p>Remove from queue</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  )
-                } catch (error) {
-                  console.error("Error rendering track:", track, error);
-                  return null;
-                }
-              })
-            ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                <p>The queue is empty.</p>
-              </div>
-            )}
+            {renderQueue()}
           </div>
         </ScrollArea>
       </div>
