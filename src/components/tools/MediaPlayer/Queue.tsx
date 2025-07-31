@@ -136,7 +136,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="queue">
               {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1 pr-3">
+                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1 pr-3 flex-shrink-0">
                   {queue.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>The queue is empty.</p></div>
                   ) : (
