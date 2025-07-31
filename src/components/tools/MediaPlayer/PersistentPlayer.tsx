@@ -32,6 +32,16 @@ export function PersistentPlayer() {
     };
   }, []);
 
+  useEffect(() => {
+    if (currentTrack?.sourceType !== 'youtube' && youtubePlayerRef.current) {
+      youtubePlayerRef.current = null;
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
+    setIsReady(false);
+  }, [currentTrack?.id]);
+
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
       return;
@@ -160,7 +170,10 @@ export function PersistentPlayer() {
   };
 
   const handleLoadedData = () => {
-      useMediaPlayer.setState({ duration: audioRef.current?.duration || 0 });
+      if (audioRef.current) {
+        useMediaPlayer.setState({ duration: audioRef.current.duration });
+        setIsReady(true);
+      }
   }
 
   // This effect will periodically ask the YouTube player for its current time
