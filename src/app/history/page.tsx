@@ -134,7 +134,7 @@ export default function SavedQuizzesPage() {
                         <Frown className="h-16 w-16 mx-auto text-muted-foreground" />
                         <CardTitle className="mt-4">No Quizzes Saved</CardTitle>
                         <CardDescription>
-                            You haven't saved any quizzes yet. After completing a quiz, you'll have the option to save it here.
+                            You haven&apos;t saved any quizzes yet. After completing a quiz, you&apos;ll have the option to save it here.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

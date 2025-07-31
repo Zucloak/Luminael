@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/tooltip"
 import { cleanDuration } from '@/lib/utils';
 import YouTube from 'react-youtube';
+import Image from 'next/image';
 
 
 export function Player() {
@@ -37,6 +38,22 @@ export function Player() {
 
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [scrollTransform, setScrollTransform] = useState('');
+
+  useLayoutEffect(() => {
+    if (textRef.current && containerRef.current) {
+      const isCurrentlyOverflowing = textRef.current.scrollWidth > containerRef.current.clientWidth;
+      setIsOverflowing(isCurrentlyOverflowing);
+      if (isCurrentlyOverflowing) {
+        const scrollDistance = textRef.current.scrollWidth - containerRef.current.clientWidth;
+        setScrollTransform(`translateX(-${scrollDistance + 16}px)`); // 16px for some extra padding
+      }
+    }
+  }, [currentTrack?.title]);
+
   const thumbnailUrl =
     currentTrack?.sourceType === 'youtube'
       ? `https://img.youtube.com/vi/${currentTrack.id}/hqdefault.jpg`
@@ -45,12 +62,14 @@ export function Player() {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-col items-center space-y-4 p-4 bg-background/80 backdrop-blur-lg rounded-2xl shadow-lg border border-border max-w-sm mx-auto">
-        <div className="w-48 h-28 rounded-lg bg-muted flex items-center justify-center">
-          {currentTrack?.sourceType === 'youtube' ? (
-            <img
-              src={`https://img.youtube.com/vi/${currentTrack.id}/hqdefault.jpg`}
+        <div className="relative w-48 h-28 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+          {currentTrack?.sourceType === 'youtube' && thumbnailUrl ? (
+            <Image
+              src={thumbnailUrl}
               alt={currentTrack.title}
-              className="w-full h-full object-cover"
+              fill
+              style={{ objectFit: 'cover' }}
+              className="object-cover"
             />
           ) : (
             <p className="text-muted-foreground">No track selected</p>
@@ -60,8 +79,14 @@ export function Player() {
           <div className="text-sm">
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="relative w-[250px] overflow-hidden">
-                  <p className={`font-bold whitespace-nowrap ${currentTrack?.title && currentTrack.title.length > 34 ? 'animate-scroll' : ''}`}>{currentTrack?.title || 'No track selected'}</p>
+                <div ref={containerRef} className="relative w-[250px] overflow-hidden">
+                  <p
+                    ref={textRef}
+                    className={`font-bold whitespace-nowrap ${isOverflowing ? 'animate-scroll' : ''}`}
+                    style={isOverflowing ? { '--scroll-transform': scrollTransform } as React.CSSProperties : {}}
+                  >
+                    {currentTrack?.title || 'No track selected'}
+                  </p>
                 </div>
               </TooltipTrigger>
               <TooltipContent sideOffset={10}>

@@ -201,11 +201,11 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
              <RadioGroup value={selectedType} onValueChange={(v) => setSelectedType(v as KeyType)} className="space-y-1">
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="free" id="plan-free" />
-                    <Label htmlFor="plan-free" className="font-normal">I'm using a free Gemini API key</Label>
+                    <Label htmlFor="plan-free" className="font-normal">I&apos;m using a free Gemini API key</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="paid" id="plan-paid" />
-                    <Label htmlFor="plan-paid" className="font-normal">I'm using a paid Gemini API key</Label>
+                    <Label htmlFor="plan-paid" className="font-normal">I&apos;m using a paid Gemini API key</Label>
                 </div>
             </RadioGroup>
           </div>

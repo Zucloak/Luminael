@@ -53,7 +53,7 @@ export function PatchNotesDialog({ isOpen, onClose, patch }: PatchNotesDialogPro
 
         <DialogFooter className="p-4 sm:p-6 pt-4 border-t">
           <Button onClick={onClose} className="w-full">
-            Got it, let's go!
+            Got it, let&apos;s go!
           </Button>
         </DialogFooter>
       </DialogContent>

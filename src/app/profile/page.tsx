@@ -186,7 +186,7 @@ export default function ProfilePage() {
             <CardHeader>
                 <CardTitle className="font-headline text-3xl">Welcome, Pioneer!</CardTitle>
                 <CardDescription>
-                You're at the forefront of AI-powered learning. Here's what's new and how I'm building a smarter tool for you.
+                You&apos;re at the forefront of AI-powered learning. Here&apos;s what&apos;s new and how I&apos;m building a smarter tool for you.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
@@ -280,7 +280,7 @@ export default function ProfilePage() {
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground/80 pt-2">
-                            If your browser supports the File System Access API, you'll be prompted to select a directory for saving. Otherwise, a JSON file will be downloaded. For loading, you can select a previously saved JSON file.
+                            If your browser supports the File System Access API, you&apos;ll be prompted to select a directory for saving. Otherwise, a JSON file will be downloaded. For loading, you can select a previously saved JSON file.
                         </p>
                     </div>
                 </div>
@@ -318,7 +318,7 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                     <h3 className="font-semibold text-lg flex items-center gap-2"><KeyRound className="h-5 w-5 text-primary" /> The Key to Your Engine</h3>
                         <div className="p-4 rounded-md border bg-muted/30">
-                        <p className="text-sm text-muted-foreground">Think of Luminael as a high-performance vehicle, engineered to perfection. Your free Google Gemini API key is the only thing needed to get in the driver's seat and unlock its full potential. The generous free tier is more than enough to get you started on the road to mastery.</p>
+                        <p className="text-sm text-muted-foreground">Think of Luminael as a high-performance vehicle, engineered to perfection. Your free Google Gemini API key is the only thing needed to get in the driver&apos;s seat and unlock its full potential. The generous free tier is more than enough to get you started on the road to mastery.</p>
                         <p className="text-sm mt-2">
                             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-primary">Get your free API Key and start your engine.</a>
                         </p>

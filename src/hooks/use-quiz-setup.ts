@@ -296,7 +296,7 @@ interface ProcessFileResult {
         }
       });
     },
-    [apiKey, incrementUsage, toast]
+    [apiKey, incrementUsage, toast, isEcoModeActive]
   );
 
   const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -361,7 +361,7 @@ interface ProcessFileResult {
       setParseProgress({ current: 0, total: 0, message: "" });
       if (event.target) event.target.value = '';
     }
-  }, [processFile, apiKey, toast, processedFiles]);
+  }, [processFile, apiKey, toast, processedFiles, isEcoModeActive]);
   
   const startQuiz = useCallback(async (values: any) => {
     if (!apiKey) {

@@ -70,33 +70,10 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [saveQuizName, setSaveQuizName] = useState('');
   const [saveQuizColor, setSaveQuizColor] = useState('gray');
+  const totalQuestions = quiz?.questions?.length || 0;
 
-  if (!quiz?.questions?.length) {
-    return (
-      <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
-        <CardHeader className="text-center">
-          <CardTitle>Empty Quiz</CardTitle>
-          <CardDescription>No questions were found for this quiz.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <p className="text-center">The AI may have failed to generate questions. Please go back and try again.</p>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-            <Button onClick={onExit}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Back to Setup
-            </Button>
-        </CardFooter>
-      </Card>
-    );
-  }
-
-  const totalQuestions = quiz.questions.length;
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
-  
   useEffect(() => {
-    if (timer <= 0) return;
+    if (timer <= 0 || totalQuestions === 0) return;
 
     setTimeLeft(timer); // Reset timer for new question
 
@@ -119,6 +96,29 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
     // Cleanup interval on component unmount or when question changes
     return () => clearInterval(intervalId);
   }, [currentQuestionIndex, timer, totalQuestions, answers, onSubmit]);
+
+  if (totalQuestions === 0) {
+    return (
+      <Card className="w-full max-w-3xl mx-auto shadow-2xl animate-in fade-in-50 duration-500">
+        <CardHeader className="text-center">
+          <CardTitle>Empty Quiz</CardTitle>
+          <CardDescription>No questions were found for this quiz.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <p className="text-center">The AI may have failed to generate questions. Please go back and try again.</p>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+            <Button onClick={onExit}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Back to Setup
+            </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  const currentQuestion = quiz.questions[currentQuestionIndex];
+  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
   const handleAnswerChange = (value: string) => {
     setAnswers({
@@ -267,7 +267,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
                       <DialogHeader>
                           <DialogTitle>Save Progress</DialogTitle>
                           <DialogDescription>
-                            Don't have time? Save your quiz now and continue later from where you left off.
+                            Don&apos;t have time? Save your quiz now and continue later from where you left off.
                           </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-2">
@@ -316,7 +316,7 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure you want to exit?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      All your progress in this quiz will be lost. Use "Save & Exit" to keep your progress.
+                      All your progress in this quiz will be lost. Use &quot;Save &amp; Exit&quot; to keep your progress.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

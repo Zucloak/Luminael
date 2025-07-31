@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
           This Privacy Policy pertains specifically to your use of the Luminael AI application (&quot;the Service&quot;) and its data handling practices as described herein. Luminael AI is a product developed and maintained by Ken Mosquera (operating as SYNAPPSE).
         </p>
         <p>
-          While Luminael AI adheres to the principles of zero user data collection by its application servers (as detailed in this policy), please be aware that direct interactions with SYNAPPSE outside of the Luminael AI application—such as visiting the SYNAPPSE company website (synappse.vercel.app), contacting me for support via email, or other business communications—may be subject to different data handling practices. Any such practices would be covered by SYNAPPSE's own operational policies, separate from this Luminael AI product-specific policy.
+          While Luminael AI adheres to the principles of zero user data collection by its application servers (as detailed in this policy), please be aware that direct interactions with SYNAPPSE outside of the Luminael AI application—such as visiting the SYNAPPSE company website (synappse.vercel.app), contacting me for support via email, or other business communications—may be subject to different data handling practices. Any such practices would be covered by SYNAPPSE&apos;s own operational policies, separate from this Luminael AI product-specific policy.
         </p>
         <p>
           For clarity: your use of the Luminael AI application remains governed by the strict privacy (no data collection by the application) principles outlined below.

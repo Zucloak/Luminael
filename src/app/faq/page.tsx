@@ -41,7 +41,7 @@ export default function FaqPage() {
                 <HelpCircle className="h-10 w-10 text-primary" />
                 <CardTitle className="font-headline text-3xl mt-4">Frequently Asked Questions</CardTitle>
                 <CardDescription>
-                    Have questions? I've got answers.
+                    Have questions? I&apos;ve got answers.
                 </CardDescription>
             </CardHeader>
             <CardContent>

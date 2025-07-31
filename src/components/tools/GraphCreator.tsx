@@ -84,6 +84,7 @@ export function GraphCreator() {
   };
 
   // Update plots when functions change
+  const functionStrings = functions.map(f => f.funcStr).join(',');
   useEffect(() => {
     const board = boardRef.current;
     if (!board) return;
@@ -97,6 +98,7 @@ export function GraphCreator() {
     // Re-draw axes
     board.create('axis', [[0, 0], [1, 0]]);
     board.create('axis', [[0, 0], [0, 1]]);
+
 
     // Plot each function
     setFunctions(currentFunctions =>
@@ -115,7 +117,7 @@ export function GraphCreator() {
     );
 
     board.unsuspendUpdate();
-  }, [functions.map(f => f.funcStr).join()]); // Dependency array on function strings
+  }, [functionStrings]);
 
   const handleFunctionChange = (id: number, value: string) => {
     setFunctions(functions.map(f => f.id === id ? { ...f, funcStr: value } : f));
