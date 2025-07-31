@@ -31,13 +31,11 @@ import { Dictionary } from '../tools/Dictionary';
 import { Translator } from '../tools/Translator';
 import { MediaPlayer } from '../tools/MediaPlayer';
 import { useIsClient } from '@/hooks/use-is-client';
-import { useQueueActions } from '@/hooks/use-queue-actions';
 
 export function UtilityToolbar() {
   const controls = useAnimation();
   const dragControls = React.useRef<HTMLDivElement>(null);
   const isClient = useIsClient();
-  const { handleImportQueue, handleExportQueue } = useQueueActions();
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const viewportWidth = window.innerWidth;
@@ -134,47 +132,10 @@ export function UtilityToolbar() {
                 </DropdownMenuItem>
               </DialogTrigger>
               <DialogContent className="max-w-sm p-4 border-0">
-                <DialogTitle className="flex justify-between items-center">
-                  <span>Media Player</span>
-                  <div className="flex items-center space-x-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleImportQueue || undefined}>
-                            <Upload className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Import playlist</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExportQueue || undefined}>
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Export playlist</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6">
-                            <HelpCircle className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Play and manage your audio queue. You can add tracks by URL or import/export your playlists as JSON files.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </DialogTitle>
+                <DialogTitle>Media Player</DialogTitle>
+                <DialogDescription>
+                  Play and manage your audio queue. You can add tracks by URL or import/export your playlists as JSON files.
+                </DialogDescription>
                 <MediaPlayer />
               </DialogContent>
             </Dialog>

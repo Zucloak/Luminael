@@ -14,15 +14,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useQueueActions } from '@/hooks/use-queue-actions';
-
 export function Queue() {
   const [newTrackUrl, setNewTrackUrl] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const { queue, addToQueue, removeFromQueue, playTrack, currentTrackIndex, loadQueue } = useMediaPlayer();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { setHandleImportQueue, setHandleExportQueue } = useQueueActions();
 
   const handleAddTrack = async () => {
     if (!newTrackUrl || isAdding) return;
@@ -125,11 +122,6 @@ export function Queue() {
 
   const currentTrack = currentTrackIndex !== null ? queue[currentTrackIndex] : null;
 
-  useEffect(() => {
-    setHandleImportQueue(() => () => fileInputRef.current?.click());
-    setHandleExportQueue(() => handleExportQueue);
-  }, [setHandleImportQueue, setHandleExportQueue, handleExportQueue]);
-
   return (
     <TooltipProvider delayDuration={200}>
       <div className="space-y-4 h-full flex flex-col p-4">
@@ -145,55 +137,103 @@ export function Queue() {
             {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           </Button>
         </div>
-        <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept=".json"
-            onChange={handleImportQueue}
-        />
-        <ScrollArea className="flex-grow max-h-[400px]">
+        <div className="flex justify-end space-x-2">
+            <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept=".json"
+                onChange={handleImportQueue}
+            />
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-xl">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Import
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={10}>
+                    <p>Import a playlist from a JSON file.</p>
+                </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={handleExportQueue} disabled={queue.length === 0} className="rounded-xl">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={10}>
+                    <p>Export the current playlist to a JSON file.</p>
+                </TooltipContent>
+            </Tooltip>
+        </div>
+        <ScrollArea className="flex-grow max-h-[300px]">
           <div className="space-y-2 pr-4">
-              {queue.map((track, index) => (
-              <div
-                  key={`${track.id}-${index}`}
-                  className={cn(
+            {Array.isArray(queue) && queue.length > 0 ? (
+              queue.map((track, index) =>
+                track && track.id ? (
+                  <div
+                    key={`${track.id}-${index}`}
+                    className={cn(
                       "flex items-center justify-between p-2 rounded-2xl cursor-pointer transition-colors",
-                      currentTrack?.id === track.id ? "bg-accent" : "hover:bg-accent/50"
-                  )}
-                  onClick={() => playTrack(track.id)}
-              >
-                  <div className="flex items-center space-x-2">
-                      <span className="text-xs font-bold w-6 text-center text-muted-foreground">{index + 1}</span>
+                      currentTrack?.id === track.id
+                        ? "bg-accent"
+                        : "hover:bg-accent/50"
+                    )}
+                    onClick={() => playTrack(track.id)}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-bold w-6 text-center text-muted-foreground">
+                        {index + 1}
+                      </span>
                       <div>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <p className="font-semibold truncate max-w-[200px] text-xs">{track.title}</p>
+                            <p className="font-semibold truncate max-w-[200px] text-xs">
+                              {track.title}
+                            </p>
                           </TooltipTrigger>
                           <TooltipContent sideOffset={10}>
                             <p>{track.title}</p>
                           </TooltipContent>
                         </Tooltip>
-                        <p className="text-xs text-muted-foreground truncate max-w-[150px]">{track.artist}</p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[150px]">
+                          {track.artist}
+                        </p>
                       </div>
-                  </div>
-                  <div className="flex items-center space-x-1">
+                    </div>
+                    <div className="flex items-center space-x-1">
                       <span className="text-xs text-muted-foreground">
-                          {cleanDuration(track.duration)}
+                        {cleanDuration(track.duration)}
                       </span>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-destructive/20" onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id)}}>
-                              <Trash2 className="h-3 w-3" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-full hover:bg-destructive/20"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromQueue(track.id);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent sideOffset={10}>
                           <p>Remove from queue</p>
                         </TooltipContent>
                       </Tooltip>
+                    </div>
                   </div>
+                ) : null
+              )
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">The queue is empty.</p>
               </div>
-              ))}
+            )}
           </div>
         </ScrollArea>
       </div>
