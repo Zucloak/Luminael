@@ -24,8 +24,8 @@ export function MediaPlayer() {
     <QueueActionsContext.Provider value={{ handleImportQueue, handleExportQueue }}>
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[384px] h-[646px] flex flex-col bg-background/80 backdrop-blur-xl border border-border rounded-2xl overflow-hidden text-foreground">
         <MediaPlayerHeader />
-        <div className="flex-grow flex flex-col overflow-hidden">
-          <Tabs defaultValue="player" className="flex-grow flex flex-col overflow-hidden">
+        <div className="flex-grow flex flex-col">
+          <Tabs defaultValue="player" className="flex-grow flex flex-col">
             <TabsList className="mx-4 bg-transparent border-b border-border flex-shrink-0">
               <TabsTrigger value="player" className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary transition-none">Player</TabsTrigger>
               <TabsTrigger value="queue" className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary transition-none">Queue</TabsTrigger>

@@ -118,7 +118,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="space-y-2 h-full flex flex-col">
+      <div className="space-y-2 flex flex-col">
         <div className="flex space-x-2 px-4 pt-4 pb-2">
           <Input
             placeholder="Enter a media or YouTube link"
