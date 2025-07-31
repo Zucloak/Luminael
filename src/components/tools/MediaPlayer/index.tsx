@@ -34,7 +34,7 @@ export function MediaPlayer() {
             <TabsContent value="player" className="overflow-y-auto" style={{ height: '365.6px' }}>
                 <Player />
             </TabsContent>
-            <TabsContent value="queue" className="overflow-y-auto" style={{ height: '365.6px' }}>
+            <TabsContent value="queue" className="overflow-y-auto" style={{ height: '365.6px' }} forceMount>
               <Queue
                 setHandleImportQueue={setImportHandler}
                 setHandleExportQueue={setExportHandler}
