@@ -235,3 +235,13 @@ export function replaceLatexDelimiters(text: string): string {
 
   return result.trim();
 }
+
+export function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
+
+export function generateThumbnail(url: string): string | null {
+  const id = getYouTubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+}

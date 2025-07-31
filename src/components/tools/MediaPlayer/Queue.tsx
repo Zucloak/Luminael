@@ -5,9 +5,9 @@ import ReactDOM from 'react-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Loader2, GripVertical } from 'lucide-react';
-import { useMediaPlayer } from '@/hooks/use-media-player';
+import { useMediaPlayer, type Track } from '@/hooks/use-media-player';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn, cleanDuration } from '@/lib/utils';
+import { cn, cleanDuration, generateThumbnail, getYouTubeId } from '@/lib/utils';
 import { useToast } from "@/components/ui/use-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import {
@@ -66,34 +66,95 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
       toast({ title: "Export Failed", description: "Cannot export an empty playlist." });
       return;
     }
-    const dataStr = JSON.stringify(queue, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = 'luminael_playlist.json';
+
+    const exportableQueue = queue.map(track => ({
+      title: track.title,
+      url: track.url,
+      thumbnail: generateThumbnail(track.url) || '',
+      duration: track.duration,
+      source: track.sourceType === 'youtube' ? 'YouTube' : 'Uploaded',
+      id: track.id,
+    }));
+
+    const dataStr = JSON.stringify(exportableQueue, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
     const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.href = url;
+    linkElement.download = 'playlist-export.json';
+    document.body.appendChild(linkElement);
     linkElement.click();
+
+    document.body.removeChild(linkElement);
+    URL.revokeObjectURL(url);
+
+    toast({ title: "Playlist Exported", description: "Your playlist has been saved." });
   }, [queue, toast]);
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const text = e.target?.result;
-        if (typeof text === 'string') {
-          const importedQueue = JSON.parse(text);
-          if (Array.isArray(importedQueue) && importedQueue.every(t => t.id && t.title && t.url)) {
-            loadQueue(importedQueue);
-            toast({ title: "Playlist Imported", description: "Your playlist has been loaded successfully." });
-          } else {
-            toast({ title: "Invalid Playlist File", description: "The selected file is not a valid Luminael playlist." });
-          }
+        if (typeof text !== 'string') {
+          throw new Error('File could not be read as text.');
         }
+
+        const importedQueue = JSON.parse(text);
+
+        if (!Array.isArray(importedQueue)) {
+          toast({ title: "Invalid Playlist File", description: "The file is not a valid playlist format (must be a JSON array)." });
+          return;
+        }
+
+        const newQueue = importedQueue.map((track: any) => {
+          if (!track || typeof track.title !== 'string' || typeof track.url !== 'string') {
+            console.warn('Skipping invalid track object:', track);
+            return null;
+          }
+
+          const source = track.source === "YouTube" ? "youtube" : "direct";
+          let id = track.id;
+
+          if (source === 'youtube' && !id) {
+            id = getYouTubeId(track.url);
+          }
+
+          if (!id) {
+            id = `${track.url}-${Date.now()}`;
+          }
+
+          const newTrack: Track = {
+            id,
+            title: track.title,
+            artist: track.artist || 'Unknown Artist',
+            url: track.url,
+            duration: typeof track.duration === 'number' ? track.duration : 0,
+            sourceType: source,
+          };
+          return newTrack;
+        }).filter((track): track is Track => track !== null);
+
+        if (newQueue.length > 0) {
+            loadQueue(newQueue);
+            toast({ title: "Playlist Imported", description: `Successfully loaded ${newQueue.length} tracks.` });
+        } else if (importedQueue.length > 0) {
+            toast({ title: "Invalid Playlist File", description: "No valid tracks were found in the file." });
+        } else {
+            toast({ title: "Empty Playlist", description: "The imported playlist is empty." });
+        }
+
       } catch (error) {
         console.error("Error parsing queue file:", error);
-        toast({ title: "Error Importing Playlist", description: "There was an error reading the playlist file." });
+        toast({ title: "Error Importing Playlist", description: "The file is not valid JSON." });
+      } finally {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     };
     reader.readAsText(file);
