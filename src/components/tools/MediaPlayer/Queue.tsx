@@ -118,8 +118,8 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="space-y-2 flex flex-col">
-        <div className="flex space-x-2 px-4 pt-4 pb-2">
+      <div className="space-y-2 h-full flex flex-col p-4">
+        <div className="flex space-x-2">
           <Input
             placeholder="Enter a media or YouTube link"
             value={newTrackUrl}
@@ -136,7 +136,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="queue">
               {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1 px-4">
+                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1 pr-3">
                   {queue.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>The queue is empty.</p></div>
                   ) : (
@@ -152,7 +152,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
                               className={cn(
                                 "flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors group",
                                 currentTrack?.id === track.id ? "bg-accent" : "hover:bg-accent/50",
-                                snapshot.isDragging && "bg-accent/80 shadow-lg z-50"
+                                snapshot.isDragging && "bg-accent/80 shadow-lg"
                               )}
                               onClick={() => playTrack(track.id)}
                             >
