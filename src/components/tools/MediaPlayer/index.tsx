@@ -31,16 +31,16 @@ export function MediaPlayer() {
               <TabsTrigger value="queue" className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary transition-none">Queue</TabsTrigger>
               <TabsTrigger value="library" className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary transition-none">Library</TabsTrigger>
             </TabsList>
-            <TabsContent value="player" className="flex-grow overflow-y-hidden">
+            <TabsContent value="player" className="flex-grow overflow-y-auto" style={{ maxHeight: '365.6px' }}>
                 <Player />
             </TabsContent>
-            <TabsContent value="queue" className="flex-grow overflow-y-hidden">
+            <TabsContent value="queue" className="flex-grow overflow-y-auto" style={{ maxHeight: '365.6px' }}>
               <Queue
                 setHandleImportQueue={setImportHandler}
                 setHandleExportQueue={setExportHandler}
               />
             </TabsContent>
-            <TabsContent value="library" className="flex-grow overflow-y-hidden">
+            <TabsContent value="library" className="flex-grow overflow-y-auto" style={{ maxHeight: '365.6px' }}>
               <Library />
             </TabsContent>
           </Tabs>

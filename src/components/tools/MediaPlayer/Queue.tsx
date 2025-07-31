@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Loader2, GripVertical } from 'lucide-react';
@@ -136,57 +137,65 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="queue">
               {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1 pr-3 flex-shrink-0">
+                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1 pr-3">
                   {queue.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>The queue is empty.</p></div>
                   ) : (
                     queue.map((track, index) => {
                       if (!track) return null;
-                      const truncatedTitle = track.title && track.title.length > 16 ? `${track.title.substring(0, 16)}...` : track.title;
                       return (
                         <Draggable key={track.id} draggableId={track.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className={cn(
-                                "flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors group",
-                                currentTrack?.id === track.id ? "bg-accent" : "hover:bg-accent/50",
-                                snapshot.isDragging && "bg-accent/80 shadow-lg"
-                              )}
-                              onClick={() => playTrack(track.id)}
-                            >
-                              <div className="flex items-center space-x-2 overflow-hidden">
-                                <div {...provided.dragHandleProps} className="flex items-center h-full cursor-grab active:cursor-grabbing">
-                                  <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground" />
+                          {(provided, snapshot) => {
+                            const child = (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={cn(
+                                  "flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors group",
+                                  currentTrack?.id === track.id ? "bg-accent" : "hover:bg-accent/50",
+                                  snapshot.isDragging && "bg-accent/80 shadow-lg"
+                                )}
+                                onClick={() => playTrack(track.id)}
+                                style={provided.draggableProps.style}
+                              >
+                                <div className="flex items-center space-x-2 overflow-hidden">
+                                  <div className="flex items-center h-full cursor-grab active:cursor-grabbing">
+                                    <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground" />
+                                  </div>
+                                  <span className="text-xs font-mono w-5 text-center text-muted-foreground">{index + 1}</span>
+                                  <div className="overflow-hidden">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild><p className="text-xs font-medium truncate">{track.title || 'Untitled Track'}</p></TooltipTrigger>
+                                      <TooltipContent sideOffset={10}><p>{track.title || 'Untitled Track'}</p></TooltipContent>
+                                    </Tooltip>
+                                    <p className="text-xs text-muted-foreground truncate">{track.artist || 'Unknown Artist'}</p>
+                                  </div>
                                 </div>
-                                <span className="text-xs font-mono w-5 text-center text-muted-foreground">{index + 1}</span>
-                                <div>
+                                <div className="flex items-center space-x-1 pl-2">
+                                  <span className="text-xs text-muted-foreground font-mono">{cleanDuration(track.duration)}</span>
                                   <Tooltip>
-                                    <TooltipTrigger asChild><p className="text-xs font-medium">{truncatedTitle || 'Untitled Track'}</p></TooltipTrigger>
-                                    <TooltipContent sideOffset={10}><p>{track.title || 'Untitled Track'}</p></TooltipContent>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 rounded-md hover:bg-destructive/20"
+                                        onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id); }}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent sideOffset={10}><p>Remove from queue</p></TooltipContent>
                                   </Tooltip>
-                                  <p className="text-xs text-muted-foreground truncate">{track.artist || 'Unknown Artist'}</p>
                                 </div>
                               </div>
-                              <div className="flex items-center space-x-1 pl-2">
-                                <span className="text-xs text-muted-foreground font-mono">{cleanDuration(track.duration)}</span>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 rounded-md hover:bg-destructive/20"
-                                      onClick={(e) => { e.stopPropagation(); removeFromQueue(track.id); }}
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent sideOffset={10}><p>Remove from queue</p></TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </div>
-                          )}
+                            );
+
+                            if (snapshot.isDragging) {
+                              return ReactDOM.createPortal(child, document.body);
+                            }
+                            return child;
+                          }}
                         </Draggable>
                       );
                     })
