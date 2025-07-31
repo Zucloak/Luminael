@@ -143,6 +143,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
                   ) : (
                     queue.map((track, index) => {
                       if (!track) return null;
+                      const truncatedTitle = track.title && track.title.length > 16 ? `${track.title.substring(0, 16)}...` : track.title;
                       return (
                         <Draggable key={track.id} draggableId={track.id} index={index}>
                           {(provided, snapshot) => {
@@ -166,7 +167,7 @@ export function Queue({ setHandleImportQueue, setHandleExportQueue }: QueueProps
                                   <span className="text-xs font-mono w-5 text-center text-muted-foreground">{index + 1}</span>
                                   <div className="overflow-hidden">
                                     <Tooltip>
-                                      <TooltipTrigger asChild><p className="text-xs font-medium truncate">{track.title || 'Untitled Track'}</p></TooltipTrigger>
+                                      <TooltipTrigger asChild><p className="text-xs font-medium truncate">{truncatedTitle || 'Untitled Track'}</p></TooltipTrigger>
                                       <TooltipContent sideOffset={10}><p>{track.title || 'Untitled Track'}</p></TooltipContent>
                                     </Tooltip>
                                     <p className="text-xs text-muted-foreground truncate">{track.artist || 'Unknown Artist'}</p>
