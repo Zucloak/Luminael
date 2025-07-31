@@ -22,29 +22,27 @@ export function MediaPlayer() {
 
   return (
     <QueueActionsContext.Provider value={{ handleImportQueue, handleExportQueue }}>
-      <div className="flex flex-col h-[600px] bg-background/80 backdrop-blur-xl border border-border rounded-2xl overflow-hidden text-foreground">
+      <div className="flex flex-col bg-background/80 backdrop-blur-xl border border-border rounded-2xl overflow-hidden text-foreground">
         <MediaPlayerHeader />
-        <div className="flex-grow flex flex-col min-h-0">
-          <Tabs defaultValue="player" className="flex flex-col flex-grow min-h-0">
-            <TabsList className="mx-4 bg-transparent border-b border-border flex-shrink-0">
+        <div className="overflow-y-auto">
+          <Tabs defaultValue="player">
+            <TabsList className="mx-4 bg-transparent border-b border-border">
               <TabsTrigger value="player" className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary transition-none">Player</TabsTrigger>
               <TabsTrigger value="queue" className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary transition-none">Queue</TabsTrigger>
               <TabsTrigger value="library" className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary transition-none">Library</TabsTrigger>
             </TabsList>
-            <div className="flex-grow overflow-y-auto">
-              <TabsContent value="player">
-                  <Player />
-              </TabsContent>
-              <TabsContent value="queue">
-                <Queue
-                  setHandleImportQueue={setImportHandler}
-                  setHandleExportQueue={setExportHandler}
-                />
-              </TabsContent>
-              <TabsContent value="library">
-                <Library />
-              </TabsContent>
-            </div>
+            <TabsContent value="player">
+                <Player />
+            </TabsContent>
+            <TabsContent value="queue">
+              <Queue
+                setHandleImportQueue={setImportHandler}
+                setHandleExportQueue={setExportHandler}
+              />
+            </TabsContent>
+            <TabsContent value="library">
+              <Library />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
