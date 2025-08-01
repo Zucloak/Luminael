@@ -319,38 +319,47 @@ export function PdfEditor() {
     if (!file) return;
 
     let imageUrl = URL.createObjectURL(file);
+    try {
+        if (options.backgroundRemoval) {
+            const imageB64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => resolve(event.target?.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            try {
+                const processedB64 = await removeImageBackground(imageB64);
+                // Since the original blob URL is now processed, we don't need to revoke it later.
+                // The new URL is a base64 string.
+                imageUrl = processedB64;
+            } catch (err) {
+                console.error("Failed to remove background", err);
+                return; // Early exit on failure
+            }
+        }
 
-    if (options.backgroundRemoval) {
-        const imageB64 = await new Promise<string>(resolve => {
-            const reader = new FileReader();
-            reader.onload = (event) => resolve(event.target?.result as string);
-            reader.readAsDataURL(file);
-        });
-        try {
-            const processedB64 = await removeImageBackground(imageB64);
-            imageUrl = processedB64;
-        } catch (err) {
-            console.error("Failed to remove background", err);
-            return;
+        if (!isMounted.current) return;
+
+        const newImageAnnotation: ImageAnnotation = {
+            id: new Date().toISOString(),
+            pageIndex: 0, // Default to first page
+            x: 100,
+            y: 100,
+            width: 150,
+            height: 100, // Default size
+            type: 'image',
+            dataUrl: imageUrl,
+        };
+        setAnnotations(prev => [...prev, newImageAnnotation]);
+
+        setIsSignatureModalOpen(false);
+        e.target.value = ''; // Reset file input
+    } finally {
+        // Revoke the blob URL only if it hasn't been replaced by a base64 string
+        if (imageUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(imageUrl);
         }
     }
-
-    if (!isMounted.current) return;
-
-    const newImageAnnotation: ImageAnnotation = {
-        id: new Date().toISOString(),
-        pageIndex: 0, // Default to first page
-        x: 100,
-        y: 100,
-        width: 150,
-        height: 100, // Default size
-        type: 'image',
-        dataUrl: imageUrl,
-    };
-    setAnnotations(prev => [...prev, newImageAnnotation]);
-
-    setIsSignatureModalOpen(false);
-    e.target.value = ''; // Reset file input
   };
 
   const removeImageBackground = (imageB64: string): Promise<string> => {
@@ -464,6 +473,33 @@ export function PdfEditor() {
 
           <Button variant={activeTool === 'text' ? 'secondary' : 'outline'} onClick={() => setActiveTool('text')}><Type className="mr-2" /> Add Text</Button>
           <Button variant={activeTool === 'select' ? 'secondary' : 'outline'} onClick={() => setActiveTool('select')}><MousePointerClick className="mr-2 h-4 w-4" /> Select/Edit</Button>
+
+          {selectedAnnotation && selectedAnnotation.type === 'text' && (
+            <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                <Button variant="outline" size="icon" onClick={() => {
+                    const newAnnotation = { ...selectedAnnotation, isBold: !selectedAnnotation.isBold };
+                    updateAnnotation(newAnnotation);
+                }}><Bold className="h-4 w-4" /></Button>
+                <Button variant="outline" size="icon" onClick={() => {
+                    const newAnnotation = { ...selectedAnnotation, isItalic: !selectedAnnotation.isItalic };
+                    updateAnnotation(newAnnotation);
+                }}><Italic className="h-4 w-4" /></Button>
+                <Button variant="outline" size="icon" onClick={() => {
+                    const newAnnotation = { ...selectedAnnotation, isUnderline: !selectedAnnotation.isUnderline };
+                    updateAnnotation(newAnnotation);
+                }}><Underline className="h-4 w-4" /></Button>
+                <input
+                    type="number"
+                    min="1"
+                    onChange={(e) => {
+                        const newAnnotation = { ...selectedAnnotation, fontSize: parseInt(e.target.value) || 1 };
+                        updateAnnotation(newAnnotation);
+                    }}
+                    value={selectedAnnotation.fontSize}
+                    className="bg-background border border-input rounded-md px-2 py-1 text-sm w-20"
+                />
+            </div>
+          )}
 
           <Button asChild variant="outline">
             <label htmlFor="image-upload-btn"><ImageIcon className="mr-2" /> Add Image</label>
