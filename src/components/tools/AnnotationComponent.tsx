@@ -48,6 +48,8 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
     const [isResizing, setIsResizing] = React.useState(false);
     const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
     const textRef = React.useRef<HTMLDivElement>(null);
+    const annotationRef = React.useRef<HTMLDivElement>(null);
+    const [toolbarPosition, setToolbarPosition] = React.useState<'top' | 'bottom'>('top');
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (activeTool !== 'select') return;
@@ -60,6 +62,15 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
     React.useEffect(() => {
         if (isSelected && textRef.current) {
             textRef.current.focus();
+        }
+        if (isSelected && annotationRef.current) {
+            const rect = annotationRef.current.getBoundingClientRect();
+            const toolbarHeight = 50; // A bit more than 40 to be safe
+            if (rect.top - toolbarHeight < 0) {
+                setToolbarPosition('bottom');
+            } else {
+                setToolbarPosition('top');
+            }
         }
     }, [isSelected]);
 
@@ -118,6 +129,7 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
 
     return (
         <div
+            ref={annotationRef}
             className="annotation-component"
             style={componentStyle}
             onMouseDown={type === 'image' ? handleMouseDown : undefined}
@@ -129,7 +141,7 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
                             <div onMouseDown={handleMouseDown} style={{ position: 'absolute', top: '50%', left: -20, transform: 'translateY(-50%)', cursor: 'grab', zIndex: 21 }}>
                                 <GripVertical size={16} />
                             </div>
-                            <div style={{ position: 'absolute', top: -40, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', backgroundColor: 'white', padding: '4px', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 21 }}>
+                            <div style={{ position: 'absolute', top: toolbarPosition === 'top' ? -40 : height + 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', backgroundColor: 'white', padding: '4px', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 21 }}>
                                 <Button variant="outline" size="icon" onClick={() => updateAnnotation({ ...annotation, isBold: !annotation.isBold })}>
                                     <Bold className="h-4 w-4" />
                                 </Button>

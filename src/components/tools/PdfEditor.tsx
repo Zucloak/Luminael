@@ -331,6 +331,7 @@ export function PdfEditor() {
             imageUrl = processedB64;
         } catch (err) {
             console.error("Failed to remove background", err);
+            return;
         }
     }
 
