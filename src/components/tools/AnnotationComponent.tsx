@@ -36,9 +36,15 @@ interface AnnotationComponentProps {
     onSelect: (e: React.MouseEvent) => void;
 }
 
-export const AnnotationComponent: React.FC<AnnotationComponentProps> = ({ annotation, onUpdate, isSelected, onSelect }) => {
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+interface AnnotationComponentProps {
+    annotation: Annotation;
+    onUpdate: (id: string, updates: Partial<Annotation>) => void;
+    isSelected: boolean;
+    onSelect: (e: React.MouseEvent) => void;
+    onDragStart: (e: React.MouseEvent, id: string) => void;
+}
+
+export const AnnotationComponent: React.FC<AnnotationComponentProps> = ({ annotation, onUpdate, isSelected, onSelect, onDragStart }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -46,33 +52,8 @@ export const AnnotationComponent: React.FC<AnnotationComponentProps> = ({ annota
             onSelect(e);
         }
         e.stopPropagation();
-        setIsDragging(true);
-        setDragStart({ x: e.clientX, y: e.clientY });
+        onDragStart(e, annotation.id);
     };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isDragging) return;
-            const dx = e.clientX - dragStart.x;
-            const dy = e.clientY - dragStart.y;
-            onUpdate(annotation.id, { x: annotation.x + dx, y: annotation.y + dy });
-            setDragStart({ x: e.clientX, y: e.clientY });
-        };
-
-        const handleMouseUp = () => {
-            setIsDragging(false);
-        };
-
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, dragStart, annotation, onUpdate]);
 
     useEffect(() => {
         if (isSelected && annotation.type === 'text' && textareaRef.current) {
@@ -95,7 +76,7 @@ export const AnnotationComponent: React.FC<AnnotationComponentProps> = ({ annota
         top: `${annotation.y}px`,
         width: `${annotation.width}px`,
         border: isSelected ? '2px solid #3b82f6' : '1px solid transparent',
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: 'grab',
         transition: 'border-color 0.2s',
     };
 
@@ -111,28 +92,35 @@ export const AnnotationComponent: React.FC<AnnotationComponentProps> = ({ annota
         });
     }
 
+    if (annotation.type === 'text' && isSelected) {
+        return (
+            <div style={componentStyle}>
+                <textarea
+                    ref={textareaRef}
+                    value={annotation.text}
+                    onChange={handleTextChange}
+                    onMouseDown={(e) => {
+                        onSelect(e);
+                        e.stopPropagation();
+                    }}
+                    className="w-full h-full bg-transparent resize-none border-none focus:outline-none p-0"
+                    style={{
+                        fontWeight: 'inherit',
+                        fontStyle: 'inherit',
+                        textDecoration: 'inherit',
+                        fontSize: 'inherit',
+                        fontFamily: 'inherit',
+                        color: 'inherit',
+                    }}
+                />
+            </div>
+        )
+    }
+
     return (
         <div style={componentStyle} onMouseDown={handleMouseDown}>
             {annotation.type === 'text' ? (
-                isSelected ? (
-                    <textarea
-                        ref={textareaRef}
-                        value={annotation.text}
-                        onChange={handleTextChange}
-                        onMouseDown={(e) => e.stopPropagation()} // Prevent drag from starting on text click
-                        className="w-full h-full bg-transparent resize-none border-none focus:outline-none p-0"
-                        style={{
-                            fontWeight: 'inherit',
-                            fontStyle: 'inherit',
-                            textDecoration: 'inherit',
-                            fontSize: 'inherit',
-                            fontFamily: 'inherit',
-                            color: 'inherit',
-                        }}
-                    />
-                ) : (
-                    <div className="w-full h-full whitespace-pre-wrap break-words">{annotation.text}</div>
-                )
+                <div className="w-full h-full whitespace-pre-wrap break-words">{annotation.text}</div>
             ) : (
                 <img src={annotation.dataUrl} alt="annotation" className="w-full h-full" draggable={false} />
             )}

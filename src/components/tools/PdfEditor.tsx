@@ -57,7 +57,41 @@ export function PdfEditor() {
 
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
+  const [draggingState, setDraggingState] = useState<{ id: string; startX: number; startY: number; aX: number; aY: number } | null>(null);
 
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+        if (!draggingState) return;
+        const dx = e.clientX - draggingState.startX;
+        const dy = e.clientY - draggingState.startY;
+        updateAnnotation(draggingState.id, { x: draggingState.aX + dx, y: draggingState.aY + dy });
+    };
+    const handleMouseUp = () => {
+        setDraggingState(null);
+    };
+
+    if (draggingState) {
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingState]);
+
+  const handleAnnotationDragStart = (e: React.MouseEvent, id: string) => {
+    const annotation = annotations.find(a => a.id === id);
+    if (!annotation) return;
+    setDraggingState({
+        id,
+        startX: e.clientX,
+        startY: e.clientY,
+        aX: annotation.x,
+        aY: annotation.y,
+    });
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -420,6 +454,7 @@ export function PdfEditor() {
                                     onUpdate={updateAnnotation}
                                     isSelected={annotation.id === selectedAnnotationId}
                                     onSelect={(e) => { e.stopPropagation(); setSelectedAnnotationId(annotation.id); }}
+                                    onDragStart={handleAnnotationDragStart}
                                   />
                                 </div>
                               ))}

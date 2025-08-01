@@ -51,8 +51,37 @@ export function Sketcher() {
     if (!context) return;
 
     setIsDrawing(true);
+    const x = e.nativeEvent.offsetX;
+    const y = e.nativeEvent.offsetY;
+
+    // Set brush properties for all types
+    context.strokeStyle = isErasing ? '#FFFFFF' : color;
+    context.lineWidth = brushSize;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+
+    if (isErasing) {
+        context.globalCompositeOperation = 'destination-out';
+    } else {
+        switch (brushType) {
+            case 'pencil':
+                context.globalCompositeOperation = 'source-over';
+                break;
+            case 'marker':
+                context.globalCompositeOperation = 'multiply';
+                break;
+            case 'spray':
+                context.globalCompositeOperation = 'source-over';
+                break;
+        }
+    }
+
+    // Start drawing
     context.beginPath();
-    context.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    context.moveTo(x, y);
+    // Draw a single dot for the start of the line
+    context.lineTo(x, y);
+    context.stroke();
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -65,33 +94,11 @@ export function Sketcher() {
     const x = e.nativeEvent.offsetX;
     const y = e.nativeEvent.offsetY;
 
-    context.strokeStyle = isErasing ? '#FFFFFF' : color;
-    context.lineWidth = brushSize;
-
-    if (isErasing) {
-        context.globalCompositeOperation = 'destination-out';
-        context.lineCap = 'round';
+    if (brushType === 'spray' && !isErasing) {
+        drawSpray(context, x, y);
+    } else {
         context.lineTo(x, y);
         context.stroke();
-    } else {
-        switch (brushType) {
-            case 'pencil':
-                context.globalCompositeOperation = 'source-over';
-                context.lineCap = 'round';
-                context.lineTo(x, y);
-                context.stroke();
-                break;
-            case 'marker':
-                context.globalCompositeOperation = 'multiply';
-                context.lineCap = 'square';
-                context.lineTo(x, y);
-                context.stroke();
-                break;
-            case 'spray':
-                context.globalCompositeOperation = 'source-over';
-                drawSpray(context, x, y);
-                break;
-        }
     }
   };
 
