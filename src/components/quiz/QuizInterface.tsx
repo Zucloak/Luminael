@@ -70,7 +70,9 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [saveQuizName, setSaveQuizName] = useState('');
   const [saveQuizColor, setSaveQuizColor] = useState('gray');
+  const [sanitizedPreview, setSanitizedPreview] = useState('');
   const totalQuestions = quiz?.questions?.length || 0;
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (timer <= 0 || totalQuestions === 0) return;
@@ -96,6 +98,36 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
     // Cleanup interval on component unmount or when question changes
     return () => clearInterval(intervalId);
   }, [currentQuestionIndex, timer, totalQuestions, answers, onSubmit]);
+
+  useEffect(() => {
+    const currentAnswer = answers[currentQuestionIndex] || '';
+    if (currentAnswer.includes('$')) {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      debounceTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await fetch('/api/sanitize-input', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ input: currentAnswer }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setSanitizedPreview(data.sanitized);
+          } else {
+            // On failure, render a safe version of the original content
+            setSanitizedPreview(currentAnswer.replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+          }
+        } catch (error) {
+          console.error("Sanitization call failed:", error);
+          setSanitizedPreview("Error: Could not sanitize content.");
+        }
+      }, 300); // 300ms debounce
+    } else {
+        setSanitizedPreview(''); // Clear preview if no LaTeX
+    }
+  }, [answers, currentQuestionIndex]);
 
   if (totalQuestions === 0) {
     return (
@@ -390,12 +422,12 @@ export function QuizInterface({ quiz, timer, onSubmit, onExit, isHellBound = fal
                 className="text-base"
               />
             </div>
-            {(answers[currentQuestionIndex] || '').includes('$') && (
+            {sanitizedPreview && (
               <div className="space-y-2">
-                <Label>Live Preview</Label>
+                <Label>Live Preview (Sanitized)</Label>
                 <Card className="p-4 bg-muted/50 min-h-[4rem] flex items-center justify-center text-lg">
                   <MarkdownRenderer>
-                    {replaceLatexDelimiters(answers[currentQuestionIndex] || '')}
+                    {replaceLatexDelimiters(sanitizedPreview)}
                   </MarkdownRenderer>
                 </Card>
               </div>

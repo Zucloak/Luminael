@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useApiKey, KeyType, PaidTierConfig, UNLIMITED_BUDGET, FREE_TIER_BUDGET } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { KeyRound, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { recordRateLimitHit } from '@/lib/rate-limit-puns';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from '../ui/progress';
@@ -28,6 +29,7 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
   const [keyInput, setKeyInput] = useState(apiKey || "");
   const [selectedType, setSelectedType] = useState<KeyType>(keyType);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isCoolingDown, setIsCoolingDown] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
@@ -95,6 +97,19 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ apiKey: trimmedKey }),
         });
+
+        if (response.status === 429) {
+            const { pun, tier } = recordRateLimitHit();
+            const title = tier > 1 ? "Whoa. Easy there." : "A Bit Too Fast";
+            toast({
+                variant: tier > 2 ? 'destructive' : 'default',
+                title: title,
+                description: pun,
+            });
+            setIsCoolingDown(true);
+            setTimeout(() => setIsCoolingDown(false), 10000); // 10s cooldown
+            return;
+        }
 
         const result = await response.json();
 
@@ -279,11 +294,13 @@ export function ApiKeyDialog({ isHellBound = false }: { isHellBound?: boolean })
           )}
         </div>
         <DialogFooter className="pt-4">
-           <Button type="button" onClick={handleSave} disabled={isVerifying}>
+           <Button type="button" onClick={handleSave} disabled={isVerifying || isCoolingDown}>
               {isVerifying ? (
                   <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...
                   </>
+              ) : isCoolingDown ? (
+                  "On Cooldown..."
               ) : (
                   "Save and Verify"
               )}
