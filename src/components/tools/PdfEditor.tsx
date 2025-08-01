@@ -314,29 +314,56 @@ export function PdfEditor() {
     setAnnotations(newAnnotations);
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, options: { backgroundRemoval: boolean }) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const imageUrl = URL.createObjectURL(file);
+    try {
+      if (!isMounted.current) return;
+
+      const newImageAnnotation: ImageAnnotation = {
+          id: new Date().toISOString(),
+          pageIndex: 0, // Default to first page
+          x: 100,
+          y: 100,
+          width: 150,
+          height: 100, // Default size
+          type: 'image',
+          dataUrl: imageUrl,
+      };
+      setAnnotations(prev => [...prev, newImageAnnotation]);
+      e.target.value = ''; // Reset file input
+    } finally {
+        if (imageUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(imageUrl);
+        }
+    }
+  };
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     let imageUrl = URL.createObjectURL(file);
     try {
-        if (options.backgroundRemoval) {
-            const imageB64 = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (event) => resolve(event.target?.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-            try {
-                const processedB64 = await removeImageBackground(imageB64);
-                // Since the original blob URL is now processed, we don't need to revoke it later.
-                // The new URL is a base64 string.
-                imageUrl = processedB64;
-            } catch (err) {
-                console.error("Failed to remove background", err);
-                return; // Early exit on failure
-            }
+        const imageB64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target?.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+
+        if (!isMounted.current) return;
+
+        const processedB64 = await removeImageBackground(imageB64);
+
+        if (!processedB64 || !processedB64.startsWith('data:image')) {
+            console.error("Failed to process image, result is not a valid data URL.");
+            return;
         }
+
+        imageUrl = processedB64;
 
         if (!isMounted.current) return;
 
@@ -346,17 +373,20 @@ export function PdfEditor() {
             x: 100,
             y: 100,
             width: 150,
-            height: 100, // Default size
+            height: 75, // Default size for signature
             type: 'image',
             dataUrl: imageUrl,
         };
-        setAnnotations(prev => [...prev, newImageAnnotation]);
 
-        setIsSignatureModalOpen(false);
-        e.target.value = ''; // Reset file input
+        if (newImageAnnotation) {
+            setAnnotations(prev => [...prev, newImageAnnotation]);
+            setIsSignatureModalOpen(false);
+            e.target.value = ''; // Reset file input
+        }
+    } catch (err) {
+        console.error("Failed to process signature", err);
     } finally {
-        // Revoke the blob URL only if it hasn't been replaced by a base64 string
-        if (imageUrl.startsWith('blob:')) {
+        if (imageUrl && imageUrl.startsWith('blob:')) {
             URL.revokeObjectURL(imageUrl);
         }
     }
@@ -504,7 +534,7 @@ export function PdfEditor() {
           <Button asChild variant="outline">
             <label htmlFor="image-upload-btn"><ImageIcon className="mr-2" /> Add Image</label>
           </Button>
-          <input type="file" id="image-upload-btn" accept="image/png, image/jpeg" className="hidden" onChange={(e) => handleImageChange(e, { backgroundRemoval: false })} />
+          <input type="file" id="image-upload-btn" accept="image/png, image/jpeg" className="hidden" onChange={handleImageChange} />
 
           <Dialog open={isSignatureModalOpen} onOpenChange={setIsSignatureModalOpen}>
               <DialogTrigger asChild>
@@ -518,7 +548,7 @@ export function PdfEditor() {
                     <Button asChild variant="outline">
                         <label htmlFor="signature-upload-btn">Upload Signature</label>
                     </Button>
-                    <input type="file" id="signature-upload-btn" accept="image/*" className="hidden" onChange={(e) => handleImageChange(e, { backgroundRemoval: true })} />
+                    <input type="file" id="signature-upload-btn" accept="image/*" className="hidden" onChange={handleSignatureUpload} />
                   </div>
                   <canvas
                       ref={signaturePadRef}
