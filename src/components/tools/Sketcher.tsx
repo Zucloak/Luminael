@@ -44,6 +44,18 @@ export function Sketcher() {
 
   }, []);
 
+  const getScaledCoords = (e: React.MouseEvent<HTMLCanvasElement>): { x: number, y: number } => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+    };
+  };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -51,37 +63,10 @@ export function Sketcher() {
     if (!context) return;
 
     setIsDrawing(true);
-    const x = e.nativeEvent.offsetX;
-    const y = e.nativeEvent.offsetY;
+    const { x, y } = getScaledCoords(e);
 
-    // Set brush properties for all types
-    context.strokeStyle = isErasing ? '#FFFFFF' : color;
-    context.lineWidth = brushSize;
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
-
-    if (isErasing) {
-        context.globalCompositeOperation = 'destination-out';
-    } else {
-        switch (brushType) {
-            case 'pencil':
-                context.globalCompositeOperation = 'source-over';
-                break;
-            case 'marker':
-                context.globalCompositeOperation = 'multiply';
-                break;
-            case 'spray':
-                context.globalCompositeOperation = 'source-over';
-                break;
-        }
-    }
-
-    // Start drawing
     context.beginPath();
     context.moveTo(x, y);
-    // Draw a single dot for the start of the line
-    context.lineTo(x, y);
-    context.stroke();
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -91,14 +76,35 @@ export function Sketcher() {
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    const x = e.nativeEvent.offsetX;
-    const y = e.nativeEvent.offsetY;
+    const { x, y } = getScaledCoords(e);
 
-    if (brushType === 'spray' && !isErasing) {
-        drawSpray(context, x, y);
-    } else {
+    context.strokeStyle = isErasing ? '#FFFFFF' : color;
+    context.lineWidth = brushSize;
+
+    if (isErasing) {
+        context.globalCompositeOperation = 'destination-out';
+        context.lineCap = 'round';
         context.lineTo(x, y);
         context.stroke();
+    } else {
+        switch (brushType) {
+            case 'pencil':
+                context.globalCompositeOperation = 'source-over';
+                context.lineCap = 'round';
+                context.lineTo(x, y);
+                context.stroke();
+                break;
+            case 'marker':
+                context.globalCompositeOperation = 'multiply';
+                context.lineCap = 'square';
+                context.lineTo(x, y);
+                context.stroke();
+                break;
+            case 'spray':
+                context.globalCompositeOperation = 'source-over';
+                drawSpray(context, x, y);
+                break;
+        }
     }
   };
 
