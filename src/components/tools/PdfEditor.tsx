@@ -55,6 +55,8 @@ export function PdfEditor() {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const signaturePadRef = useRef<HTMLCanvasElement>(null);
   const [isSigning, setIsSigning] = useState(false);
+  const renderingPages = useRef(new Set<number>());
+  const isMounted = useRef(true);
 
   // The overlay refs are still needed for positioning and interaction
   const pageOverlayRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -95,6 +97,13 @@ export function PdfEditor() {
     }
   }, [annotations, saveStateToHistory]);
 
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -129,17 +138,26 @@ export function PdfEditor() {
     }
   };
 
-  const renderPage = async (page: any, canvas: HTMLCanvasElement) => {
-      const viewport = page.getViewport({ scale: 1.5 });
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      const context = canvas.getContext('2d');
-      if(!context) return;
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport,
-      };
-      await page.render(renderContext).promise;
+  const renderPage = async (page: any, canvas: HTMLCanvasElement, pageIndex: number) => {
+    if (renderingPages.current.has(pageIndex)) return;
+
+    try {
+        renderingPages.current.add(pageIndex);
+        const viewport = page.getViewport({ scale: 1.5 });
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        const context = canvas.getContext('2d');
+        if(!context) return;
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+        await page.render(renderContext).promise;
+    } catch (error) {
+        console.error(`Failed to render page ${pageIndex + 1}:`, error);
+    } finally {
+        renderingPages.current.delete(pageIndex);
+    }
   }
 
   const exportPdf = async () => {
@@ -223,8 +241,9 @@ export function PdfEditor() {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
+        const newId = new Date().toISOString();
         const newTextAnnotation: TextAnnotation = {
-            id: new Date().toISOString(),
+            id: newId,
             pageIndex,
             x,
             y,
@@ -240,7 +259,8 @@ export function PdfEditor() {
             color: { r: 0, g: 0, b: 0 },
         };
         setAnnotations(prev => [...prev, newTextAnnotation]);
-        setActiveTool(null);
+        setSelectedElementId(newId);
+        setActiveTool('select');
     } else {
         setSelectedElementId(null);
     }
@@ -275,6 +295,8 @@ export function PdfEditor() {
             console.error("Failed to remove background", err);
         }
     }
+
+    if (!isMounted.current) return;
 
     const newImageAnnotation: ImageAnnotation = {
         id: new Date().toISOString(),
@@ -493,7 +515,7 @@ export function PdfEditor() {
                     <canvas
                         ref={el => {
                             canvasRefs.current[index] = el;
-                            if(el && page) renderPage(page, el);
+                            if(el && page) renderPage(page, el, index);
                         }}
                         className="pdf-page-canvas shadow-md"
                         style={{
