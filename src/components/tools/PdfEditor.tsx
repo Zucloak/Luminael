@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, PDFTextField } from 'pdf-lib';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Download, Type, Image as ImageIcon, Signature, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -20,8 +21,10 @@ export function PdfEditor() {
   const [error, setError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<'text' | 'image' | 'signature' | null>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
-  const [textInput, setTextInput] = useState<{ x: number, y: number, pageIndex: number, canvasTop: number, canvasLeft: number } | null>(null);
-  const [textValue, setTextValue] = useState('');
+  const [textInput, setTextInput] = useState<{ x: number, y: number, pageIndex: number } | null>(null);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const signaturePadRef = useRef<HTMLCanvasElement>(null);
+  const [isSigning, setIsSigning] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,7 +80,7 @@ export function PdfEditor() {
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>, pageIndex: number) => {
-    if (activeTool !== 'text') return;
+    if (!activeTool) return;
     const canvas = canvasRefs.current[pageIndex];
     if (!canvas) return;
 
@@ -85,17 +88,13 @@ export function PdfEditor() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    setTextInput({ x, y, pageIndex, canvasTop: canvas.offsetTop, canvasLeft: canvas.offsetLeft });
-    setTextValue('');
+    if (activeTool === 'text') {
+        addTextField(x, y, pageIndex);
+    }
   };
 
-  const addTextToPdf = async () => {
-    if (!pdfDoc || !textInput || !textValue) {
-      setTextInput(null);
-      return;
-    }
-
-    const { x, y, pageIndex } = textInput;
+  const addTextField = async (x: number, y: number, pageIndex: number) => {
+    if (!pdfDoc) return;
     const page = pdfDoc.getPages()[pageIndex];
     const { width, height } = page.getSize();
     const canvas = canvasRefs.current[pageIndex];
@@ -104,24 +103,88 @@ export function PdfEditor() {
     const pdfX = (x / canvas.width) * width;
     const pdfY = height - (y / canvas.height) * height;
 
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    page.drawText(textValue, {
-        x: pdfX,
-        y: pdfY,
-        font,
-        size: 12,
-        color: rgb(0, 0, 0),
+    const form = pdfDoc.getForm();
+    const textField = form.createTextField(`text.field.${Date.now()}`);
+    textField.setText('Enter text here');
+    textField.addToPage(page, { x: pdfX, y: pdfY, width: 150, height: 20 });
+
+    await rerenderAllPages();
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!pdfDoc) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const imageBytes = await file.arrayBuffer();
+    const image = await pdfDoc.embedPng(imageBytes);
+    const page = pdfDoc.getPages()[0]; // Default to first page
+    page.drawImage(image, {
+        x: 50,
+        y: page.getHeight() - 150,
+        width: 100,
+        height: 100,
     });
 
-    setTextInput(null);
-    setTextValue('');
+    await rerenderAllPages();
+  };
 
-    // Re-render the page
+  const handleSaveSignature = async () => {
+    if (!pdfDoc || !signaturePadRef.current) return;
+    const signatureUrl = signaturePadRef.current.toDataURL('image/png');
+    const signatureBytes = await fetch(signatureUrl).then(res => res.arrayBuffer());
+    const signatureImage = await pdfDoc.embedPng(signatureBytes);
+
+    const page = pdfDoc.getPages()[0]; // Default to first page
+    page.drawImage(signatureImage, {
+        x: 200,
+        y: page.getHeight() - 150,
+        width: 150,
+        height: 75,
+    });
+
+    setIsSignatureModalOpen(false);
+    await rerenderAllPages();
+  }
+
+  const startSigning = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsSigning(true);
+    const canvas = signaturePadRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.beginPath();
+    context.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+  };
+
+  const drawSignature = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isSigning) return;
+    const canvas = signaturePadRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.strokeStyle = 'black';
+    context.lineWidth = 2;
+    context.lineCap = 'round';
+    context.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    context.stroke();
+  };
+
+  const stopSigning = () => {
+    setIsSigning(false);
+  };
+
+  const rerenderAllPages = async () => {
+    if (!pdfDoc) return;
     const pdfBytes = await pdfDoc.save();
     const pdfjsDoc = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
-    const newPage = await pdfjsDoc.getPage(textInput.pageIndex + 1);
-    await renderPage(newPage, canvas);
-  };
+    const pages = [];
+    for (let i = 0; i < pdfjsDoc.numPages; i++) {
+        const page = await pdfjsDoc.getPage(i + 1);
+        pages.push(page);
+    }
+    setPdfPages(pages);
+  }
 
   return (
     <Card className="w-full max-w-6xl mx-auto border-0">
@@ -135,8 +198,32 @@ export function PdfEditor() {
 
           <div className="flex items-center gap-2">
             <Button variant={activeTool === 'text' ? 'secondary' : 'outline'} onClick={() => setActiveTool('text')}><Type className="mr-2" /> Text</Button>
-            <Button variant={activeTool === 'image' ? 'secondary' : 'outline'} onClick={() => setActiveTool('image')} disabled><ImageIcon className="mr-2" /> Image</Button>
-            <Button variant={activeTool === 'signature' ? 'secondary' : 'outline'} onClick={() => setActiveTool('signature')} disabled><Signature className="mr-2" /> Signature</Button>
+            <Button asChild variant={activeTool === 'image' ? 'secondary' : 'outline'} onClick={() => setActiveTool('image')}>
+                <label htmlFor="image-upload"><ImageIcon className="mr-2" /> Image</label>
+            </Button>
+            <input type="file" id="image-upload" accept="image/png, image/jpeg" className="hidden" onChange={handleImageChange} />
+
+            <Dialog open={isSignatureModalOpen} onOpenChange={setIsSignatureModalOpen}>
+                <DialogTrigger asChild>
+                    <Button variant={activeTool === 'signature' ? 'secondary' : 'outline'} onClick={() => setActiveTool('signature')}><Signature className="mr-2" /> Signature</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Draw your signature</DialogTitle>
+                    </DialogHeader>
+                    <canvas
+                        ref={signaturePadRef}
+                        width="400"
+                        height="200"
+                        className="bg-gray-200 rounded-md"
+                        onMouseDown={startSigning}
+                        onMouseMove={drawSignature}
+                        onMouseUp={stopSigning}
+                        onMouseLeave={stopSigning}
+                    ></canvas>
+                    <Button onClick={handleSaveSignature}>Save Signature</Button>
+                </DialogContent>
+            </Dialog>
           </div>
 
           <Button onClick={exportPdf} disabled={!pdfDoc}><Download className="mr-2 h-4 w-4" /> Export as PDF</Button>
@@ -163,23 +250,6 @@ export function PdfEditor() {
                 />
             ))}
             {!pdfDoc && !error && <div className="flex items-center justify-center h-full text-muted-foreground">Upload a PDF to begin editing.</div>}
-            {textInput && (
-              <textarea
-                style={{
-                  position: 'absolute',
-                  left: textInput.canvasLeft + textInput.x,
-                  top: textInput.canvasTop + textInput.y,
-                  border: '1px solid blue',
-                  background: 'white',
-                  color: 'black',
-                  zIndex: 100,
-                }}
-                value={textValue}
-                onChange={(e) => setTextValue(e.target.value)}
-                onBlur={addTextToPdf}
-                autoFocus
-              />
-            )}
         </div>
       </CardContent>
     </Card>

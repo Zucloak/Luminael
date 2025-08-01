@@ -137,7 +137,7 @@ export function Sketcher() {
     });
   };
 
-  const cursorUrl = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>') 12 12, crosshair`;
+  const cursorUrl = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1"><circle cx="12" cy="12" r="10"/></svg>') 12 12, auto`;
 
   return (
     <Card className="w-full max-w-4xl mx-auto border-0">
@@ -180,7 +180,7 @@ export function Sketcher() {
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
           className="bg-white rounded-md"
-          style={{ width: '100%', height: '500px', cursor: cursorUrl }}
+          style={{ width: '100%', height: '500px', cursor: isErasing ? 'crosshair' : cursorUrl }}
         />
       </CardContent>
     </Card>
