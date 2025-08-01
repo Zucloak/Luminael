@@ -53,24 +53,36 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
         setDragStart({ x: e.clientX, y: e.clientY });
     };
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (isDragging) {
-            const dx = e.clientX - dragStart.x;
-            const dy = e.clientY - dragStart.y;
-            updateAnnotation({ ...annotation, x: x + dx, y: y + dy });
-            setDragStart({ x: e.clientX, y: e.clientY });
-        } else if (isResizing) {
-            const dx = e.clientX - dragStart.x;
-            const dy = e.clientY - dragStart.y;
-            updateAnnotation({ ...annotation, width: width + dx, height: height + dy });
-            setDragStart({ x: e.clientX, y: e.clientY });
-        }
-    };
+    React.useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isDragging) {
+                const dx = e.clientX - dragStart.x;
+                const dy = e.clientY - dragStart.y;
+                updateAnnotation({ ...annotation, x: annotation.x + dx, y: annotation.y + dy });
+                setDragStart({ x: e.clientX, y: e.clientY });
+            } else if (isResizing) {
+                const dx = e.clientX - dragStart.x;
+                const dy = e.clientY - dragStart.y;
+                updateAnnotation({ ...annotation, width: annotation.width + dx, height: annotation.height + dy });
+                setDragStart({ x: e.clientX, y: e.clientY });
+            }
+        };
 
-    const handleMouseUp = (e: React.MouseEvent) => {
-        setIsDragging(false);
-        setIsResizing(false);
-    };
+        const handleMouseUp = () => {
+            setIsDragging(false);
+            setIsResizing(false);
+        };
+
+        if (isDragging || isResizing) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, isResizing, dragStart, annotation, updateAnnotation]);
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -97,9 +109,6 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
         <div
             style={componentStyle}
             onMouseDown={handleMouseDown}
-            onMouseMove={isDragging || isResizing ? handleMouseMove : undefined}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
         >
             {isSelected && (
                 <>

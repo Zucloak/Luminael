@@ -212,13 +212,32 @@ export function PdfEditor() {
             }
         } else if (annotation.type === 'image') {
             const { dataUrl } = annotation;
-            const imageBytes = await fetch(dataUrl).then(res => res.arrayBuffer());
-            let image;
-            if (dataUrl.startsWith('data:image/png')) {
-                image = await newPdfDoc.embedPng(imageBytes);
-            } else {
-                image = await newPdfDoc.embedJpg(imageBytes);
+
+            // To ensure consistency and avoid format errors, convert all images to PNG
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error("Could not get canvas context for image conversion.");
+                continue;
             }
+            const img = new Image();
+
+            // Wait for image to load
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = dataUrl;
+            });
+
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            const pngDataUrl = canvas.toDataURL('image/png');
+            const pngBytes = await fetch(pngDataUrl).then(res => res.arrayBuffer());
+
+            const image = await newPdfDoc.embedPng(pngBytes);
+
             page.drawImage(image, {
                 x: x * scaleX,
                 y: pageHeight - (y * scaleY) - (height * scaleY),
@@ -369,9 +388,13 @@ export function PdfEditor() {
             type: 'image',
             dataUrl: signatureUrl,
         };
-        setAnnotations(prev => [...prev, newImageAnnotation]);
+        if (isMounted.current) {
+            setAnnotations(prev => [...prev, newImageAnnotation]);
+        }
     }
-    setIsSignatureModalOpen(false);
+    if (isMounted.current) {
+        setIsSignatureModalOpen(false);
+    }
   }
 
   const clearAllEdits = () => {
