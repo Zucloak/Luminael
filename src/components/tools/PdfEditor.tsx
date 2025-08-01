@@ -436,7 +436,18 @@ export function PdfEditor() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="bg-muted p-4 rounded-lg h-[70vh] overflow-auto" style={{ position: 'relative', height: 'auto !important', overflow: 'visible' }}>
+        <div className="pdf-container" style={{
+            width: '100%',
+            height: '70vh', // Keep a fixed height for the viewport
+            overflow: 'auto',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            background: '#f1f5f9', // Equivalent to bg-muted
+            padding: '1rem',
+            borderRadius: '0.5rem',
+        }}>
             {error && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
@@ -451,8 +462,13 @@ export function PdfEditor() {
                             canvasRefs.current[index] = el;
                             if(el && page) renderPage(page, el);
                         }}
-                        className="shadow-md"
-                        style={{ pointerEvents: 'none' }}
+                        className="pdf-page-canvas shadow-md"
+                        style={{
+                            pointerEvents: 'none',
+                            maxWidth: '100%',
+                            height: 'auto',
+                            objectFit: 'contain',
+                        }}
                         onClick={(e) => handleCanvasClick(e, index)}
                     />
                     <div

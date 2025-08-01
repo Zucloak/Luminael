@@ -153,22 +153,24 @@ export function Sketcher() {
   const [cursorUrl, setCursorUrl] = useState('');
 
   useEffect(() => {
-    const generateCursor = (size: number) => {
-      const strokeWidth = 1;
+    const generateCursor = (size: number, isErasing: boolean) => {
+      const strokeWidth = 1.5;
       const diameter = Math.max(2, size);
       const radius = diameter / 2;
       const svgSize = diameter + strokeWidth * 2;
       const center = svgSize / 2;
+      const strokeColor = isErasing ? 'rgba(255,0,0,0.6)' : 'rgba(0,0,0,0.5)';
+      const lineDash = isErasing ? 'stroke-dasharray="5, 3"' : '';
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}" viewBox="0 0 ${svgSize} ${svgSize}">
-                      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="black" stroke-width="${strokeWidth}"/>
+                      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${lineDash}/>
                    </svg>`;
 
       const encodedSvg = encodeURIComponent(svg);
       return `url('data:image/svg+xml;utf8,${encodedSvg}') ${center} ${center}, crosshair`;
     };
-    setCursorUrl(generateCursor(brushSize));
-  }, [brushSize]);
+    setCursorUrl(generateCursor(brushSize, isErasing));
+  }, [brushSize, isErasing]);
 
   return (
     <Card className="w-full max-w-4xl mx-auto border-0">
