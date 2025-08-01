@@ -47,14 +47,21 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
     const [isDragging, setIsDragging] = React.useState(false);
     const [isResizing, setIsResizing] = React.useState(false);
     const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
+    const textRef = React.useRef<HTMLDivElement>(null);
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (activeTool !== 'select') return;
-        e.stopPropagation();
+        // e.stopPropagation(); // This was causing issues with text selection
         onSelect(id);
         setIsDragging(true);
         setDragStart({ x: e.clientX, y: e.clientY });
     };
+
+    React.useEffect(() => {
+        if (isSelected && textRef.current) {
+            textRef.current.focus();
+        }
+    }, [isSelected]);
 
     React.useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
@@ -154,8 +161,14 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
             )}
             {type === 'text' && (
                 <div
-                    contentEditable={isSelected}
+                    ref={textRef}
+                    contentEditable={isSelected && activeTool === 'select'}
                     suppressContentEditableWarning={true}
+                    onMouseDown={(e) => {
+                        if (activeTool !== 'select') return;
+                        onSelect(id);
+                        e.stopPropagation();
+                    }}
                     onBlur={(e) => updateAnnotation({ ...annotation, text: e.currentTarget.innerText })}
                     style={{
                         width: '100%',
