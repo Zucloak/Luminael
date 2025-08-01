@@ -5,15 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eraser, Pencil, Trash2, Download } from 'lucide-react';
+import { Eraser, Pencil, Trash2, Download, Brush } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+
+type BrushType = 'pencil' | 'marker' | 'spray';
 
 export function Sketcher() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
+  const [brushType, setBrushType] = useState<BrushType>('pencil');
   const [isErasing, setIsErasing] = useState(false);
 
   useEffect(() => {
@@ -53,11 +62,46 @@ export function Sketcher() {
     const context = canvas.getContext('2d');
     if (!context) return;
 
+    const x = e.nativeEvent.offsetX;
+    const y = e.nativeEvent.offsetY;
+
     context.strokeStyle = isErasing ? '#FFFFFF' : color;
     context.lineWidth = brushSize;
-    context.lineCap = 'round';
-    context.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    context.stroke();
+
+    if (isErasing) {
+        context.globalCompositeOperation = 'destination-out';
+        context.lineTo(x, y);
+        context.stroke();
+    } else {
+        context.globalCompositeOperation = 'source-over';
+        switch (brushType) {
+            case 'pencil':
+                context.lineCap = 'round';
+                context.lineTo(x, y);
+                context.stroke();
+                break;
+            case 'marker':
+                context.lineCap = 'square';
+                context.lineTo(x, y);
+                context.stroke();
+                break;
+            case 'spray':
+                drawSpray(context, x, y);
+                break;
+        }
+    }
+  };
+
+  const drawSpray = (context: CanvasRenderingContext2D, x: number, y: number) => {
+    const density = brushSize * 2;
+    for (let i = 0; i < density; i++) {
+        const offsetX = (Math.random() - 0.5) * brushSize * 2;
+        const offsetY = (Math.random() - 0.5) * brushSize * 2;
+        if (Math.sqrt(offsetX * offsetX + offsetY * offsetY) < brushSize) {
+            context.fillStyle = color;
+            context.fillRect(x + offsetX, y + offsetY, 1, 1);
+        }
+    }
   };
 
   const stopDrawing = () => {
@@ -92,13 +136,27 @@ export function Sketcher() {
 
   return (
     <Card className="w-full max-w-4xl mx-auto border-0">
+       <style>{`
+        .sketch-canvas {
+            cursor: crosshair;
+        }
+      `}</style>
       <CardHeader>
         <CardTitle>Sketchpad</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap items-center gap-4 mb-4 p-4 bg-muted rounded-lg">
-          <Button variant={isErasing ? "outline" : "secondary"} size="icon" onClick={() => setIsErasing(false)}><Pencil /></Button>
-          <Button variant={!isErasing ? "outline" : "secondary"} size="icon" onClick={() => setIsErasing(true)}><Eraser /></Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline"><Brush className="mr-2" /> {brushType}</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => { setBrushType('pencil'); setIsErasing(false); }}>Pencil</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setBrushType('marker'); setIsErasing(false); }}>Marker</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setBrushType('spray'); setIsErasing(false); }}>Spray</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="icon" onClick={() => setIsErasing(true)}><Eraser /></Button>
           <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-14 h-10 p-1" />
           <div className="flex items-center gap-2">
             <label>Brush Size:</label>
@@ -121,7 +179,7 @@ export function Sketcher() {
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
-          className="bg-white rounded-md cursor-crosshair"
+          className="bg-white rounded-md sketch-canvas"
           style={{ width: '100%', height: '500px' }}
         />
       </CardContent>

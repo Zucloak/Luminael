@@ -1,41 +1,56 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Download, Type, Image as ImageIcon, Signature } from 'lucide-react';
+import { Upload, Download, Type, Image as ImageIcon, Signature, AlertTriangle } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
-
-// Set worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 export function PdfEditor() {
   const [pdfDoc, setPdfDoc] = useState<PDFDocument | null>(null);
   const [pdfPages, setPdfPages] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<'text' | 'image' | 'signature' | null>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const [textInput, setTextInput] = useState<{ x: number, y: number, pageIndex: number, canvasTop: number, canvasLeft: number } | null>(null);
   const [textValue, setTextValue] = useState('');
 
+  useEffect(() => {
+    // Set worker source only on the client
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  }, []);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const arrayBuffer = await file.arrayBuffer();
-    const loadedPdfDoc = await PDFDocument.load(arrayBuffer);
-    setPdfDoc(loadedPdfDoc);
+    setError(null);
+    setPdfPages([]);
+    setPdfDoc(null);
 
-    // Render pages
-    const pdfjsDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const pages = [];
-    canvasRefs.current = [];
-    for (let i = 0; i < pdfjsDoc.numPages; i++) {
-      const page = await pdfjsDoc.getPage(i + 1);
-      pages.push(page);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Load with pdf-lib for editing
+      const loadedPdfDoc = await PDFDocument.load(arrayBuffer);
+      setPdfDoc(loadedPdfDoc);
+
+      // Load with pdf.js for rendering
+      const pdfjsDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+      const pages = [];
+      canvasRefs.current = new Array(pdfjsDoc.numPages);
+      for (let i = 0; i < pdfjsDoc.numPages; i++) {
+        const page = await pdfjsDoc.getPage(i + 1);
+        pages.push(page);
+      }
+      setPdfPages(pages);
+    } catch (err) {
+      console.error("Failed to load or render PDF:", err);
+      setError("Failed to load PDF. The file may be corrupted or in an unsupported format.");
     }
-    setPdfPages(pages);
   };
 
   const renderPage = async (page: any, canvas: HTMLCanvasElement) => {
@@ -129,18 +144,25 @@ export function PdfEditor() {
       </CardHeader>
       <CardContent>
         <div className="bg-muted p-4 rounded-lg h-[70vh] overflow-auto relative">
+            {error && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             {pdfPages.map((page, index) => (
                 <canvas
                     key={index}
                     ref={el => {
                         canvasRefs.current[index] = el;
-                        if(el) renderPage(page, el);
+                        if(el && page) renderPage(page, el);
                     }}
                     className="mb-4 shadow-md"
                     onClick={(e) => handleCanvasClick(e, index)}
                 />
             ))}
-            {!pdfDoc && <div className="flex items-center justify-center h-full text-muted-foreground">Upload a PDF to begin editing.</div>}
+            {!pdfDoc && !error && <div className="flex items-center justify-center h-full text-muted-foreground">Upload a PDF to begin editing.</div>}
             {textInput && (
               <textarea
                 style={{

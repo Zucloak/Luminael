@@ -30,11 +30,11 @@ export function Notepad() {
   }, []);
 
   const exportToTxt = () => {
-    const element = document.createElement("a");
-    // To get plain text from Quill's delta format, we can use a trick
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = value;
-    const file = new Blob([tempDiv.innerText], {type: 'text/plain'});
+    const text = tempDiv.innerText;
+    const element = document.createElement("a");
+    const file = new Blob([text], {type: 'text/plain'});
 
     element.href = URL.createObjectURL(file);
     element.download = "notes.txt";
@@ -104,7 +104,12 @@ export function Notepad() {
         </div>
       </CardHeader>
       <CardContent>
-        <ReactQuill theme="snow" value={value} onChange={setValue} modules={modules}/>
+        <ReactQuill
+            theme="snow"
+            value={value}
+            onChange={setValue}
+            modules={modules}
+        />
       </CardContent>
     </Card>
   );
