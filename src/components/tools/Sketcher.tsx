@@ -24,6 +24,8 @@ export function Sketcher() {
   const [brushSize, setBrushSize] = useState(5);
   const [brushType, setBrushType] = useState<BrushType>('pencil');
   const [isErasing, setIsErasing] = useState(false);
+  const [history, setHistory] = useState<ImageData[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,7 +43,9 @@ export function Sketcher() {
     // Fill background
     context.fillStyle = '#FFFFFF';
     context.fillRect(0, 0, canvas.width, canvas.height);
-
+    const initialImageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    setHistory([initialImageData]);
+    setHistoryIndex(0);
   }, []);
 
   const getScaledCoords = (e: React.MouseEvent<HTMLCanvasElement>): { x: number, y: number } => {
@@ -120,6 +124,21 @@ export function Sketcher() {
     }
   };
 
+  const saveState = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+    setHistory(prev => {
+        const newHistory = prev.slice(0, historyIndex + 1);
+        newHistory.push(imageData);
+        return newHistory;
+    });
+    setHistoryIndex(prev => prev + 1);
+  };
+
   const stopDrawing = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -128,6 +147,7 @@ export function Sketcher() {
 
     context.closePath();
     setIsDrawing(false);
+    saveState();
   };
 
   const clearCanvas = () => {
@@ -137,6 +157,34 @@ export function Sketcher() {
     if (!context) return;
     context.fillStyle = '#FFFFFF';
     context.fillRect(0, 0, canvas.width, canvas.height);
+    saveState();
+  };
+
+  const restoreState = (index: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    const imageData = history[index];
+    if (imageData) {
+        context.putImageData(imageData, 0, 0);
+    }
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        restoreState(newIndex);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+        const newIndex = historyIndex + 1;
+        setHistoryIndex(newIndex);
+        restoreState(newIndex);
+    }
   };
 
   const exportToPdf = () => {
@@ -202,6 +250,10 @@ export function Sketcher() {
               className="w-32"
             />
             <span>{brushSize}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleUndo} disabled={historyIndex <= 0}>Undo</Button>
+            <Button variant="outline" onClick={handleRedo} disabled={historyIndex >= history.length - 1}>Redo</Button>
           </div>
           <Button variant="outline" onClick={clearCanvas}><Trash2 className="mr-2" /> Clear</Button>
           <Button onClick={exportToPdf}><Download className="mr-2" /> Export as PDF</Button>

@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb, StandardFonts, PDFTextField } from 'pdf-lib';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Download, Type, Image as ImageIcon, Signature, AlertTriangle, Trash2, Bold, Italic, Underline } from 'lucide-react';
+import { Upload, Download, Type, Image as ImageIcon, Signature, AlertTriangle, Trash2, Bold, Italic, Underline, MousePointerClick } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -53,6 +53,8 @@ export function PdfEditor() {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const signaturePadRef = useRef<HTMLCanvasElement>(null);
   const [isSigning, setIsSigning] = useState(false);
+  const [domHistory, setDomHistory] = useState<string[]>([]);
+  const [domHistoryIndex, setDomHistoryIndex] = useState(-1);
 
   const pageOverlayRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -226,8 +228,11 @@ export function PdfEditor() {
     });
 
     overlay.addEventListener('mouseup', () => {
-        isDragging = false;
-        textBox.style.cursor = 'move';
+        if (isDragging) {
+            isDragging = false;
+            textBox.style.cursor = 'move';
+            saveDomState();
+        }
     });
 
     textBox.addEventListener('focus', () => {
@@ -240,6 +245,7 @@ export function PdfEditor() {
 
     overlay.appendChild(textBox);
     setActiveTool(null);
+    saveDomState();
   };
 
   const addImageToOverlay = (imageUrl: string, pageIndex: number) => {
@@ -273,9 +279,15 @@ export function PdfEditor() {
             img.style.top = `${e.clientY - dragStartY}px`;
         }
     });
-    overlay.addEventListener('mouseup', () => { isDragging = false; });
+    overlay.addEventListener('mouseup', () => {
+        if(isDragging) {
+            isDragging = false;
+            saveDomState();
+        }
+    });
 
     overlay.appendChild(img);
+    saveDomState();
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, options: { backgroundRemoval: boolean }) => {
@@ -346,7 +358,69 @@ export function PdfEditor() {
             annotations.forEach(el => el.remove());
         }
     });
+    saveDomState();
   }
+
+  const saveDomState = () => {
+    const snapshot = pageOverlayRefs.current.map(el => el?.innerHTML || '').join('|||---PAGE_BREAK---|||');
+    setDomHistory(prev => {
+        const newHistory = prev.slice(0, domHistoryIndex + 1);
+        newHistory.push(snapshot);
+        return newHistory;
+    });
+    setDomHistoryIndex(prev => prev + 1);
+  };
+
+  const restoreDomState = (index: number) => {
+    const snapshot = domHistory[index];
+    if (snapshot === undefined) return;
+    const pageHtmls = snapshot.split('|||---PAGE_BREAK---|||');
+    pageOverlayRefs.current.forEach((overlay, i) => {
+        if (overlay) {
+            overlay.innerHTML = pageHtmls[i] || '';
+            // Re-attach event listeners
+            overlay.querySelectorAll('.editable-text, .inserted-img').forEach(el => {
+                const htmlEl = el as HTMLElement;
+                let isDragging = false;
+                let dragStartX: number, dragStartY: number;
+                htmlEl.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    dragStartX = e.clientX - htmlEl.offsetLeft;
+                    dragStartY = e.clientY - htmlEl.offsetTop;
+                    e.stopPropagation();
+                });
+                overlay.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        htmlEl.style.left = `${e.clientX - dragStartX}px`;
+                        htmlEl.style.top = `${e.clientY - dragStartY}px`;
+                    }
+                });
+                overlay.addEventListener('mouseup', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        saveDomState();
+                    }
+                });
+            });
+        }
+    });
+  };
+
+  const handleDomUndo = () => {
+    if (domHistoryIndex > 0) {
+      const newIndex = domHistoryIndex - 1;
+      setDomHistoryIndex(newIndex);
+      restoreDomState(newIndex);
+    }
+  };
+
+  const handleDomRedo = () => {
+    if (domHistoryIndex < domHistory.length - 1) {
+      const newIndex = domHistoryIndex + 1;
+      setDomHistoryIndex(newIndex);
+      restoreDomState(newIndex);
+    }
+  };
 
   const startSigning = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsSigning(true);
@@ -380,10 +454,10 @@ export function PdfEditor() {
       <CardHeader>
         <CardTitle>PDF Editor</CardTitle>
         <div id="textToolbar" className="flex items-center gap-4 mt-2 p-2 bg-muted rounded-lg" style={{ display: 'none' }}>
-            <Button variant="outline" size="icon" onClick={() => document.execCommand('bold')}><Bold className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon" onClick={() => document.execCommand('italic')}><Italic className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon" onClick={() => document.execCommand('underline')}><Underline className="h-4 w-4" /></Button>
-            <select onChange={(e) => document.execCommand('fontSize', false, e.target.value)} className="bg-background border border-input rounded-md px-2 py-1 text-sm">
+            <Button variant="outline" size="icon" onClick={() => { document.execCommand('bold'); saveDomState(); }}><Bold className="h-4 w-4" /></Button>
+            <Button variant="outline" size="icon" onClick={() => { document.execCommand('italic'); saveDomState(); }}><Italic className="h-4 w-4" /></Button>
+            <Button variant="outline" size="icon" onClick={() => { document.execCommand('underline'); saveDomState(); }}><Underline className="h-4 w-4" /></Button>
+            <select onChange={(e) => { document.execCommand('fontSize', false, e.target.value); saveDomState(); }} className="bg-background border border-input rounded-md px-2 py-1 text-sm">
                 <option value="3">12px</option>
                 <option value="4">14px</option>
                 <option value="5">16px</option>
@@ -396,7 +470,8 @@ export function PdfEditor() {
           </Button>
           <input type="file" id="pdf-upload" accept=".pdf" onChange={handleFileChange} className="hidden" />
 
-          <Button variant="outline" onClick={() => setActiveTool('text')}><Type className="mr-2" /> Text</Button>
+          <Button variant="outline" onClick={() => setActiveTool('text')}><Type className="mr-2" /> Add Text</Button>
+          <Button variant="outline"><MousePointerClick className="mr-2 h-4 w-4" /> Select/Edit Text</Button>
 
           <Button asChild variant="outline">
             <label htmlFor="image-upload-btn"><ImageIcon className="mr-2" /> Image</label>
@@ -433,6 +508,10 @@ export function PdfEditor() {
 
           <Button onClick={exportPdf} disabled={!pdfDoc}><Download className="mr-2 h-4 w-4" /> Export as PDF</Button>
           <Button variant="outline" onClick={clearAllEdits}><Trash2 className="mr-2 h-4 w-4" /> Clear All</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleDomUndo} disabled={domHistoryIndex <= 0}>Undo</Button>
+            <Button variant="outline" onClick={handleDomRedo} disabled={domHistoryIndex >= domHistory.length - 1}>Redo</Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
