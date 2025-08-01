@@ -9,9 +9,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
-
 import * as pdfjsLib from 'pdfjs-dist';
+import { AnnotationComponent } from './AnnotationComponent';
 
+// Define more robust types for annotations
 type AnnotationBase = {
   id: string;
   pageIndex: number;
@@ -29,7 +30,7 @@ type TextAnnotation = AnnotationBase & {
   isBold: boolean;
   isItalic: boolean;
   isUnderline: boolean;
-  color: string;
+  color: { r: number; g: number; b: number; };
 };
 
 type ImageAnnotation = AnnotationBase & {
@@ -43,33 +44,56 @@ if (typeof window !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/workers/pdf.worker.min.mjs';
 }
 
-
 export function PdfEditor() {
   const [pdfDoc, setPdfDoc] = useState<PDFDocument | null>(null);
   const [pdfPages, setPdfPages] = useState<any[]>([]);
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTool, setActiveTool] = useState<'text' | 'image' | 'signature' | null>(null);
+  const [activeTool, setActiveTool] = useState<'text' | 'image' | 'signature' | 'select' | null>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const signaturePadRef = useRef<HTMLCanvasElement>(null);
   const [isSigning, setIsSigning] = useState(false);
-  const [domHistory, setDomHistory] = useState<string[]>([]);
-  const [domHistoryIndex, setDomHistoryIndex] = useState(-1);
 
+  // The overlay refs are still needed for positioning and interaction
   const pageOverlayRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // History for undo/redo
+  const [history, setHistory] = useState<Annotation[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // Save state to history
+  const saveStateToHistory = React.useCallback((newState: Annotation[]) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [history, historyIndex]);
+
+  // Handle undo
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setAnnotations(history[newIndex]);
+    }
+  };
+
+  // Handle redo
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setAnnotations(history[newIndex + 1] ? history[newIndex + 1] : annotations);
+    }
+  };
+
   useEffect(() => {
-    const handleFocus = (e: FocusEvent) => {
-        const toolbar = document.getElementById('textToolbar');
-        if (toolbar && e.target instanceof HTMLElement && e.target.classList.contains('editable-text')) {
-            toolbar.style.display = 'flex';
-        } else if (toolbar) {
-            toolbar.style.display = 'none';
-        }
-    };
-    document.addEventListener('focusin', handleFocus);
-    return () => document.removeEventListener('focusin', handleFocus);
-  }, []);
+    if (annotations.length > 0) {
+        saveStateToHistory(annotations);
+    }
+  }, [annotations, saveStateToHistory]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,9 +102,10 @@ export function PdfEditor() {
     setError(null);
     setPdfPages([]);
     setPdfDoc(null);
-    pageOverlayRefs.current.forEach(overlay => {
-        if (overlay) overlay.innerHTML = '';
-    });
+    setAnnotations([]);
+    setHistory([]);
+    setHistoryIndex(-1);
+    setSelectedElementId(null);
 
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -120,53 +145,72 @@ export function PdfEditor() {
   const exportPdf = async () => {
     if (!pdfDoc) return;
 
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const newPdfDoc = await pdfDoc.copy();
+    const pages = newPdfDoc.getPages();
 
-    for (let i = 0; i < pdfDoc.getPageCount(); i++) {
-        const page = pdfDoc.getPage(i);
-        const overlay = pageOverlayRefs.current[i];
-        const canvas = canvasRefs.current[i];
-        if (!overlay || !canvas) continue;
-
+    for (const annotation of annotations) {
+        const page = pages[annotation.pageIndex];
+        const { x, y, width, height } = annotation;
         const { width: pageWidth, height: pageHeight } = page.getSize();
+
+        const canvas = canvasRefs.current[annotation.pageIndex];
+        if(!canvas) continue;
+
         const scaleX = pageWidth / canvas.clientWidth;
         const scaleY = pageHeight / canvas.clientHeight;
 
-        const elements = overlay.querySelectorAll('.editable-text, .inserted-img');
-        for (const element of Array.from(elements)) {
-            const htmlEl = element as HTMLElement;
-            const x = parseFloat(htmlEl.style.left) * scaleX;
-            const y = pageHeight - (parseFloat(htmlEl.style.top) * scaleY);
+        if (annotation.type === 'text') {
+            const { text, fontSize, fontFamily, isBold, isItalic, isUnderline, color } = annotation;
 
-            if (htmlEl.classList.contains('editable-text')) {
-                page.drawText(htmlEl.innerText, {
-                    x,
-                    y: y - (parseFloat(htmlEl.style.fontSize) * scaleY),
-                    font: htmlEl.style.fontWeight === 'bold' ? helveticaBoldFont : helveticaFont,
-                    size: parseFloat(htmlEl.style.fontSize) * scaleY,
-                    color: rgb(0, 0, 0),
-                });
-            } else if (htmlEl.tagName === 'IMG') {
-                const imgEl = htmlEl as HTMLImageElement;
-                const imageBytes = await fetch(imgEl.src).then(res => res.arrayBuffer());
-                let image;
-                if (imgEl.src.includes('png')) {
-                    image = await pdfDoc.embedPng(imageBytes);
-                } else {
-                    image = await pdfDoc.embedJpg(imageBytes);
-                }
-                page.drawImage(image, {
-                    x,
-                    y: y - (imgEl.clientHeight * scaleY),
-                    width: imgEl.clientWidth * scaleX,
-                    height: imgEl.clientHeight * scaleY,
+            let font;
+            if (isBold && isItalic) {
+                font = await newPdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
+            } else if (isBold) {
+                font = await newPdfDoc.embedFont(StandardFonts.HelveticaBold);
+            } else if (isItalic) {
+                font = await newPdfDoc.embedFont(StandardFonts.HelveticaOblique);
+            } else {
+                font = await newPdfDoc.embedFont(StandardFonts.Helvetica);
+            }
+
+            const textWidth = font.widthOfTextAtSize(text, fontSize * scaleY);
+            const textHeight = font.heightAtSize(fontSize * scaleY);
+
+            page.drawText(text, {
+                x: x * scaleX,
+                y: pageHeight - (y * scaleY) - textHeight,
+                font,
+                size: fontSize * scaleY,
+                color: rgb(color.r, color.g, color.b),
+            });
+
+            if (isUnderline) {
+                page.drawLine({
+                    start: { x: x * scaleX, y: pageHeight - (y * scaleY) - textHeight - 1 },
+                    end: { x: x * scaleX + textWidth, y: pageHeight - (y * scaleY) - textHeight - 1 },
+                    thickness: 0.5,
+                    color: rgb(color.r, color.g, color.b),
                 });
             }
+        } else if (annotation.type === 'image') {
+            const { dataUrl } = annotation;
+            const imageBytes = await fetch(dataUrl).then(res => res.arrayBuffer());
+            let image;
+            if (dataUrl.startsWith('data:image/png')) {
+                image = await newPdfDoc.embedPng(imageBytes);
+            } else {
+                image = await newPdfDoc.embedJpg(imageBytes);
+            }
+            page.drawImage(image, {
+                x: x * scaleX,
+                y: pageHeight - (y * scaleY) - (height * scaleY),
+                width: width * scaleX,
+                height: height * scaleY,
+            });
         }
     }
 
-    const pdfBytes = await pdfDoc.save();
+    const pdfBytes = await newPdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -174,120 +218,42 @@ export function PdfEditor() {
     link.click();
   };
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>, pageIndex: number) => {
-    if (!activeTool) return;
-    const canvas = canvasRefs.current[pageIndex];
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>, pageIndex: number) => {
     if (activeTool === 'text') {
-        addTextField(x, y, pageIndex);
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const newTextAnnotation: TextAnnotation = {
+            id: new Date().toISOString(),
+            pageIndex,
+            x,
+            y,
+            width: 150,
+            height: 20,
+            type: 'text',
+            text: 'New Text',
+            fontSize: 16,
+            fontFamily: 'Helvetica',
+            isBold: false,
+            isItalic: false,
+            isUnderline: false,
+            color: { r: 0, g: 0, b: 0 },
+        };
+        setAnnotations(prev => [...prev, newTextAnnotation]);
+        setActiveTool(null);
+    } else {
+        setSelectedElementId(null);
     }
   };
 
-
-  const addTextField = (x: number, y: number, pageIndex: number) => {
-    const overlay = pageOverlayRefs.current[pageIndex];
-    if (!overlay) return;
-
-    const textBox = document.createElement('div');
-    textBox.contentEditable = 'true';
-    textBox.classList.add('editable-text');
-    textBox.style.cssText = `
-      position: absolute;
-      top: ${y}px;
-      left: ${x}px;
-      font-size: 16px;
-      font-family: Helvetica, Arial, sans-serif;
-      padding: 2px;
-      border: 1px solid transparent;
-      cursor: move;
-      z-index: 10;
-    `;
-    textBox.innerText = 'Edit me';
-
-    let isDragging = false;
-    let dragStartX: number, dragStartY: number;
-
-    textBox.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        dragStartX = e.clientX - textBox.offsetLeft;
-        dragStartY = e.clientY - textBox.offsetTop;
-        textBox.style.cursor = 'grabbing';
-        e.stopPropagation();
-    });
-
-    overlay.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            textBox.style.left = `${e.clientX - dragStartX}px`;
-            textBox.style.top = `${e.clientY - dragStartY}px`;
-        }
-    });
-
-    overlay.addEventListener('mouseup', () => {
-        if (isDragging) {
-            isDragging = false;
-            textBox.style.cursor = 'move';
-            saveDomState();
-        }
-    });
-
-    textBox.addEventListener('focus', () => {
-        textBox.style.border = '1px dashed #3b82f6';
-    });
-
-    textBox.addEventListener('blur', () => {
-        textBox.style.border = '1px solid transparent';
-    });
-
-    overlay.appendChild(textBox);
-    setActiveTool(null);
-    saveDomState();
+  const updateAnnotation = (updatedAnnotation: Annotation) => {
+    const newAnnotations = annotations.map(ann => ann.id === updatedAnnotation.id ? updatedAnnotation : ann);
+    setAnnotations(newAnnotations);
   };
 
-  const addImageToOverlay = (imageUrl: string, pageIndex: number) => {
-    const overlay = pageOverlayRefs.current[pageIndex];
-    if (!overlay) return;
-
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.classList.add('inserted-img');
-    img.style.cssText = `
-        position: absolute;
-        top: 100px;
-        left: 100px;
-        width: 150px;
-        cursor: move;
-        z-index: 10;
-    `;
-
-    // Add drag handling
-    let isDragging = false;
-    let dragStartX: number, dragStartY: number;
-    img.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        dragStartX = e.clientX - img.offsetLeft;
-        dragStartY = e.clientY - img.offsetTop;
-        e.stopPropagation();
-    });
-    overlay.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            img.style.left = `${e.clientX - dragStartX}px`;
-            img.style.top = `${e.clientY - dragStartY}px`;
-        }
-    });
-    overlay.addEventListener('mouseup', () => {
-        if(isDragging) {
-            isDragging = false;
-            saveDomState();
-        }
-    });
-
-    overlay.appendChild(img);
-    saveDomState();
+  const deleteAnnotation = (id: string) => {
+    const newAnnotations = annotations.filter(ann => ann.id !== id);
+    setAnnotations(newAnnotations);
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, options: { backgroundRemoval: boolean }) => {
@@ -310,7 +276,18 @@ export function PdfEditor() {
         }
     }
 
-    addImageToOverlay(imageUrl, 0); // Default to first page
+    const newImageAnnotation: ImageAnnotation = {
+        id: new Date().toISOString(),
+        pageIndex: 0, // Default to first page
+        x: 100,
+        y: 100,
+        width: 150,
+        height: 100, // Default size
+        type: 'image',
+        dataUrl: imageUrl,
+    };
+    setAnnotations(prev => [...prev, newImageAnnotation]);
+
     setIsSignatureModalOpen(false);
     e.target.value = ''; // Reset file input
   };
@@ -327,12 +304,26 @@ export function PdfEditor() {
         ctx.drawImage(img, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
-        const bgR = data[0], bgG = data[1], bgB = data[2];
-        const tolerance = 10;
+
+        // Check corners for background color
+        const corners = [
+            [data[0], data[1], data[2]], // top-left
+            [data[(canvas.width - 1) * 4], data[(canvas.width - 1) * 4 + 1], data[(canvas.width - 1) * 4 + 2]], // top-right
+            [data[(canvas.height - 1) * canvas.width * 4], data[(canvas.height - 1) * canvas.width * 4 + 1], data[(canvas.height - 1) * canvas.width * 4 + 2]], // bottom-left
+            [data[data.length - 4], data[data.length - 3], data[data.length - 2]] // bottom-right
+        ];
+
+        const tolerance = 30; // Increased tolerance
         for (let i = 0; i < data.length; i += 4) {
-          if (Math.abs(data[i] - bgR) < tolerance && Math.abs(data[i+1] - bgG) < tolerance && Math.abs(data[i+2] - bgB) < tolerance) {
-            data[i+3] = 0;
-          }
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            for (const corner of corners) {
+                if (Math.abs(r - corner[0]) < tolerance && Math.abs(g - corner[1]) < tolerance && Math.abs(b - corner[2]) < tolerance) {
+                    data[i+3] = 0;
+                    break;
+                }
+            }
         }
         ctx.putImageData(imageData, 0, 0);
         resolve(canvas.toDataURL());
@@ -346,81 +337,26 @@ export function PdfEditor() {
     if (!signaturePadRef.current) return;
     const signatureUrl = signaturePadRef.current.toDataURL('image/png');
     if (signatureUrl) {
-        addImageToOverlay(signatureUrl, 0); // Default to first page
+        const newImageAnnotation: ImageAnnotation = {
+            id: new Date().toISOString(),
+            pageIndex: 0, // Default to first page
+            x: 100,
+            y: 100,
+            width: 150,
+            height: 75, // Default size for signature
+            type: 'image',
+            dataUrl: signatureUrl,
+        };
+        setAnnotations(prev => [...prev, newImageAnnotation]);
     }
     setIsSignatureModalOpen(false);
   }
 
   const clearAllEdits = () => {
-    pageOverlayRefs.current.forEach(overlay => {
-        if (overlay) {
-            const annotations = overlay.querySelectorAll('.editable-text, .inserted-img');
-            annotations.forEach(el => el.remove());
-        }
-    });
-    saveDomState();
+    setAnnotations([]);
+    setHistory([]);
+    setHistoryIndex(-1);
   }
-
-  const saveDomState = () => {
-    const snapshot = pageOverlayRefs.current.map(el => el?.innerHTML || '').join('|||---PAGE_BREAK---|||');
-    setDomHistory(prev => {
-        const newHistory = prev.slice(0, domHistoryIndex + 1);
-        newHistory.push(snapshot);
-        return newHistory;
-    });
-    setDomHistoryIndex(prev => prev + 1);
-  };
-
-  const restoreDomState = (index: number) => {
-    const snapshot = domHistory[index];
-    if (snapshot === undefined) return;
-    const pageHtmls = snapshot.split('|||---PAGE_BREAK---|||');
-    pageOverlayRefs.current.forEach((overlay, i) => {
-        if (overlay) {
-            overlay.innerHTML = pageHtmls[i] || '';
-            // Re-attach event listeners
-            overlay.querySelectorAll('.editable-text, .inserted-img').forEach(el => {
-                const htmlEl = el as HTMLElement;
-                let isDragging = false;
-                let dragStartX: number, dragStartY: number;
-                htmlEl.addEventListener('mousedown', (e) => {
-                    isDragging = true;
-                    dragStartX = e.clientX - htmlEl.offsetLeft;
-                    dragStartY = e.clientY - htmlEl.offsetTop;
-                    e.stopPropagation();
-                });
-                overlay.addEventListener('mousemove', (e) => {
-                    if (isDragging) {
-                        htmlEl.style.left = `${e.clientX - dragStartX}px`;
-                        htmlEl.style.top = `${e.clientY - dragStartY}px`;
-                    }
-                });
-                overlay.addEventListener('mouseup', () => {
-                    if (isDragging) {
-                        isDragging = false;
-                        saveDomState();
-                    }
-                });
-            });
-        }
-    });
-  };
-
-  const handleDomUndo = () => {
-    if (domHistoryIndex > 0) {
-      const newIndex = domHistoryIndex - 1;
-      setDomHistoryIndex(newIndex);
-      restoreDomState(newIndex);
-    }
-  };
-
-  const handleDomRedo = () => {
-    if (domHistoryIndex < domHistory.length - 1) {
-      const newIndex = domHistoryIndex + 1;
-      setDomHistoryIndex(newIndex);
-      restoreDomState(newIndex);
-    }
-  };
 
   const startSigning = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsSigning(true);
@@ -449,21 +385,37 @@ export function PdfEditor() {
     setIsSigning(false);
   };
 
+  const selectedAnnotation = annotations.find(a => a.id === selectedElementId);
+
   return (
     <Card className="w-full max-w-6xl mx-auto border-0">
       <CardHeader>
         <CardTitle>PDF Editor</CardTitle>
-        <div id="textToolbar" className="flex items-center gap-4 mt-2 p-2 bg-muted rounded-lg" style={{ display: 'none' }}>
-            <Button variant="outline" size="icon" onClick={() => { document.execCommand('bold'); saveDomState(); }}><Bold className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon" onClick={() => { document.execCommand('italic'); saveDomState(); }}><Italic className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon" onClick={() => { document.execCommand('underline'); saveDomState(); }}><Underline className="h-4 w-4" /></Button>
-            <select onChange={(e) => { document.execCommand('fontSize', false, e.target.value); saveDomState(); }} className="bg-background border border-input rounded-md px-2 py-1 text-sm">
-                <option value="3">12px</option>
-                <option value="4">14px</option>
-                <option value="5">16px</option>
-                <option value="6">20px</option>
-            </select>
-        </div>
+        {selectedAnnotation && selectedAnnotation.type === 'text' && (
+            <div className="flex items-center gap-4 mt-2 p-2 bg-muted rounded-lg">
+                <Button variant="outline" size="icon" onClick={() => {
+                    const newAnnotation = { ...selectedAnnotation, isBold: !selectedAnnotation.isBold };
+                    updateAnnotation(newAnnotation);
+                }}><Bold className="h-4 w-4" /></Button>
+                <Button variant="outline" size="icon" onClick={() => {
+                    const newAnnotation = { ...selectedAnnotation, isItalic: !selectedAnnotation.isItalic };
+                    updateAnnotation(newAnnotation);
+                }}><Italic className="h-4 w-4" /></Button>
+                <Button variant="outline" size="icon" onClick={() => {
+                    const newAnnotation = { ...selectedAnnotation, isUnderline: !selectedAnnotation.isUnderline };
+                    updateAnnotation(newAnnotation);
+                }}><Underline className="h-4 w-4" /></Button>
+                <select onChange={(e) => {
+                    const newAnnotation = { ...selectedAnnotation, fontSize: parseInt(e.target.value) };
+                    updateAnnotation(newAnnotation);
+                }} value={selectedAnnotation.fontSize} className="bg-background border border-input rounded-md px-2 py-1 text-sm">
+                    <option value="12">12px</option>
+                    <option value="14">14px</option>
+                    <option value="16">16px</option>
+                    <option value="20">20px</option>
+                </select>
+            </div>
+        )}
         <div className="flex flex-wrap items-center gap-4 pt-4">
           <Button asChild variant="outline">
             <label htmlFor="pdf-upload"><Upload className="mr-2 h-4 w-4" /> Upload PDF</label>
@@ -471,10 +423,10 @@ export function PdfEditor() {
           <input type="file" id="pdf-upload" accept=".pdf" onChange={handleFileChange} className="hidden" />
 
           <Button variant="outline" onClick={() => setActiveTool('text')}><Type className="mr-2" /> Add Text</Button>
-          <Button variant="outline"><MousePointerClick className="mr-2 h-4 w-4" /> Select/Edit Text</Button>
+          <Button variant="outline" onClick={() => setActiveTool('select')}><MousePointerClick className="mr-2 h-4 w-4" /> Select/Edit</Button>
 
           <Button asChild variant="outline">
-            <label htmlFor="image-upload-btn"><ImageIcon className="mr-2" /> Image</label>
+            <label htmlFor="image-upload-btn"><ImageIcon className="mr-2" /> Add Image</label>
           </Button>
           <input type="file" id="image-upload-btn" accept="image/png, image/jpeg" className="hidden" onChange={(e) => handleImageChange(e, { backgroundRemoval: false })} />
 
@@ -509,8 +461,8 @@ export function PdfEditor() {
           <Button onClick={exportPdf} disabled={!pdfDoc}><Download className="mr-2 h-4 w-4" /> Export as PDF</Button>
           <Button variant="outline" onClick={clearAllEdits}><Trash2 className="mr-2 h-4 w-4" /> Clear All</Button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleDomUndo} disabled={domHistoryIndex <= 0}>Undo</Button>
-            <Button variant="outline" onClick={handleDomRedo} disabled={domHistoryIndex >= domHistory.length - 1}>Redo</Button>
+            <Button variant="outline" onClick={handleUndo} disabled={historyIndex <= 0}>Undo</Button>
+            <Button variant="outline" onClick={handleRedo} disabled={historyIndex >= history.length - 1}>Redo</Button>
           </div>
         </div>
       </CardHeader>
@@ -535,7 +487,9 @@ export function PdfEditor() {
               </Alert>
             )}
             {pdfPages.map((page, index) => (
-                <div key={index} className="relative mb-4" style={{ position: 'relative' }}>
+                <div key={index} className="relative mb-4" style={{ position: 'relative' }}
+                    onClick={(e) => handleCanvasClick(e, index)}
+                >
                     <canvas
                         ref={el => {
                             canvasRefs.current[index] = el;
@@ -543,19 +497,28 @@ export function PdfEditor() {
                         }}
                         className="pdf-page-canvas shadow-md"
                         style={{
-                            pointerEvents: 'none',
                             maxWidth: '100%',
                             height: 'auto',
                             objectFit: 'contain',
                         }}
-                        onClick={(e) => handleCanvasClick(e, index)}
                     />
                     <div
                         id={`page-overlay-${index}`}
                         ref={el => { pageOverlayRefs.current[index] = el; }}
                         className="absolute top-0 left-0 w-full h-full"
-                        style={{ pointerEvents: 'auto' }}
-                    />
+                        style={{ pointerEvents: activeTool ? 'auto' : 'none' }}
+                    >
+                        {annotations.filter(a => a.pageIndex === index).map(annotation => (
+                            <AnnotationComponent
+                                key={annotation.id}
+                                annotation={annotation}
+                                isSelected={selectedElementId === annotation.id}
+                                onSelect={setSelectedElementId}
+                                onDelete={deleteAnnotation}
+                                updateAnnotation={updateAnnotation}
+                            />
+                        ))}
+                    </div>
                 </div>
             ))}
             {!pdfDoc && !error && <div className="flex items-center justify-center h-full text-muted-foreground">Upload a PDF to begin editing.</div>}
