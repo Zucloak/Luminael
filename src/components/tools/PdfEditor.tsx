@@ -5,8 +5,13 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Download, Type, Image as ImageIcon, Signature, AlertTriangle } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+import * as pdfjsLib from 'pdfjs-dist';
+
+if (typeof window !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/workers/pdf.worker.min.mjs';
+}
 
 
 export function PdfEditor() {
@@ -17,11 +22,6 @@ export function PdfEditor() {
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const [textInput, setTextInput] = useState<{ x: number, y: number, pageIndex: number, canvasTop: number, canvasLeft: number } | null>(null);
   const [textValue, setTextValue] = useState('');
-
-  useEffect(() => {
-    // Set worker source only on the client
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-  }, []);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

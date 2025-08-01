@@ -70,22 +70,25 @@ export function Sketcher() {
 
     if (isErasing) {
         context.globalCompositeOperation = 'destination-out';
+        context.lineCap = 'round';
         context.lineTo(x, y);
         context.stroke();
     } else {
-        context.globalCompositeOperation = 'source-over';
         switch (brushType) {
             case 'pencil':
+                context.globalCompositeOperation = 'source-over';
                 context.lineCap = 'round';
                 context.lineTo(x, y);
                 context.stroke();
                 break;
             case 'marker':
+                context.globalCompositeOperation = 'multiply';
                 context.lineCap = 'square';
                 context.lineTo(x, y);
                 context.stroke();
                 break;
             case 'spray':
+                context.globalCompositeOperation = 'source-over';
                 drawSpray(context, x, y);
                 break;
         }
@@ -93,7 +96,7 @@ export function Sketcher() {
   };
 
   const drawSpray = (context: CanvasRenderingContext2D, x: number, y: number) => {
-    const density = brushSize * 2;
+    const density = brushSize * 2.5;
     for (let i = 0; i < density; i++) {
         const offsetX = (Math.random() - 0.5) * brushSize * 2;
         const offsetY = (Math.random() - 0.5) * brushSize * 2;
@@ -134,13 +137,10 @@ export function Sketcher() {
     });
   };
 
+  const cursorUrl = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>') 12 12, crosshair`;
+
   return (
     <Card className="w-full max-w-4xl mx-auto border-0">
-       <style>{`
-        .sketch-canvas {
-            cursor: crosshair;
-        }
-      `}</style>
       <CardHeader>
         <CardTitle>Sketchpad</CardTitle>
       </CardHeader>
@@ -179,8 +179,8 @@ export function Sketcher() {
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
-          className="bg-white rounded-md sketch-canvas"
-          style={{ width: '100%', height: '500px' }}
+          className="bg-white rounded-md"
+          style={{ width: '100%', height: '500px', cursor: cursorUrl }}
         />
       </CardContent>
     </Card>
