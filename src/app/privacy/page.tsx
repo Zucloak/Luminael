@@ -85,9 +85,19 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section className="mb-8">
-        <h3 className="text-xl font-semibold mb-3">Third-Party Services</h3>
+        <h3 className="text-xl font-semibold mb-3">Client-Side Tools and Operations</h3>
+        <p>
+          Luminael includes several powerful tools, such as a Notepad, Sketcher, and PDF Editor. All operations with these tools, including file creation (e.g., notes, drawings), editing, and exporting (e.g., as `.txt` or `.pdf` files), happen entirely within your browser. No data from these documents is ever sent to or stored on any server operated by me. Similarly, importing and exporting playlists as `.json` files is a client-side operation. Your files are your own.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h3 className="text-xl font-semibold mb-3">Third-Party Services and APIs</h3>
         <p>
           When you use your API key with a third-party AI provider (e.g., Google Gemini), your interaction with that provider is governed by their respective privacy policies and terms of service. Luminael is not responsible for the data practices of these third-party services.
+        </p>
+        <p>
+          To enrich functionality, Luminael may leverage other free or open-access APIs for optional features (e.g., translation, voice-to-text, or image background removal). These features are explicitly opt-in, meaning you must choose to use them. When you do, only the necessary data for that specific function is sent to the third-party service, and it is not persisted. For example, text for translation is sent to a translation API, but no personal or identifying data is included.
         </p>
       </section>
 

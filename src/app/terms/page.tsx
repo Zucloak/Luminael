@@ -29,7 +29,13 @@ export default function TermsOfServicePage() {
             <strong>Content Ownership:</strong> You represent and warrant that you have all necessary rights to any content (text, images, documents) you upload or input into the Service for processing. You retain all ownership of your content and the quizzes or other materials generated from it by the AI models. Luminael AI claims no ownership over your content or the AI-generated output derived from your content and API key.
           </li>
           <li>
-            <strong>Acceptable Use:</strong> You agree not to use the Service for any unlawful, harmful, or prohibited purpose. This includes, but is not limited to, generating content that is defamatory, obscene, infringing on intellectual property rights, or violating any applicable laws or regulations. You are responsible for the nature of the content you process and generate using the Service.
+            <strong>Acceptable Use:</strong> You agree not to use the Service for any unlawful, harmful, or prohibited purpose. This includes, but is not limited to, generating content that is defamatory, obscene, infringing on intellectual property rights, or violating any applicable laws or regulations. You are responsible for the nature of the content you process and generate using the Service. Unauthorized redistribution, infringement, or scraping of third-party content is strictly prohibited.
+          </li>
+          <li>
+            <strong>Client-Side Tools:</strong> The Service includes tools such as a Sketcher, Notepad, and PDF Editor. These tools operate entirely within your browser. Any content you create, edit, or download using these tools is handled client-side. The Service provides these tools &quot;as is&quot; for your use.
+          </li>
+          <li>
+            <strong>User-Provided Media and Playlists:</strong> The Service supports playing media from user-provided links (e.g., YouTube) and allows for the import/export of playlists via `.json` files. The Service does not host, own, or claim any rights to this content. You are solely responsible for ensuring you have the necessary rights and licenses to access and use any third-party content or services.
           </li>
         </ul>
       </section>

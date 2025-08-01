@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, Music, HelpCircle, Upload, Download } from 'lucide-react';
+import { Wrench, BarChart2, Calculator as CalculatorIcon, BookOpen, Languages, Music, HelpCircle, Upload, Download, Paintbrush, FileText, FileSignature } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -30,6 +30,9 @@ import { GraphCreator } from '../tools/GraphCreator';
 import { Dictionary } from '../tools/Dictionary';
 import { Translator } from '../tools/Translator';
 import { MediaPlayer } from '../tools/MediaPlayer';
+import { Sketcher } from '../tools/Sketcher';
+import { Notepad } from '../tools/Notepad';
+import { PdfEditor } from '../tools/PdfEditor';
 import { useIsClient } from '@/hooks/use-is-client';
 
 export function UtilityToolbar() {
@@ -84,6 +87,42 @@ export function UtilityToolbar() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl p-0 border-0">
               <GraphCreator />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <FileSignature className="mr-2 h-4 w-4" />
+                <span>PDF Editor</span>
+              </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent className="max-w-6xl p-0 border-0">
+              <PdfEditor />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Notepad</span>
+              </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl p-0 border-0">
+              <Notepad />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Paintbrush className="mr-2 h-4 w-4" />
+                <span>Sketcher</span>
+              </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl p-0 border-0">
+              <Sketcher />
             </DialogContent>
           </Dialog>
 
