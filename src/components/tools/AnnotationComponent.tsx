@@ -39,15 +39,17 @@ interface AnnotationComponentProps {
     onSelect: (id: string) => void;
     onDelete: (id: string) => void;
     updateAnnotation: (annotation: Annotation) => void;
+    activeTool: 'text' | 'image' | 'signature' | 'select' | null;
 }
 
-export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete, updateAnnotation }: AnnotationComponentProps) {
+export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete, updateAnnotation, activeTool }: AnnotationComponentProps) {
     const { id, x, y, width, height, type } = annotation;
     const [isDragging, setIsDragging] = React.useState(false);
     const [isResizing, setIsResizing] = React.useState(false);
     const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
 
     const handleMouseDown = (e: React.MouseEvent) => {
+        if (activeTool !== 'select') return;
         e.stopPropagation();
         onSelect(id);
         setIsDragging(true);
@@ -101,6 +103,7 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
     };
 
     const handleResizeMouseDown = (e: React.MouseEvent) => {
+        if (activeTool !== 'select') return;
         e.stopPropagation();
         setIsResizing(true);
         setDragStart({ x: e.clientX, y: e.clientY });
@@ -112,7 +115,7 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
             style={componentStyle}
             onMouseDown={type === 'image' ? handleMouseDown : undefined}
         >
-            {isSelected && (
+            {isSelected && activeTool === 'select' && (
                 <>
                     {type === 'text' && (
                         <>
@@ -129,16 +132,13 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
                                 <Button variant="outline" size="icon" onClick={() => updateAnnotation({ ...annotation, isUnderline: !annotation.isUnderline })}>
                                     <Underline className="h-4 w-4" />
                                 </Button>
-                                <select
-                                    onChange={(e) => updateAnnotation({ ...annotation, fontSize: parseInt(e.target.value) })}
+                                <input
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => updateAnnotation({ ...annotation, fontSize: parseInt(e.target.value) || 1 })}
                                     value={annotation.fontSize}
-                                    className="bg-background border border-input rounded-md px-2 py-1 text-sm"
-                                >
-                                    <option value="12">12px</option>
-                                    <option value="14">14px</option>
-                                    <option value="16">16px</option>
-                                    <option value="20">20px</option>
-                                </select>
+                                    className="bg-background border border-input rounded-md px-2 py-1 text-sm w-20"
+                                />
                             </div>
                         </>
                     )}

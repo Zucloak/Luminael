@@ -461,8 +461,8 @@ export function PdfEditor() {
           </Button>
           <input type="file" id="pdf-upload" accept=".pdf" onChange={handleFileChange} className="hidden" />
 
-          <Button variant="outline" onClick={() => setActiveTool('text')}><Type className="mr-2" /> Add Text</Button>
-          <Button variant="outline" onClick={() => setActiveTool('select')}><MousePointerClick className="mr-2 h-4 w-4" /> Select/Edit</Button>
+          <Button variant={activeTool === 'text' ? 'secondary' : 'outline'} onClick={() => setActiveTool('text')}><Type className="mr-2" /> Add Text</Button>
+          <Button variant={activeTool === 'select' ? 'secondary' : 'outline'} onClick={() => setActiveTool('select')}><MousePointerClick className="mr-2 h-4 w-4" /> Select/Edit</Button>
 
           <Button asChild variant="outline">
             <label htmlFor="image-upload-btn"><ImageIcon className="mr-2" /> Add Image</label>
@@ -555,6 +555,7 @@ export function PdfEditor() {
                                 onSelect={setSelectedElementId}
                                 onDelete={deleteAnnotation}
                                 updateAnnotation={updateAnnotation}
+                                activeTool={activeTool}
                             />
                         ))}
                     </div>
