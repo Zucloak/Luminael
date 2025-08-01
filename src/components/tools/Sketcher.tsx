@@ -137,7 +137,25 @@ export function Sketcher() {
     });
   };
 
-  const cursorUrl = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1"><circle cx="12" cy="12" r="10"/></svg>') 12 12, auto`;
+  const [cursorUrl, setCursorUrl] = useState('');
+
+  useEffect(() => {
+    const generateCursor = (size: number) => {
+      const strokeWidth = 1;
+      const diameter = Math.max(2, size);
+      const radius = diameter / 2;
+      const svgSize = diameter + strokeWidth * 2;
+      const center = svgSize / 2;
+
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}" viewBox="0 0 ${svgSize} ${svgSize}">
+                      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="black" stroke-width="${strokeWidth}"/>
+                   </svg>`;
+
+      const encodedSvg = encodeURIComponent(svg);
+      return `url('data:image/svg+xml;utf8,${encodedSvg}') ${center} ${center}, crosshair`;
+    };
+    setCursorUrl(generateCursor(brushSize));
+  }, [brushSize]);
 
   return (
     <Card className="w-full max-w-4xl mx-auto border-0">
