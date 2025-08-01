@@ -22,7 +22,7 @@ export function MarkdownRenderer({ children, className }: MarkdownRendererProps)
     <div className={cn("markdown-renderer-wrapper", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
-        rehypePlugins={[rehypeRaw, [rehypeKatex, { output: 'htmlAndMathml', throwOnError: false }]]}
+        rehypePlugins={[[rehypeKatex, { output: 'htmlAndMathml', throwOnError: false }]]}
       >
         {children}
       </ReactMarkdown>

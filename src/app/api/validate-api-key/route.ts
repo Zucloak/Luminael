@@ -76,6 +76,18 @@ async function performApiKeyValidation(input: ValidateApiKeyInput): Promise<Vali
 
 export async function POST(req: NextRequest) {
   try {
+    // SECURITY WARNING: Public Unprotected Endpoint
+    // This endpoint is public and lacks any form of rate-limiting or bot protection.
+    // This makes it vulnerable to Denial of Service (DoS) attacks and abuse, where an attacker
+    // can bombard the endpoint with requests, consuming serverless resources and incurring costs.
+    // It can also be used as a free proxy to validate lists of stolen API keys.
+    //
+    // RECOMMENDATION:
+    // 1. Implement Rate Limiting: Use a service like Upstash (https://upstash.com/docs/redis/features/rate-limiting)
+    //    to limit the number of requests per IP address or user to a reasonable threshold (e.g., 10 requests/minute).
+    // 2. Add a CAPTCHA: Integrate a service like hCaptcha or Google reCAPTCHA on the front-end form
+    //    that calls this endpoint. The CAPTCHA token should be verified by this serverless function
+    //    before proceeding with the API key validation. This prevents automated bot attacks.
     const { apiKey } = await req.json();
 
     if (!apiKey) {

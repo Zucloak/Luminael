@@ -1,6 +1,19 @@
 
 "use client";
 
+// SECURITY WARNING: Client-Side Trust
+// This hook's state (apiKey, keyType, usage) is initialized from and persists to localStorage.
+// This is insecure for managing anything with financial implications, such as API quotas or feature tiers.
+// A malicious user can easily modify these values in their browser's developer tools to bypass restrictions.
+//
+// RECOMMENDATION:
+// The source of truth for a user's API tier, budget, and usage must be on the server-side.
+// 1. Store user-specific data (like tier and quota) in a secure database (e.g., Vercel KV, Firestore).
+// 2. When a user makes an API request, the backend function should first validate the user's quota from the database before making the call to the external API (Gemini).
+// 3. The client-side should only query and display this information, not enforce it.
+//
+// This file should be refactored to remove the client-side enforcement logic.
+
 import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 
 const API_KEY = 'luminael_gemini_api_key';
