@@ -55,6 +55,7 @@ export function PdfEditor() {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const signaturePadRef = useRef<HTMLCanvasElement>(null);
   const [isSigning, setIsSigning] = useState(false);
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false);
   const renderingPages = useRef(new Set<number>());
   const isMounted = useRef(true);
 
@@ -345,6 +346,17 @@ export function PdfEditor() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image.");
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+        alert("Image too large. Please upload an image smaller than 5MB.");
+        return;
+    }
+
+    setIsUploadingSignature(true);
     let imageUrl = URL.createObjectURL(file);
     try {
         const imageB64 = await new Promise<string>((resolve, reject) => {
@@ -386,6 +398,7 @@ export function PdfEditor() {
     } catch (err) {
         console.error("Failed to process signature", err);
     } finally {
+        setIsUploadingSignature(false);
         if (imageUrl && imageUrl.startsWith('blob:')) {
             URL.revokeObjectURL(imageUrl);
         }
@@ -545,11 +558,12 @@ export function PdfEditor() {
                       <DialogTitle>Draw or Upload Signature</DialogTitle>
                   </DialogHeader>
                   <div className="flex justify-around mb-4">
-                    <Button asChild variant="outline">
+                    <Button asChild variant="outline" disabled={isUploadingSignature}>
                         <label htmlFor="signature-upload-btn">Upload Signature</label>
                     </Button>
                     <input type="file" id="signature-upload-btn" accept="image/*" className="hidden" onChange={handleSignatureUpload} />
                   </div>
+                  {isUploadingSignature && <div className="text-center">Uploading...</div>}
                   <canvas
                       ref={signaturePadRef}
                       width="400"
