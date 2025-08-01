@@ -238,11 +238,27 @@ export function PdfEditor() {
 
             const image = await newPdfDoc.embedPng(pngBytes);
 
+            // Calculate new dimensions to preserve aspect ratio
+            const { width: imgWidth, height: imgHeight } = image.size();
+            const boxWidth = width * scaleX;
+            const boxHeight = height * scaleY;
+
+            const widthRatio = boxWidth / imgWidth;
+            const heightRatio = boxHeight / imgHeight;
+            const ratio = Math.min(widthRatio, heightRatio);
+
+            const newWidth = imgWidth * ratio;
+            const newHeight = imgHeight * ratio;
+
+            // Center the image in the box
+            const xOffset = (boxWidth - newWidth) / 2;
+            const yOffset = (boxHeight - newHeight) / 2;
+
             page.drawImage(image, {
-                x: x * scaleX,
-                y: pageHeight - (y * scaleY) - (height * scaleY),
-                width: width * scaleX,
-                height: height * scaleY,
+                x: x * scaleX + xOffset,
+                y: pageHeight - (y * scaleY) - boxHeight + yOffset,
+                width: newWidth,
+                height: newHeight,
             });
         }
     }
@@ -281,7 +297,10 @@ export function PdfEditor() {
         setSelectedElementId(newId);
         setActiveTool('select');
     } else {
-        setSelectedElementId(null);
+        const target = e.target as HTMLElement;
+        if (!target.closest('.annotation-component')) {
+            setSelectedElementId(null);
+        }
     }
   };
 
@@ -436,31 +455,6 @@ export function PdfEditor() {
     <Card className="w-full max-w-6xl mx-auto border-0">
       <CardHeader>
         <CardTitle>PDF Editor</CardTitle>
-        {selectedAnnotation && selectedAnnotation.type === 'text' && (
-            <div className="flex items-center gap-4 mt-2 p-2 bg-muted rounded-lg">
-                <Button variant="outline" size="icon" onClick={() => {
-                    const newAnnotation = { ...selectedAnnotation, isBold: !selectedAnnotation.isBold };
-                    updateAnnotation(newAnnotation);
-                }}><Bold className="h-4 w-4" /></Button>
-                <Button variant="outline" size="icon" onClick={() => {
-                    const newAnnotation = { ...selectedAnnotation, isItalic: !selectedAnnotation.isItalic };
-                    updateAnnotation(newAnnotation);
-                }}><Italic className="h-4 w-4" /></Button>
-                <Button variant="outline" size="icon" onClick={() => {
-                    const newAnnotation = { ...selectedAnnotation, isUnderline: !selectedAnnotation.isUnderline };
-                    updateAnnotation(newAnnotation);
-                }}><Underline className="h-4 w-4" /></Button>
-                <select onChange={(e) => {
-                    const newAnnotation = { ...selectedAnnotation, fontSize: parseInt(e.target.value) };
-                    updateAnnotation(newAnnotation);
-                }} value={selectedAnnotation.fontSize} className="bg-background border border-input rounded-md px-2 py-1 text-sm">
-                    <option value="12">12px</option>
-                    <option value="14">14px</option>
-                    <option value="16">16px</option>
-                    <option value="20">20px</option>
-                </select>
-            </div>
-        )}
         <div className="flex flex-wrap items-center gap-4 pt-4">
           <Button asChild variant="outline">
             <label htmlFor="pdf-upload"><Upload className="mr-2 h-4 w-4" /> Upload PDF</label>
