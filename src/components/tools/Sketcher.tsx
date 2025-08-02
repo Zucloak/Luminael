@@ -265,7 +265,7 @@ export function Sketcher() {
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
           className="bg-white rounded-md"
-          style={{ width: '100%', height: '500px', cursor: isErasing ? 'crosshair' : cursorUrl }}
+          style={{ width: '100%', height: '500px', cursor: cursorUrl }}
         />
       </CardContent>
     </Card>
