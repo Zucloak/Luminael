@@ -11,7 +11,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import * as pdfjsLib from 'pdfjs-dist';
 import { AnnotationComponent } from './AnnotationComponent';
-import { SignatureAnnotationComponent } from './SignatureAnnotationComponent';
 
 const generateUniqueId = () => {
     return `ann_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -61,7 +60,6 @@ export function PdfEditor() {
   const signaturePadRef = useRef<HTMLCanvasElement>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
-  const [signatureAnnotation, setSignatureAnnotation] = useState<ImageAnnotation | null>(null);
   const renderingPages = useRef(new Set<number>());
   const isMounted = useRef(true);
 
@@ -270,42 +268,6 @@ export function PdfEditor() {
         }
     }
 
-    if (signatureAnnotation) {
-        const page = pages[signatureAnnotation.pageIndex];
-        const { x, y, width, height } = signatureAnnotation;
-        const { width: pageWidth, height: pageHeight } = page.getSize();
-
-        const canvas = canvasRefs.current[signatureAnnotation.pageIndex];
-        if(canvas) {
-            const scaleX = pageWidth / canvas.clientWidth;
-            const scaleY = pageHeight / canvas.clientHeight;
-
-            const pngBytes = await fetch(signatureAnnotation.dataUrl).then(res => res.arrayBuffer());
-            const image = await newPdfDoc.embedPng(pngBytes);
-
-            const { width: imgWidth, height: imgHeight } = image.size();
-            const boxWidth = width * scaleX;
-            const boxHeight = height * scaleY;
-
-            const widthRatio = boxWidth / imgWidth;
-            const heightRatio = boxHeight / imgHeight;
-            const ratio = Math.min(widthRatio, heightRatio);
-
-            const newWidth = imgWidth * ratio;
-            const newHeight = imgHeight * ratio;
-
-            const xOffset = (boxWidth - newWidth) / 2;
-            const yOffset = (boxHeight - newHeight) / 2;
-
-            page.drawImage(image, {
-                x: x * scaleX + xOffset,
-                y: pageHeight - (y * scaleY) - boxHeight + yOffset,
-                width: newWidth,
-                height: newHeight,
-            });
-        }
-    }
-
     const pdfBytes = await newPdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const link = document.createElement('a');
@@ -357,59 +319,7 @@ export function PdfEditor() {
     setAnnotations(newAnnotations);
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    let objectUrl: string | null = null;
-    try {
-        objectUrl = URL.createObjectURL(file);
-
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    return reject(new Error("Could not get canvas context"));
-                }
-                ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL());
-            };
-            img.onerror = reject;
-            if (objectUrl) {
-                img.src = objectUrl;
-            } else {
-                reject(new Error("objectUrl is null"));
-            }
-        });
-
-        if (!isMounted.current) return;
-
-        const newImageAnnotation: ImageAnnotation = {
-            id: generateUniqueId(),
-            pageIndex: 0, // Default to first page
-            x: 100,
-            y: 100,
-            width: 150,
-            height: 100, // Default size
-            type: 'image',
-            dataUrl: dataUrl,
-        };
-        setAnnotations(prev => [...prev, newImageAnnotation]);
-        e.target.value = ''; // Reset file input
-    } catch (err) {
-        console.error("Failed to load image", err);
-    } finally {
-        if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-        }
-    }
-  };
-
-  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, options?: { isSignature: boolean }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -423,7 +333,10 @@ export function PdfEditor() {
         return;
     }
 
-    setIsUploadingSignature(true);
+    if (options?.isSignature) {
+        setIsUploadingSignature(true);
+    }
+
     try {
         const dataUrl = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
@@ -440,26 +353,29 @@ export function PdfEditor() {
 
         if (!isMounted.current) return;
 
-        const newSignatureAnnotation: ImageAnnotation = {
+        const newImageAnnotation: ImageAnnotation = {
             id: generateUniqueId(),
             pageIndex: 0, // Default to first page
             x: 100,
             y: 100,
-            width: 150,
-            height: 75, // Default size for signature
+            width: options?.isSignature ? 150 : 150,
+            height: options?.isSignature ? 75 : 100,
             type: 'image',
             dataUrl: dataUrl,
         };
 
-        if (isMounted.current) {
-            setSignatureAnnotation(newSignatureAnnotation);
+        setAnnotations(prev => [...prev, newImageAnnotation]);
+
+        if (options?.isSignature) {
             setIsSignatureModalOpen(false);
-            e.target.value = ''; // Reset file input
         }
+        e.target.value = ''; // Reset file input
     } catch (err) {
-        console.error("Failed to process signature", err);
+        console.error("Failed to load image", err);
     } finally {
-        setIsUploadingSignature(false);
+        if (options?.isSignature) {
+            setIsUploadingSignature(false);
+        }
     }
   };
 
@@ -605,7 +521,7 @@ export function PdfEditor() {
           <Button asChild variant="outline">
             <label htmlFor="image-upload-btn"><ImageIcon className="mr-2" /> Add Image</label>
           </Button>
-          <input type="file" id="image-upload-btn" accept="image/png, image/jpeg" className="hidden" onChange={handleImageChange} />
+          <input type="file" id="image-upload-btn" accept="image/png, image/jpeg" className="hidden" onChange={(e) => handleImageUpload(e)} />
 
           <Dialog open={isSignatureModalOpen} onOpenChange={setIsSignatureModalOpen}>
               <DialogTrigger asChild>
@@ -619,7 +535,7 @@ export function PdfEditor() {
                     <Button asChild variant="outline" disabled={isUploadingSignature}>
                         <label htmlFor="signature-upload-btn">Upload Signature</label>
                     </Button>
-                    <input type="file" id="signature-upload-btn" accept="image/*" className="hidden" onChange={handleSignatureUpload} />
+                    <input type="file" id="signature-upload-btn" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, { isSignature: true })} />
                   </div>
                   {isUploadingSignature && <div className="text-center">Uploading...</div>}
                   <canvas
@@ -697,16 +613,6 @@ export function PdfEditor() {
                                 activeTool={activeTool}
                             />
                         ))}
-                        {signatureAnnotation && signatureAnnotation.pageIndex === index && (
-                            <SignatureAnnotationComponent
-                                annotation={signatureAnnotation}
-                                isSelected={selectedElementId === signatureAnnotation.id}
-                                onSelect={setSelectedElementId}
-                                onDelete={() => setSignatureAnnotation(null)}
-                                updateAnnotation={setSignatureAnnotation}
-                                activeTool={activeTool}
-                            />
-                        )}
                     </div>
                 </div>
             ))}
