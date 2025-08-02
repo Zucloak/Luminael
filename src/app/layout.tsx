@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
+import '@/styles/desmos-overrides.css';
 import { Toaster } from '@/components/ui/toaster';
 import 'katex/dist/katex.min.css';
 import { Inter } from 'next/font/google';

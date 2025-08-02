@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useTheme } from '@/hooks/use-theme';
 
-// It's important to declare the Desmos global object to TypeScript
 declare const Desmos: any;
 
 export function Calculator() {
@@ -14,7 +13,6 @@ export function Calculator() {
 
   useEffect(() => {
     if (calculatorRef.current && typeof Desmos !== 'undefined') {
-      // If a calculator instance already exists, destroy it before creating a new one
       if (calculatorInstance.current) {
         calculatorInstance.current.destroy();
       }
@@ -28,7 +26,6 @@ export function Calculator() {
         projectorMode: false,
       };
 
-      // Ensure the 'ScientificCalculator' feature is enabled
       if (Desmos.enabledFeatures.ScientificCalculator) {
         calculatorInstance.current = Desmos.ScientificCalculator(calculatorRef.current, options);
       } else {
@@ -36,22 +33,27 @@ export function Calculator() {
       }
     }
 
-    // Cleanup function to destroy the calculator instance when the component unmounts
     return () => {
       if (calculatorInstance.current) {
         calculatorInstance.current.destroy();
         calculatorInstance.current = null;
       }
     };
-  }, [isHellBound]); // Re-initialize when the theme changes
+  }, [isHellBound]);
 
   return (
-    <Card className="w-full max-w-xs mx-auto shadow-lg border-0 bg-background">
-      <CardContent className="p-2 space-y-2">
-        <div ref={calculatorRef} style={{ width: '100%', height: '400px' }}></div>
-        <div className="text-center text-xs text-muted-foreground">
-          (Powered by Desmos)
+    <Card className="w-full max-w-sm mx-auto shadow-lg border-0 desmos-container">
+      <CardHeader>
+        <CardTitle>Scientific Calculator</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardDescription>A powerful scientific calculator.</CardDescription>
+          <span className="text-xs text-muted-foreground desmos-powered-by">
+            Powered by Desmos
+          </span>
         </div>
+      </CardHeader>
+      <CardContent className="p-2">
+        <div ref={calculatorRef} style={{ width: '100%', height: '450px' }}></div>
       </CardContent>
     </Card>
   );
