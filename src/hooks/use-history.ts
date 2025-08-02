@@ -7,7 +7,7 @@ type HistoryState<T> = {
 };
 
 // Custom hook for managing state history with undo/redo functionality.
-export const useHistory = <T>(initialState: T) => {
+export const useHistory = <T,>(initialState: T) => {
   const [state, setState] = useState<HistoryState<T>>({
     past: [],
     present: initialState,
@@ -37,10 +37,10 @@ export const useHistory = <T>(initialState: T) => {
   }, []);
 
   // Replaces the present state without affecting the history.
-  const replace = useCallback((newState: T) => {
+  const replace = useCallback((newState: T | ((prevState: T) => T)) => {
     setState(currentState => ({
       ...currentState,
-      present: newState,
+      present: typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState.present) : newState,
     }));
   }, []);
 
@@ -62,18 +62,18 @@ export const useHistory = <T>(initialState: T) => {
   }, []);
 
   // Sets a new state and clears the future (redo stack).
-  const set = useCallback((newState: T) => {
+  const set = useCallback((newState: T | ((prevState: T) => T)) => {
     setState((currentState) => {
-      const { past, present } = currentState;
+      const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState.present) : newState;
 
       // Don't save duplicates
-      if (JSON.stringify(newState) === JSON.stringify(present)) {
+      if (JSON.stringify(newPresent) === JSON.stringify(currentState.present)) {
         return currentState;
       }
 
       return {
-        past: [...past, present],
-        present: newState,
+        past: [...currentState.past, currentState.present],
+        present: newPresent,
         future: [], // Clear future when a new state is set
       };
     });

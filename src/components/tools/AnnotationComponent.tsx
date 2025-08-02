@@ -158,7 +158,8 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
                             e.stopPropagation();
                         }
                     }}
-                    onBlur={(e) => updateAnnotation({ ...annotation, text: e.currentTarget.innerText })}
+                    onInput={(e) => updateAnnotation({ ...annotation, text: e.currentTarget.innerText }, false)}
+                    onBlur={(e) => updateAnnotation({ ...annotation, text: e.currentTarget.innerText }, true)}
                     style={{
                         width: '100%',
                         height: '100%',

@@ -273,13 +273,15 @@ export function PdfEditor() {
   };
 
   const updateAnnotation = useCallback((updatedAnnotation: Annotation, addToHistory: boolean = true) => {
-    const newAnnotations = annotations.map(ann => (ann.id === updatedAnnotation.id ? updatedAnnotation : ann));
+    const updater = (prevAnnotations: Annotation[]) =>
+      prevAnnotations.map(ann => (ann.id === updatedAnnotation.id ? updatedAnnotation : ann));
+
     if (addToHistory) {
-      setAnnotations(newAnnotations);
+      setAnnotations(updater);
     } else {
-      replaceAnnotations(newAnnotations);
+      replaceAnnotations(updater);
     }
-  }, [annotations, setAnnotations, replaceAnnotations]);
+  }, [setAnnotations, replaceAnnotations]);
 
   const deleteAnnotation = (id: string) => {
     const newAnnotations = annotations.filter(ann => ann.id !== id);
