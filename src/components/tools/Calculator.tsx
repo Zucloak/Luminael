@@ -43,14 +43,14 @@ export function Calculator() {
 
   return (
     <Card className="w-full max-w-sm mx-auto shadow-lg border-0 desmos-container">
-      <CardHeader>
-        <CardTitle>Scientific Calculator</CardTitle>
-        <div className="flex items-center justify-between">
-          <CardDescription>A powerful scientific calculator.</CardDescription>
-          <span className="text-xs text-muted-foreground desmos-powered-by">
-            Powered by Desmos
-          </span>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <CardTitle>Scientific Calculator</CardTitle>
+          <CardDescription className="mt-1">A powerful scientific calculator.</CardDescription>
         </div>
+        <span className="text-sm text-muted-foreground desmos-powered-by">
+          Powered by Desmos
+        </span>
       </CardHeader>
       <CardContent className="p-2">
         <div ref={calculatorRef} style={{ width: '100%', height: '450px' }}></div>
