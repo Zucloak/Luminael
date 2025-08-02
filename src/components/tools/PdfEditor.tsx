@@ -361,25 +361,50 @@ export function PdfEditor() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const imageUrl = URL.createObjectURL(file);
+    let objectUrl: string | null = null;
     try {
-      if (!isMounted.current) return;
+        objectUrl = URL.createObjectURL(file);
 
-      const newImageAnnotation: ImageAnnotation = {
-          id: generateUniqueId(),
-          pageIndex: 0, // Default to first page
-          x: 100,
-          y: 100,
-          width: 150,
-          height: 100, // Default size
-          type: 'image',
-          dataUrl: imageUrl,
-      };
-      setAnnotations(prev => [...prev, newImageAnnotation]);
-      e.target.value = ''; // Reset file input
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    return reject(new Error("Could not get canvas context"));
+                }
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL());
+            };
+            img.onerror = reject;
+            if (objectUrl) {
+                img.src = objectUrl;
+            } else {
+                reject(new Error("objectUrl is null"));
+            }
+        });
+
+        if (!isMounted.current) return;
+
+        const newImageAnnotation: ImageAnnotation = {
+            id: generateUniqueId(),
+            pageIndex: 0, // Default to first page
+            x: 100,
+            y: 100,
+            width: 150,
+            height: 100, // Default size
+            type: 'image',
+            dataUrl: dataUrl,
+        };
+        setAnnotations(prev => [...prev, newImageAnnotation]);
+        e.target.value = ''; // Reset file input
+    } catch (err) {
+        console.error("Failed to load image", err);
     } finally {
-        if (imageUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(imageUrl);
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
         }
     }
   };
@@ -399,10 +424,8 @@ export function PdfEditor() {
     }
 
     setIsUploadingSignature(true);
-    let objectUrl: string | null = null;
     try {
-        objectUrl = URL.createObjectURL(file);
-        const imageB64 = await new Promise<string>((resolve, reject) => {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (event) => {
                 if (typeof event.target?.result === 'string') {
@@ -417,13 +440,6 @@ export function PdfEditor() {
 
         if (!isMounted.current) return;
 
-        const processedB64 = await removeImageBackground(imageB64);
-
-        if (!processedB64 || !processedB64.startsWith('data:image')) {
-            console.error("Failed to process image, result is not a valid data URL.");
-            return;
-        }
-
         const newSignatureAnnotation: ImageAnnotation = {
             id: generateUniqueId(),
             pageIndex: 0, // Default to first page
@@ -432,7 +448,7 @@ export function PdfEditor() {
             width: 150,
             height: 75, // Default size for signature
             type: 'image',
-            dataUrl: processedB64,
+            dataUrl: dataUrl,
         };
 
         if (isMounted.current) {
@@ -444,9 +460,6 @@ export function PdfEditor() {
         console.error("Failed to process signature", err);
     } finally {
         setIsUploadingSignature(false);
-        if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-        }
     }
   };
 
