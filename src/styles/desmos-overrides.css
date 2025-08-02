@@ -72,7 +72,10 @@
 .desmos-container .dcg-icon-chevron-up,
 .desmos-container .dcg-icon-chevron-down,
 .desmos-container .dcg-icon-chevron-left,
-.desmos-container .dcg-icon-chevron-right {
+.desmos-container .dcg-icon-chevron-right,
+.desmos-container .dcg-icon-zoom-in,
+.desmos-container .dcg-icon-zoom-out,
+.desmos-container .dcg-icon-zoom-fit {
   color: hsl(var(--foreground)) !important;
   fill: hsl(var(--foreground)) !important;
 }
@@ -80,6 +83,55 @@
 .desmos-container .dcg-btn-flat-gray .dcg-icon {
     color: hsl(var(--primary-foreground)) !important;
     fill: hsl(var(--primary-foreground)) !important;
+}
+
+/* Graph Settings Panel */
+.desmos-container .dcg-settings-container {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
+}
+
+.desmos-container .dcg-settings-title {
+    color: hsl(var(--card-foreground));
+    font-weight: 600;
+}
+
+/* Checkboxes in Settings */
+.desmos-container .dcg-checkbox-container {
+    color: hsl(var(--foreground));
+}
+
+.desmos-container .dcg-checkbox-box {
+    border: 1px solid hsl(var(--border)) !important;
+    background-color: hsl(var(--input));
+}
+
+.desmos-container .dcg-checkbox-checked .dcg-checkbox-box {
+    background-color: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+}
+
+/* Sliders in Settings */
+.desmos-container .dcg-slider .dcg-slider-track {
+    background-color: hsl(var(--muted));
+}
+
+.desmos-container .dcg-slider .dcg-slider-thumb {
+    background-color: hsl(var(--primary));
+    border: 2px solid hsl(var(--primary-foreground));
+}
+
+/* Input fields in Settings */
+.desmos-container .dcg-settings-container .dcg-input-container {
+    background-color: hsl(var(--input));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+}
+
+.desmos-container .dcg-settings-container .dcg-input-container.dcg-mq-focused {
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
 }
 
 /* Keypad */
@@ -101,7 +153,17 @@
 
 /* "Powered by Desmos" subtitle */
 .desmos-powered-by {
-  font-size: 0.75rem; /* 12px */
-  font-style: italic;
-  animation: green-shimmer 4s infinite;
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted-foreground)) 25%,
+    #28a745 50%,
+    hsl(var(--muted-foreground)) 75%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer-green 5s linear infinite;
 }
