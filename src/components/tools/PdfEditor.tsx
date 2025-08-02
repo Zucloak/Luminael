@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb, StandardFonts, PDFTextField } from 'pdf-lib';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Image from 'next/image';
 import { Upload, Download, Type, Image as ImageIcon, Signature, AlertTriangle, Trash2, Bold, Italic, Underline, MousePointerClick } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -86,6 +87,7 @@ export function PdfEditor() {
   const [signatureForProcessing, setSignatureForProcessing] = useState<string | null>(null);
   const [isBgRemovalDialogOpen, setIsBgRemovalDialogOpen] = useState(false);
   const [isBgRemovalLoading, setIsBgRemovalLoading] = useState(false);
+  const [processedSignatureData, setProcessedSignatureData] = useState<string | null>(null);
 
   // The overlay refs are still needed for positioning and interaction
   const pageOverlayRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -249,7 +251,7 @@ export function PdfEditor() {
                 console.error("Could not get canvas context for image conversion.");
                 continue;
             }
-            const img = new Image();
+            const img = document.createElement('img');
 
             // Wait for image to load
             await new Promise((resolve, reject) => {
@@ -425,17 +427,17 @@ export function PdfEditor() {
     if (!signatureForProcessing) return;
 
     setIsBgRemovalLoading(true);
-
-    let finalDataUrl = signatureForProcessing;
+    setProcessedSignatureData(null); // Clear previous processed data
 
     try {
+        let finalDataUrl = signatureForProcessing;
         if (removeBg) {
             finalDataUrl = await removeImageBackground(signatureForProcessing);
             toast.success("Background removed successfully!");
         } else {
-            // Launder the image through a canvas to ensure a consistent format
+            // Launder the image to ensure consistent format
             const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-                const image = new Image();
+                const image = document.createElement('img');
                 image.onload = () => resolve(image);
                 image.onerror = reject;
                 image.src = signatureForProcessing;
@@ -448,40 +450,49 @@ export function PdfEditor() {
             ctx.drawImage(img, 0, 0);
             finalDataUrl = canvas.toDataURL('image/png');
         }
+        if (isMounted.current) {
+            setProcessedSignatureData(finalDataUrl);
+        }
     } catch (error) {
         console.error("Signature processing failed:", error);
-        toast.error("Could not process signature. Using original image.");
-        // Fallback to original image if laundering fails
-        finalDataUrl = signatureForProcessing;
+        toast.error("Could not process signature.");
     } finally {
         if(isMounted.current) {
             setIsBgRemovalLoading(false);
         }
     }
+  };
 
+  const handleSaveProcessedSignature = () => {
+    if (!processedSignatureData) {
+        toast.error("No signature to save.", {
+            description: "Please process a signature before saving.",
+        });
+        return;
+    }
 
     const newSignatureAnnotation: SignatureAnnotation = {
         id: generateUniqueId(),
-        pageIndex: 0, // Default to first page
+        pageIndex: 0,
         x: 100,
         y: 100,
         width: 150,
         height: 75,
         type: 'signature',
-        dataUrl: finalDataUrl,
+        dataUrl: processedSignatureData,
     };
 
     if (isMounted.current) {
         setAnnotations(prev => [...prev, newSignatureAnnotation]);
         setIsBgRemovalDialogOpen(false);
         setSignatureForProcessing(null);
+        setProcessedSignatureData(null);
     }
   };
 
-
   const removeImageBackground = (imageB64: string): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
@@ -715,24 +726,38 @@ export function PdfEditor() {
               </DialogContent>
           </Dialog>
 
-          <Dialog open={isBgRemovalDialogOpen} onOpenChange={setIsBgRemovalDialogOpen}>
+          <Dialog open={isBgRemovalDialogOpen} onOpenChange={(isOpen) => {
+              setIsBgRemovalDialogOpen(isOpen);
+              if (!isOpen) {
+                  // Reset states when dialog is closed
+                  setSignatureForProcessing(null);
+                  setProcessedSignatureData(null);
+              }
+          }}>
               <DialogContent className="max-w-[90vw] md:max-w-2xl max-h-[80vh] flex flex-col">
                   <DialogHeader>
-                      <DialogTitle>Remove Background?</DialogTitle>
+                      <DialogTitle>Process and Save Signature</DialogTitle>
                   </DialogHeader>
-                  <div className="flex-grow flex items-center justify-center my-4 overflow-hidden">
-                      {signatureForProcessing && (
-                          <img
-                              src={signatureForProcessing}
-                              alt="Signature preview"
-                              className="max-w-full max-h-full object-contain rounded-md"
-                          />
-                      )}
+                  <div className="flex-grow my-4 overflow-y-auto">
+                      <div className="relative w-full h-full min-h-[300px]">
+                          {(processedSignatureData || signatureForProcessing) && (
+                              <Image
+                                  src={processedSignatureData || signatureForProcessing!}
+                                  alt="Signature preview"
+                                  layout="fill"
+                                  objectFit="contain"
+                                  unoptimized
+                              />
+                          )}
+                      </div>
                   </div>
                   {isBgRemovalLoading && <div className="text-center my-2">Processing...</div>}
-                  <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => handleProcessSignature(false)} disabled={isBgRemovalLoading}>Use as-is</Button>
-                      <Button onClick={() => handleProcessSignature(true)} disabled={isBgRemovalLoading}>Use with Transparent Background</Button>
+                  <div className="flex justify-between items-center gap-2">
+                      <div className="flex gap-2">
+                          <Button variant="outline" onClick={() => handleProcessSignature(false)} disabled={isBgRemovalLoading}>Use as-is</Button>
+                          <Button onClick={() => handleProcessSignature(true)} disabled={isBgRemovalLoading}>Clear Background</Button>
+                      </div>
+                      <Button onClick={handleSaveProcessedSignature} disabled={!processedSignatureData || isBgRemovalLoading}>Save Signature</Button>
                   </div>
               </DialogContent>
           </Dialog>
