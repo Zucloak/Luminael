@@ -172,3 +172,14 @@
     80% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(-20px); }
 }
+
+@keyframes green-shimmer {
+  0%, 100% {
+    text-shadow: 0 0 4px hsl(var(--muted-foreground));
+    color: hsl(var(--muted-foreground));
+  }
+  50% {
+    text-shadow: 0 0 8px #28a745, 0 0 12px #28a745;
+    color: #a3ffb4;
+  }
+}

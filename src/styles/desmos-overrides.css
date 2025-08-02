@@ -66,8 +66,20 @@
 
 .desmos-container .dcg-icon-add,
 .desmos-container .dcg-icon-settings,
-.desmos-container .dcg-icon-delete {
-  color: hsl(var(--primary-foreground));
+.desmos-container .dcg-icon-delete,
+.desmos-container .dcg-icon-keyboard,
+.desmos-container .dcg-icon-x,
+.desmos-container .dcg-icon-chevron-up,
+.desmos-container .dcg-icon-chevron-down,
+.desmos-container .dcg-icon-chevron-left,
+.desmos-container .dcg-icon-chevron-right {
+  color: hsl(var(--foreground)) !important;
+  fill: hsl(var(--foreground)) !important;
+}
+
+.desmos-container .dcg-btn-flat-gray .dcg-icon {
+    color: hsl(var(--primary-foreground)) !important;
+    fill: hsl(var(--primary-foreground)) !important;
 }
 
 /* Keypad */
@@ -89,7 +101,7 @@
 
 /* "Powered by Desmos" subtitle */
 .desmos-powered-by {
-  color: hsl(var(--muted-foreground));
   font-size: 0.75rem; /* 12px */
   font-style: italic;
+  animation: green-shimmer 4s infinite;
 }

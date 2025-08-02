@@ -1,9 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, RefObject } from 'react';
 
-// Define a type for the document with potential vendor prefixes
 interface DocumentWithFullscreen extends Document {
   mozFullScreenElement?: Element;
   msFullscreenElement?: Element;
@@ -13,7 +12,6 @@ interface DocumentWithFullscreen extends Document {
   webkitExitFullscreen?: () => Promise<void>;
 }
 
-// Define a type for the element with potential vendor prefixes
 interface HTMLElementWithFullscreen extends HTMLElement {
   mozRequestFullScreen?: () => Promise<void>;
   msRequestFullscreen?: () => Promise<void>;
@@ -21,16 +19,16 @@ interface HTMLElementWithFullscreen extends HTMLElement {
 }
 
 function isDocumentInFullscreen(doc: DocumentWithFullscreen): boolean {
-    return !!(doc.fullscreenElement || doc.mozFullScreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement);
+  return !!(doc.fullscreenElement || doc.mozFullScreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement);
 }
 
-
-export function useFullscreen() {
+export function useFullscreen(ref?: RefObject<HTMLElementWithFullscreen>) {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  // Start with `false` to prevent hydration mismatches.
-  // The server will render nothing, and the client will initially match.
-  // The button will appear on the client after `useEffect` runs if supported.
   const [isSupported, setIsSupported] = useState(false);
+
+  const getElement = useCallback(() => {
+    return ref?.current || document.documentElement as HTMLElementWithFullscreen;
+  }, [ref]);
 
   const handleFullscreenChange = useCallback(() => {
     const doc = document as DocumentWithFullscreen;
@@ -38,8 +36,7 @@ export function useFullscreen() {
   }, []);
 
   useEffect(() => {
-    // Check for support on mount (client-side only).
-    const element = document.documentElement as HTMLElementWithFullscreen;
+    const element = getElement();
     const supported = !!(
       element.requestFullscreen ||
       element.webkitRequestFullscreen ||
@@ -48,7 +45,6 @@ export function useFullscreen() {
     );
     setIsSupported(supported);
     
-    // Set initial state
     handleFullscreenChange();
 
     const doc = document as DocumentWithFullscreen;
@@ -63,36 +59,34 @@ export function useFullscreen() {
       doc.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       doc.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
-  }, [handleFullscreenChange]);
+  }, [getElement, handleFullscreenChange]);
   
   const toggleFullscreen = useCallback(() => {
     const doc = document as DocumentWithFullscreen;
-    const element = document.documentElement as HTMLElementWithFullscreen;
+    const element = getElement();
 
     if (!isDocumentInFullscreen(doc)) {
-      // Try to enter fullscreen
       if (element.requestFullscreen) {
         element.requestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
-      } else if (element.webkitRequestFullscreen) { // Chrome, Safari and Opera
+      } else if (element.webkitRequestFullscreen) {
         element.webkitRequestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
-      } else if (element.mozRequestFullScreen) { // Firefox
+      } else if (element.mozRequestFullScreen) {
         element.mozRequestFullScreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
-      } else if (element.msRequestFullscreen) { // IE/Edge
+      } else if (element.msRequestFullscreen) {
         element.msRequestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
       }
     } else {
-      // Try to exit fullscreen
       if (doc.exitFullscreen) {
         doc.exitFullscreen();
-      } else if (doc.webkitExitFullscreen) { // Chrome, Safari and Opera
+      } else if (doc.webkitExitFullscreen) {
         doc.webkitExitFullscreen();
-      } else if (doc.mozCancelFullScreen) { // Firefox
+      } else if (doc.mozCancelFullScreen) {
         doc.mozCancelFullScreen();
-      } else if (doc.msExitFullscreen) { // IE/Edge
+      } else if (doc.msExitFullscreen) {
         doc.msExitFullscreen();
       }
     }
-  }, []);
+  }, [getElement]);
 
   return { isFullscreen, toggleFullscreen, isSupported };
 }
