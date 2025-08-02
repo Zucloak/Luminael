@@ -464,9 +464,9 @@ export function PdfEditor() {
   };
 
   const handleSaveProcessedSignature = () => {
-    if (!processedSignatureData) {
-        toast.error("No signature to save.", {
-            description: "Please process a signature before saving.",
+    if (!processedSignatureData || typeof processedSignatureData !== 'string' || !processedSignatureData.startsWith('data:image/png;base64,')) {
+        toast.error("Invalid signature data.", {
+            description: "Could not save the signature. Please try processing it again.",
         });
         return;
     }
