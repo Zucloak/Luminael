@@ -341,10 +341,10 @@ export function PdfEditor() {
         const dataUrl = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (event) => {
-                if (typeof event.target?.result === 'string') {
+                if (typeof event.target?.result === 'string' && event.target.result) {
                     resolve(event.target.result);
                 } else {
-                    reject(new Error("FileReader result is not a string."));
+                    reject(new Error("FileReader result is not a valid string."));
                 }
             };
             reader.onerror = reject;
