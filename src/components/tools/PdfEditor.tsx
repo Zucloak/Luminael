@@ -55,7 +55,7 @@ if (typeof window !== 'undefined') {
 export function PdfEditor() {
   const [pdfDoc, setPdfDoc] = useState<PDFDocument | null>(null);
   const [pdfPages, setPdfPages] = useState<any[]>([]);
-  const { state: annotations, set: setAnnotations, undo, redo, reset: resetAnnotations, canUndo, canRedo } = useHistory<Annotation[]>([]);
+  const { state: annotations, set: setAnnotations, replace: replaceAnnotations, undo, redo, reset: resetAnnotations, canUndo, canRedo } = useHistory<Annotation[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<'text' | 'image' | 'signature' | 'select' | null>(null);
@@ -272,10 +272,14 @@ export function PdfEditor() {
     }
   };
 
-  const updateAnnotation = useCallback((updatedAnnotation: Annotation) => {
+  const updateAnnotation = useCallback((updatedAnnotation: Annotation, addToHistory: boolean = true) => {
     const newAnnotations = annotations.map(ann => (ann.id === updatedAnnotation.id ? updatedAnnotation : ann));
-    setAnnotations(newAnnotations);
-  }, [annotations, setAnnotations]);
+    if (addToHistory) {
+      setAnnotations(newAnnotations);
+    } else {
+      replaceAnnotations(newAnnotations);
+    }
+  }, [annotations, setAnnotations, replaceAnnotations]);
 
   const deleteAnnotation = (id: string) => {
     const newAnnotations = annotations.filter(ann => ann.id !== id);

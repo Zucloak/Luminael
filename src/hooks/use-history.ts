@@ -36,6 +36,14 @@ export const useHistory = <T>(initialState: T) => {
     });
   }, []);
 
+  // Replaces the present state without affecting the history.
+  const replace = useCallback((newState: T) => {
+    setState(currentState => ({
+      ...currentState,
+      present: newState,
+    }));
+  }, []);
+
   // The redo function.
   const redo = useCallback(() => {
     setState((currentState) => {
@@ -83,6 +91,7 @@ export const useHistory = <T>(initialState: T) => {
   return {
     state: state.present,
     set,
+    replace,
     undo,
     redo,
     reset,
