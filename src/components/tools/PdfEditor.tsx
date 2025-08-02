@@ -12,6 +12,10 @@ import { Slider } from '@/components/ui/slider';
 import * as pdfjsLib from 'pdfjs-dist';
 import { AnnotationComponent } from './AnnotationComponent';
 
+const generateUniqueId = () => {
+    return `ann_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
 // Define more robust types for annotations
 type AnnotationBase = {
   id: string;
@@ -277,7 +281,7 @@ export function PdfEditor() {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        const newId = new Date().toISOString();
+        const newId = generateUniqueId();
         const newTextAnnotation: TextAnnotation = {
             id: newId,
             pageIndex,
@@ -324,7 +328,7 @@ export function PdfEditor() {
       if (!isMounted.current) return;
 
       const newImageAnnotation: ImageAnnotation = {
-          id: new Date().toISOString(),
+          id: generateUniqueId(),
           pageIndex: 0, // Default to first page
           x: 100,
           y: 100,
@@ -361,7 +365,13 @@ export function PdfEditor() {
     try {
         const imageB64 = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = (event) => resolve(event.target?.result as string);
+            reader.onload = (event) => {
+                if (typeof event.target?.result === 'string') {
+                    resolve(event.target.result);
+                } else {
+                    reject(new Error("FileReader result is not a string."));
+                }
+            };
             reader.onerror = reject;
             reader.readAsDataURL(file);
         });
@@ -380,7 +390,7 @@ export function PdfEditor() {
         if (!isMounted.current) return;
 
         const newImageAnnotation: ImageAnnotation = {
-            id: new Date().toISOString(),
+            id: generateUniqueId(),
             pageIndex: 0, // Default to first page
             x: 100,
             y: 100,
@@ -451,7 +461,7 @@ export function PdfEditor() {
     const signatureUrl = signaturePadRef.current.toDataURL('image/png');
     if (signatureUrl) {
         const newImageAnnotation: ImageAnnotation = {
-            id: new Date().toISOString(),
+            id: generateUniqueId(),
             pageIndex: 0, // Default to first page
             x: 100,
             y: 100,

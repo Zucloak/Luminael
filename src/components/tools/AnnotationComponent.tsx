@@ -167,7 +167,7 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
                     {annotation.text}
                 </div>
             )}
-            {type === 'image' && (
+            {type === 'image' && (annotation as ImageAnnotation).dataUrl && (
                  <Image src={annotation.dataUrl} layout="fill" objectFit="contain" alt="annotation" />
             )}
         </div>
