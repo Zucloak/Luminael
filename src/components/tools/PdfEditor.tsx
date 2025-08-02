@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import * as pdfjsLib from 'pdfjs-dist';
 import { AnnotationComponent } from './AnnotationComponent';
+import { SignatureAnnotationComponent } from './SignatureAnnotationComponent';
 
 const generateUniqueId = () => {
     return `ann_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -60,6 +61,7 @@ export function PdfEditor() {
   const signaturePadRef = useRef<HTMLCanvasElement>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
+  const [signatureAnnotation, setSignatureAnnotation] = useState<ImageAnnotation | null>(null);
   const renderingPages = useRef(new Set<number>());
   const isMounted = useRef(true);
 
@@ -268,6 +270,42 @@ export function PdfEditor() {
         }
     }
 
+    if (signatureAnnotation) {
+        const page = pages[signatureAnnotation.pageIndex];
+        const { x, y, width, height } = signatureAnnotation;
+        const { width: pageWidth, height: pageHeight } = page.getSize();
+
+        const canvas = canvasRefs.current[signatureAnnotation.pageIndex];
+        if(canvas) {
+            const scaleX = pageWidth / canvas.clientWidth;
+            const scaleY = pageHeight / canvas.clientHeight;
+
+            const pngBytes = await fetch(signatureAnnotation.dataUrl).then(res => res.arrayBuffer());
+            const image = await newPdfDoc.embedPng(pngBytes);
+
+            const { width: imgWidth, height: imgHeight } = image.size();
+            const boxWidth = width * scaleX;
+            const boxHeight = height * scaleY;
+
+            const widthRatio = boxWidth / imgWidth;
+            const heightRatio = boxHeight / imgHeight;
+            const ratio = Math.min(widthRatio, heightRatio);
+
+            const newWidth = imgWidth * ratio;
+            const newHeight = imgHeight * ratio;
+
+            const xOffset = (boxWidth - newWidth) / 2;
+            const yOffset = (boxHeight - newHeight) / 2;
+
+            page.drawImage(image, {
+                x: x * scaleX + xOffset,
+                y: pageHeight - (y * scaleY) - boxHeight + yOffset,
+                width: newWidth,
+                height: newHeight,
+            });
+        }
+    }
+
     const pdfBytes = await newPdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const link = document.createElement('a');
@@ -361,8 +399,9 @@ export function PdfEditor() {
     }
 
     setIsUploadingSignature(true);
-    let imageUrl = URL.createObjectURL(file);
+    let objectUrl: string | null = null;
     try {
+        objectUrl = URL.createObjectURL(file);
         const imageB64 = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -385,11 +424,7 @@ export function PdfEditor() {
             return;
         }
 
-        imageUrl = processedB64;
-
-        if (!isMounted.current) return;
-
-        const newImageAnnotation: ImageAnnotation = {
+        const newSignatureAnnotation: ImageAnnotation = {
             id: generateUniqueId(),
             pageIndex: 0, // Default to first page
             x: 100,
@@ -397,11 +432,11 @@ export function PdfEditor() {
             width: 150,
             height: 75, // Default size for signature
             type: 'image',
-            dataUrl: imageUrl,
+            dataUrl: processedB64,
         };
 
-        if (newImageAnnotation) {
-            setAnnotations(prev => [...prev, newImageAnnotation]);
+        if (isMounted.current) {
+            setSignatureAnnotation(newSignatureAnnotation);
             setIsSignatureModalOpen(false);
             e.target.value = ''; // Reset file input
         }
@@ -409,8 +444,8 @@ export function PdfEditor() {
         console.error("Failed to process signature", err);
     } finally {
         setIsUploadingSignature(false);
-        if (imageUrl && imageUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(imageUrl);
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
         }
     }
   };
@@ -649,6 +684,16 @@ export function PdfEditor() {
                                 activeTool={activeTool}
                             />
                         ))}
+                        {signatureAnnotation && signatureAnnotation.pageIndex === index && (
+                            <SignatureAnnotationComponent
+                                annotation={signatureAnnotation}
+                                isSelected={selectedElementId === signatureAnnotation.id}
+                                onSelect={setSelectedElementId}
+                                onDelete={() => setSignatureAnnotation(null)}
+                                updateAnnotation={setSignatureAnnotation}
+                                activeTool={activeTool}
+                            />
+                        )}
                     </div>
                 </div>
             ))}
