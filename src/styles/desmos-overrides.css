@@ -85,6 +85,20 @@
     fill: hsl(var(--primary-foreground)) !important;
 }
 
+/*
+ * Overrides for graph-paper controls (e.g., zoom, settings).
+ * These controls are located on the graph paper itself and need a more
+ * specific selector to override the default white color.
+ */
+.desmos-container .dcg-grapher .dcg-icon-settings,
+.desmos-container .dcg-grapher .dcg-icon-zoom-in,
+.desmos-container .dcg-grapher .dcg-icon-zoom-out,
+.desmos-container .dcg-zoom-controls .dcg-icon,
+.desmos-container .dcg-settings-icon-container .dcg-icon {
+  color: hsl(var(--foreground)) !important;
+  fill: hsl(var(--foreground)) !important;
+}
+
 /* Graph Settings Panel */
 .desmos-container .dcg-settings-container {
     background-color: hsl(var(--card));
