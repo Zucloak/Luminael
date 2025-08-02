@@ -76,11 +76,13 @@ export function PdfEditor() {
 
   // Save state to history
   const saveStateToHistory = React.useCallback((newState: Annotation[]) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newState);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, [history, historyIndex]);
+    setHistory(prevHistory => {
+        const newHistory = prevHistory.slice(0, historyIndex + 1);
+        newHistory.push(newState);
+        return newHistory;
+    });
+    setHistoryIndex(prevIndex => prevIndex + 1);
+  }, [historyIndex]);
 
   // Handle undo
   const handleUndo = () => {
@@ -104,7 +106,7 @@ export function PdfEditor() {
     if (annotations.length > 0) {
         saveStateToHistory(annotations);
     }
-  }, [annotations, saveStateToHistory]);
+  }, [annotations]);
 
   useEffect(() => {
     isMounted.current = true;
