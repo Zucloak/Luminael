@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import 'katex/dist/katex.min.css';
@@ -35,6 +36,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
       </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
+        <Script src="https://www.desmos.com/api/v1.6/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6" strategy="beforeInteractive" />
         <AppProviders>
           <Header />
           <MainContent>
