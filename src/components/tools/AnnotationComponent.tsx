@@ -48,49 +48,41 @@ interface AnnotationComponentProps {
 
 export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete, updateAnnotation, activeTool }: AnnotationComponentProps) {
     const { id, x, y, width, height, type } = annotation;
-    const [isDragging, setIsDragging] = React.useState(false);
-    const [isResizing, setIsResizing] = React.useState(false);
-    const dragStartRef = React.useRef({ x: 0, y: 0 });
-    const originalAnnotationRef = React.useRef<Annotation | null>(null);
-    const textRef = React.useRef<HTMLDivElement>(null);
 
     const handleMouseDown = (e: React.MouseEvent, isResize: boolean = false) => {
         if (activeTool !== 'select') return;
         e.stopPropagation();
         onSelect(id);
 
-        if(isResize) {
-            setIsResizing(true);
-        } else {
-            setIsDragging(true);
-        }
-
-        dragStartRef.current = { x: e.clientX, y: e.clientY };
-        originalAnnotationRef.current = annotation;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const originalAnnotation = { ...annotation };
 
         const handleMouseMove = (e: MouseEvent) => {
-            const dx = e.clientX - dragStartRef.current.x;
-            const dy = e.clientY - dragStartRef.current.y;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
 
+            let updatedAnnotation: Annotation;
             if (isResize) {
-                updateAnnotation({ ...originalAnnotationRef.current!, width: originalAnnotationRef.current!.width + dx, height: originalAnnotationRef.current!.height + dy }, false);
+                updatedAnnotation = { ...originalAnnotation, width: originalAnnotation.width + dx, height: originalAnnotation.height + dy };
             } else {
-                updateAnnotation({ ...originalAnnotationRef.current!, x: originalAnnotationRef.current!.x + dx, y: originalAnnotationRef.current!.y + dy }, false);
+                updatedAnnotation = { ...originalAnnotation, x: originalAnnotation.x + dx, y: originalAnnotation.y + dy };
             }
+            updateAnnotation(updatedAnnotation, false); // Replace state without adding to history
         };
 
         const handleMouseUp = (e: MouseEvent) => {
-            const dx = e.clientX - dragStartRef.current.x;
-            const dy = e.clientY - dragStartRef.current.y;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
 
+            let finalAnnotation: Annotation;
             if (isResize) {
-                updateAnnotation({ ...originalAnnotationRef.current!, width: originalAnnotationRef.current!.width + dx, height: originalAnnotationRef.current!.height + dy }, true);
+                finalAnnotation = { ...originalAnnotation, width: originalAnnotation.width + dx, height: originalAnnotation.height + dy };
             } else {
-                updateAnnotation({ ...originalAnnotationRef.current!, x: originalAnnotationRef.current!.x + dx, y: originalAnnotationRef.current!.y + dy }, true);
+                finalAnnotation = { ...originalAnnotation, x: originalAnnotation.x + dx, y: originalAnnotation.y + dy };
             }
+            updateAnnotation(finalAnnotation, true); // Set state and add to history
 
-            setIsDragging(false);
-            setIsResizing(false);
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
@@ -99,11 +91,6 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
         window.addEventListener('mouseup', handleMouseUp);
     };
 
-    React.useEffect(() => {
-        if (isSelected && textRef.current) {
-            textRef.current.focus();
-        }
-    }, [isSelected]);
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -117,7 +104,7 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
         width: `${width}px`,
         height: `${height}px`,
         border: isSelected ? '2px solid #3b82f6' : '1px solid transparent',
-        cursor: isDragging ? 'grabbing' : (activeTool === 'select' ? 'grab' : 'default'),
+        cursor: (activeTool === 'select' ? 'grab' : 'default'),
     };
 
     return (
@@ -143,36 +130,38 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
                     <div onMouseDown={(e) => handleMouseDown(e, true)} style={{ position: 'absolute', bottom: -4, right: -4, width: 8, height: 8, backgroundColor: '#3b82f6', cursor: 'nwse-resize', zIndex: 21 }} />
                 </>
             )}
-            {type === 'text' && (
-                <div
-                    ref={textRef}
-                    contentEditable={isSelected && activeTool === 'select'}
-                    suppressContentEditableWarning={true}
-                    onMouseDown={(e) => {
-                        if (activeTool !== 'select') return;
-                        onSelect(id);
-                        e.stopPropagation();
-                    }}
-                    onKeyDown={(e) => {
-                        if (e.key === ' ') {
-                            e.stopPropagation();
-                        }
-                    }}
-                    onInput={(e) => updateAnnotation({ ...annotation, text: e.currentTarget.innerText }, false)}
-                    onBlur={(e) => updateAnnotation({ ...annotation, text: e.currentTarget.innerText }, true)}
+            {type === 'text' && isSelected ? (
+                <textarea
+                    autoFocus
+                    value={annotation.text}
+                    onChange={(e) => updateAnnotation({ ...annotation, text: e.target.value }, false)}
+                    onBlur={() => updateAnnotation(annotation, true)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="absolute w-full h-full bg-transparent border-0 resize-none focus:outline-none focus:ring-0"
                     style={{
-                        width: '100%',
-                        height: '100%',
-                        overflow: 'hidden',
+                        padding: 0,
+                        margin: 0,
                         fontWeight: annotation.isBold ? 'bold' : 'normal',
                         fontStyle: annotation.isItalic ? 'italic' : 'normal',
                         textDecoration: annotation.isUnderline ? 'underline' : 'none',
                         fontSize: `${annotation.fontSize}px`,
+                        color: `rgb(${annotation.color.r * 255}, ${annotation.color.g * 255}, ${annotation.color.b * 255})`,
+                    }}
+                />
+            ) : type === 'text' ? (
+                <div
+                    className="w-full h-full"
+                    style={{
+                        fontWeight: annotation.isBold ? 'bold' : 'normal',
+                        fontStyle: annotation.isItalic ? 'italic' : 'normal',
+                        textDecoration: annotation.isUnderline ? 'underline' : 'none',
+                        fontSize: `${annotation.fontSize}px`,
+                        color: `rgb(${annotation.color.r * 255}, ${annotation.color.g * 255}, ${annotation.color.b * 255})`,
                     }}
                 >
                     {annotation.text}
                 </div>
-            )}
+            ) : null}
             {(type === 'image' || type === 'signature') && (annotation as ImageAnnotation | SignatureAnnotation).dataUrl && (
                  <Image src={annotation.dataUrl} layout="fill" objectFit="contain" alt="annotation" />
             )}
