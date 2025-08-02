@@ -11,9 +11,25 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import * as pdfjsLib from 'pdfjs-dist';
 import { AnnotationComponent } from './AnnotationComponent';
+import { toast } from "sonner"
 
 const generateUniqueId = () => {
     return `ann_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+const isCanvasEmpty = (canvas: HTMLCanvasElement): boolean => {
+    const context = canvas.getContext('2d');
+    if (!context) {
+        return true; // Cannot get context, assume empty
+    }
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 3; i < data.length; i += 4) {
+        if (data[i] !== 0) {
+            return false; // Found a non-transparent pixel
+        }
+    }
+    return true; // All pixels are transparent
 };
 
 // Define more robust types for annotations
@@ -67,6 +83,9 @@ export function PdfEditor() {
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
   const renderingPages = useRef(new Set<number>());
   const isMounted = useRef(true);
+  const [signatureForProcessing, setSignatureForProcessing] = useState<string | null>(null);
+  const [isBgRemovalDialogOpen, setIsBgRemovalDialogOpen] = useState(false);
+  const [isBgRemovalLoading, setIsBgRemovalLoading] = useState(false);
 
   // The overlay refs are still needed for positioning and interaction
   const pageOverlayRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -367,16 +386,14 @@ export function PdfEditor() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-        alert("Please upload a valid image.");
+        toast.error("Please upload a valid image.");
         return;
     }
 
     if (file.size > 5 * 1024 * 1024) { // 5MB
-        alert("Image too large. Please upload an image smaller than 5MB.");
+        toast.error("Image too large. Please upload an image smaller than 5MB.");
         return;
     }
-
-    setIsUploadingSignature(true);
 
     try {
         const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -392,31 +409,57 @@ export function PdfEditor() {
             reader.readAsDataURL(file);
         });
 
-        const dataUrlWithRemovedBg = await removeImageBackground(dataUrl);
-
-        if (!isMounted.current) return;
-
-        const newSignatureAnnotation: SignatureAnnotation = {
-            id: generateUniqueId(),
-            pageIndex: 0, // Default to first page
-            x: 100,
-            y: 100,
-            width: 150,
-            height: 75,
-            type: 'signature',
-            dataUrl: dataUrlWithRemovedBg,
-        };
-
-        setAnnotations(prev => [...prev, newSignatureAnnotation]);
-
-        setIsSignatureModalOpen(false);
+        if (isMounted.current) {
+            setSignatureForProcessing(dataUrl);
+            setIsBgRemovalDialogOpen(true);
+            setIsSignatureModalOpen(false); // Close the first modal
+        }
         e.target.value = ''; // Reset file input
     } catch (err) {
         console.error("Failed to load image", err);
-    } finally {
-        setIsUploadingSignature(false);
+        toast.error("Failed to load signature image.");
     }
   };
+
+  const handleProcessSignature = async (removeBg: boolean) => {
+    if (!signatureForProcessing) return;
+
+    let finalDataUrl = signatureForProcessing;
+
+    if (removeBg) {
+        setIsBgRemovalLoading(true);
+        try {
+            const processedUrl = await removeImageBackground(signatureForProcessing);
+            finalDataUrl = processedUrl;
+            toast.success("Background removed successfully!");
+        } catch (error) {
+            console.error("Background removal failed:", error);
+            toast.error("Background removal failed. Using original image.");
+        } finally {
+            if(isMounted.current) {
+                setIsBgRemovalLoading(false);
+            }
+        }
+    }
+
+    const newSignatureAnnotation: SignatureAnnotation = {
+        id: generateUniqueId(),
+        pageIndex: 0, // Default to first page
+        x: 100,
+        y: 100,
+        width: 150,
+        height: 75,
+        type: 'signature',
+        dataUrl: finalDataUrl,
+    };
+
+    if (isMounted.current) {
+        setAnnotations(prev => [...prev, newSignatureAnnotation]);
+        setIsBgRemovalDialogOpen(false);
+        setSignatureForProcessing(null);
+    }
+};
+
 
   const removeImageBackground = (imageB64: string): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -431,24 +474,61 @@ export function PdfEditor() {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
 
-        // Check corners for background color
-        const corners = [
-            [data[0], data[1], data[2]], // top-left
-            [data[(canvas.width - 1) * 4], data[(canvas.width - 1) * 4 + 1], data[(canvas.width - 1) * 4 + 2]], // top-right
-            [data[(canvas.height - 1) * canvas.width * 4], data[(canvas.height - 1) * canvas.width * 4 + 1], data[(canvas.height - 1) * canvas.width * 4 + 2]], // bottom-left
-            [data[data.length - 4], data[data.length - 3], data[data.length - 2]] // bottom-right
-        ];
+        // --- Improved background color detection ---
 
-        const tolerance = 30; // Increased tolerance
+        // 1. Collect color samples from the border
+        const samples: [number, number, number][] = [];
+        const borderSize = Math.min(10, Math.floor(canvas.width / 10), Math.floor(canvas.height / 10)); // pixels from the edge
+
+        for (let i = 0; i < canvas.width; i+=5) {
+            for (let j = 0; j < borderSize; j+=2) {
+                const topIndex = (j * canvas.width + i) * 4;
+                samples.push([data[topIndex], data[topIndex + 1], data[topIndex + 2]]);
+                const bottomIndex = ((canvas.height - 1 - j) * canvas.width + i) * 4;
+                samples.push([data[bottomIndex], data[bottomIndex + 1], data[bottomIndex + 2]]);
+            }
+        }
+        for (let i = 0; i < canvas.height; i+=5) {
+            for (let j = 0; j < borderSize; j+=2) {
+                 const leftIndex = (i * canvas.width + j) * 4;
+                 samples.push([data[leftIndex], data[leftIndex + 1], data[leftIndex + 2]]);
+                 const rightIndex = (i * canvas.width + (canvas.width - 1 - j)) * 4;
+                 samples.push([data[rightIndex], data[rightIndex + 1], data[rightIndex + 2]]);
+            }
+        }
+
+        // 2. Find the most frequent color (mode)
+        const colorCounts = new Map<string, number>();
+        let maxCount = 0;
+        let bgColor: [number, number, number] = [255, 255, 255]; // Default to white
+
+        for (const color of samples) {
+            if(!color) continue;
+            const key = color.join(',');
+            const count = (colorCounts.get(key) || 0) + 1;
+            colorCounts.set(key, count);
+            if (count > maxCount) {
+                maxCount = count;
+                bgColor = color;
+            }
+        }
+
+        // --- End of improved detection ---
+
+        const tolerance = 45; // A bit more tolerance
         for (let i = 0; i < data.length; i += 4) {
             const r = data[i];
             const g = data[i+1];
             const b = data[i+2];
-            for (const corner of corners) {
-                if (Math.abs(r - corner[0]) < tolerance && Math.abs(g - corner[1]) < tolerance && Math.abs(b - corner[2]) < tolerance) {
-                    data[i+3] = 0;
-                    break;
-                }
+
+            const distance = Math.sqrt(
+                Math.pow(r - bgColor[0], 2) +
+                Math.pow(g - bgColor[1], 2) +
+                Math.pow(b - bgColor[2], 2)
+            );
+
+            if (distance < tolerance) {
+                data[i+3] = 0;
             }
         }
         ctx.putImageData(imageData, 0, 0);
@@ -460,9 +540,16 @@ export function PdfEditor() {
   };
 
   const handleSaveSignature = () => {
-    if (!signaturePadRef.current) return;
+    if (!signaturePadRef.current || isCanvasEmpty(signaturePadRef.current)) {
+        toast.info("Signature pad is empty.", {
+            description: "Please draw a signature before saving.",
+        });
+        return;
+    }
+
     const signatureUrl = signaturePadRef.current.toDataURL('image/png');
-    if (signatureUrl) {
+
+    if (signatureUrl && signatureUrl !== 'data:,') {
         const newSignatureAnnotation: SignatureAnnotation = {
             id: generateUniqueId(),
             pageIndex: 0, // Default to first page
@@ -475,10 +562,12 @@ export function PdfEditor() {
         };
         if (isMounted.current) {
             setAnnotations(prev => [...prev, newSignatureAnnotation]);
+            setIsSignatureModalOpen(false);
         }
-    }
-    if (isMounted.current) {
-        setIsSignatureModalOpen(false);
+    } else {
+        toast.error("Could not save signature.", {
+            description: "An error occurred while saving the signature. Please try again.",
+        });
     }
   }
 
@@ -586,12 +675,11 @@ export function PdfEditor() {
                       <DialogTitle>Draw or Upload Signature</DialogTitle>
                   </DialogHeader>
                   <div className="flex justify-around mb-4">
-                    <Button asChild variant="outline" disabled={isUploadingSignature}>
+                    <Button asChild variant="outline">
                         <label htmlFor="signature-upload-btn">Upload Signature</label>
                     </Button>
                     <input type="file" id="signature-upload-btn" accept="image/*" className="hidden" onChange={handleSignatureUpload} />
                   </div>
-                  {isUploadingSignature && <div className="text-center">Uploading...</div>}
                   <canvas
                       ref={signaturePadRef}
                       width="400"
@@ -602,7 +690,26 @@ export function PdfEditor() {
                       onMouseUp={stopSigning}
                       onMouseLeave={stopSigning}
                   ></canvas>
-                  <Button onClick={handleSaveSignature}>Save Signature</Button>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="outline" onClick={clearSignaturePad}>Clear</Button>
+                    <Button onClick={handleSaveSignature}>Save Signature</Button>
+                  </div>
+              </DialogContent>
+          </Dialog>
+
+          <Dialog open={isBgRemovalDialogOpen} onOpenChange={setIsBgRemovalDialogOpen}>
+              <DialogContent>
+                  <DialogHeader>
+                      <DialogTitle>Remove Background?</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex justify-center my-4">
+                      {signatureForProcessing && <img src={signatureForProcessing} alt="Signature preview" className="max-w-full h-auto rounded-md" />}
+                  </div>
+                  {isBgRemovalLoading && <div className="text-center my-2">Removing background...</div>}
+                  <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => handleProcessSignature(false)} disabled={isBgRemovalLoading}>Use as-is</Button>
+                      <Button onClick={() => handleProcessSignature(true)} disabled={isBgRemovalLoading}>Use with Transparent Background</Button>
+                  </div>
               </DialogContent>
           </Dialog>
 
