@@ -424,23 +424,41 @@ export function PdfEditor() {
   const handleProcessSignature = async (removeBg: boolean) => {
     if (!signatureForProcessing) return;
 
+    setIsBgRemovalLoading(true);
+
     let finalDataUrl = signatureForProcessing;
 
-    if (removeBg) {
-        setIsBgRemovalLoading(true);
-        try {
-            const processedUrl = await removeImageBackground(signatureForProcessing);
-            finalDataUrl = processedUrl;
+    try {
+        if (removeBg) {
+            finalDataUrl = await removeImageBackground(signatureForProcessing);
             toast.success("Background removed successfully!");
-        } catch (error) {
-            console.error("Background removal failed:", error);
-            toast.error("Background removal failed. Using original image.");
-        } finally {
-            if(isMounted.current) {
-                setIsBgRemovalLoading(false);
-            }
+        } else {
+            // Launder the image through a canvas to ensure a consistent format
+            const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = reject;
+                image.src = signatureForProcessing;
+            });
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error("Could not get canvas context");
+            ctx.drawImage(img, 0, 0);
+            finalDataUrl = canvas.toDataURL('image/png');
+        }
+    } catch (error) {
+        console.error("Signature processing failed:", error);
+        toast.error("Could not process signature. Using original image.");
+        // Fallback to original image if laundering fails
+        finalDataUrl = signatureForProcessing;
+    } finally {
+        if(isMounted.current) {
+            setIsBgRemovalLoading(false);
         }
     }
+
 
     const newSignatureAnnotation: SignatureAnnotation = {
         id: generateUniqueId(),
@@ -458,7 +476,7 @@ export function PdfEditor() {
         setIsBgRemovalDialogOpen(false);
         setSignatureForProcessing(null);
     }
-};
+  };
 
 
   const removeImageBackground = (imageB64: string): Promise<string> => {
@@ -698,14 +716,20 @@ export function PdfEditor() {
           </Dialog>
 
           <Dialog open={isBgRemovalDialogOpen} onOpenChange={setIsBgRemovalDialogOpen}>
-              <DialogContent>
+              <DialogContent className="max-w-[90vw] md:max-w-2xl max-h-[80vh] flex flex-col">
                   <DialogHeader>
                       <DialogTitle>Remove Background?</DialogTitle>
                   </DialogHeader>
-                  <div className="flex justify-center my-4">
-                      {signatureForProcessing && <img src={signatureForProcessing} alt="Signature preview" className="max-w-full h-auto rounded-md" />}
+                  <div className="flex-grow flex items-center justify-center my-4 overflow-hidden">
+                      {signatureForProcessing && (
+                          <img
+                              src={signatureForProcessing}
+                              alt="Signature preview"
+                              className="max-w-full max-h-full object-contain rounded-md"
+                          />
+                      )}
                   </div>
-                  {isBgRemovalLoading && <div className="text-center my-2">Removing background...</div>}
+                  {isBgRemovalLoading && <div className="text-center my-2">Processing...</div>}
                   <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => handleProcessSignature(false)} disabled={isBgRemovalLoading}>Use as-is</Button>
                       <Button onClick={() => handleProcessSignature(true)} disabled={isBgRemovalLoading}>Use with Transparent Background</Button>
