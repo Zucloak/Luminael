@@ -314,10 +314,11 @@ export function PdfEditor() {
     }
   };
 
-  const updateAnnotation = (updatedAnnotation: Annotation) => {
-    const newAnnotations = annotations.map(ann => ann.id === updatedAnnotation.id ? updatedAnnotation : ann);
-    setAnnotations(newAnnotations);
-  };
+  const updateAnnotation = React.useCallback((updatedAnnotation: Annotation) => {
+    setAnnotations(prevAnnotations =>
+      prevAnnotations.map(ann => (ann.id === updatedAnnotation.id ? updatedAnnotation : ann))
+    );
+  }, []);
 
   const deleteAnnotation = (id: string) => {
     const newAnnotations = annotations.filter(ann => ann.id !== id);
