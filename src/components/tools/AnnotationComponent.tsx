@@ -30,7 +30,12 @@ type ImageAnnotation = AnnotationBase & {
   dataUrl: string;
 };
 
-type Annotation = TextAnnotation | ImageAnnotation;
+type SignatureAnnotation = AnnotationBase & {
+    type: 'signature';
+    dataUrl: string;
+};
+
+type Annotation = TextAnnotation | ImageAnnotation | SignatureAnnotation;
 
 interface AnnotationComponentProps {
     annotation: Annotation;
@@ -119,7 +124,7 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
         <div
             className="annotation-component"
             style={componentStyle}
-            onMouseDown={type === 'image' ? handleMouseDown : undefined}
+            onMouseDown={(type === 'image' || type === 'signature') ? handleMouseDown : undefined}
         >
             {isSelected && activeTool === 'select' && (
                 <>
@@ -169,6 +174,9 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
             )}
             {type === 'image' && (annotation as ImageAnnotation).dataUrl && (
                  <Image src={annotation.dataUrl} layout="fill" objectFit="contain" alt="annotation" />
+            )}
+            {type === 'signature' && (annotation as SignatureAnnotation).dataUrl && (
+                 <img src={annotation.dataUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="signature" />
             )}
         </div>
     );

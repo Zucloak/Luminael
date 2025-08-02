@@ -42,7 +42,12 @@ type ImageAnnotation = AnnotationBase & {
   dataUrl: string;
 };
 
-type Annotation = TextAnnotation | ImageAnnotation;
+type SignatureAnnotation = AnnotationBase & {
+    type: 'signature';
+    dataUrl: string;
+};
+
+type Annotation = TextAnnotation | ImageAnnotation | SignatureAnnotation;
 
 if (typeof window !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/workers/pdf.worker.min.mjs';
@@ -215,7 +220,7 @@ export function PdfEditor() {
                     color: rgb(color.r, color.g, color.b),
                 });
             }
-        } else if (annotation.type === 'image') {
+        } else if (annotation.type === 'image' || annotation.type === 'signature') {
             const { dataUrl } = annotation;
 
             // To ensure consistency and avoid format errors, convert all images to PNG
@@ -353,18 +358,18 @@ export function PdfEditor() {
 
         if (!isMounted.current) return;
 
-        const newImageAnnotation: ImageAnnotation = {
+        const newAnnotation: Annotation = {
             id: generateUniqueId(),
             pageIndex: 0, // Default to first page
             x: 100,
             y: 100,
             width: options?.isSignature ? 150 : 150,
             height: options?.isSignature ? 75 : 100,
-            type: 'image',
+            type: options?.isSignature ? 'signature' : 'image',
             dataUrl: dataUrl,
         };
 
-        setAnnotations(prev => [...prev, newImageAnnotation]);
+        setAnnotations(prev => [...prev, newAnnotation]);
 
         if (options?.isSignature) {
             setIsSignatureModalOpen(false);
@@ -424,18 +429,18 @@ export function PdfEditor() {
     if (!signaturePadRef.current) return;
     const signatureUrl = signaturePadRef.current.toDataURL('image/png');
     if (signatureUrl) {
-        const newImageAnnotation: ImageAnnotation = {
+        const newSignatureAnnotation: SignatureAnnotation = {
             id: generateUniqueId(),
             pageIndex: 0, // Default to first page
             x: 100,
             y: 100,
             width: 150,
             height: 75, // Default size for signature
-            type: 'image',
+            type: 'signature',
             dataUrl: signatureUrl,
         };
         if (isMounted.current) {
-            setAnnotations(prev => [...prev, newImageAnnotation]);
+            setAnnotations(prev => [...prev, newSignatureAnnotation]);
         }
     }
     if (isMounted.current) {
