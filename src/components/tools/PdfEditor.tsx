@@ -324,7 +324,7 @@ export function PdfEditor() {
     setAnnotations(newAnnotations);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, options?: { isSignature: boolean }) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -336,10 +336,6 @@ export function PdfEditor() {
     if (file.size > 5 * 1024 * 1024) { // 5MB
         alert("Image too large. Please upload an image smaller than 5MB.");
         return;
-    }
-
-    if (options?.isSignature) {
-        setIsUploadingSignature(true);
     }
 
     try {
@@ -358,29 +354,75 @@ export function PdfEditor() {
 
         if (!isMounted.current) return;
 
-        const newAnnotation: Annotation = {
+        const newImageAnnotation: ImageAnnotation = {
             id: generateUniqueId(),
             pageIndex: 0, // Default to first page
             x: 100,
             y: 100,
-            width: options?.isSignature ? 150 : 150,
-            height: options?.isSignature ? 75 : 100,
-            type: options?.isSignature ? 'signature' : 'image',
+            width: 150,
+            height: 100,
+            type: 'image',
             dataUrl: dataUrl,
         };
 
-        setAnnotations(prev => [...prev, newAnnotation]);
+        setAnnotations(prev => [...prev, newImageAnnotation]);
+        e.target.value = ''; // Reset file input
+    } catch (err) {
+        console.error("Failed to load image", err);
+    }
+  };
 
-        if (options?.isSignature) {
-            setIsSignatureModalOpen(false);
-        }
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image.");
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+        alert("Image too large. Please upload an image smaller than 5MB.");
+        return;
+    }
+
+    setIsUploadingSignature(true);
+
+    try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (typeof event.target?.result === 'string' && event.target.result) {
+                    resolve(event.target.result);
+                } else {
+                    reject(new Error("FileReader result is not a valid string."));
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+
+        if (!isMounted.current) return;
+
+        const newSignatureAnnotation: SignatureAnnotation = {
+            id: generateUniqueId(),
+            pageIndex: 0, // Default to first page
+            x: 100,
+            y: 100,
+            width: 150,
+            height: 75,
+            type: 'signature',
+            dataUrl: dataUrl,
+        };
+
+        setAnnotations(prev => [...prev, newSignatureAnnotation]);
+
+        setIsSignatureModalOpen(false);
         e.target.value = ''; // Reset file input
     } catch (err) {
         console.error("Failed to load image", err);
     } finally {
-        if (options?.isSignature) {
-            setIsUploadingSignature(false);
-        }
+        setIsUploadingSignature(false);
     }
   };
 
@@ -540,7 +582,7 @@ export function PdfEditor() {
                     <Button asChild variant="outline" disabled={isUploadingSignature}>
                         <label htmlFor="signature-upload-btn">Upload Signature</label>
                     </Button>
-                    <input type="file" id="signature-upload-btn" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, { isSignature: true })} />
+                    <input type="file" id="signature-upload-btn" accept="image/*" className="hidden" onChange={handleSignatureUpload} />
                   </div>
                   {isUploadingSignature && <div className="text-center">Uploading...</div>}
                   <canvas
