@@ -339,18 +339,7 @@ export function PdfEditor() {
     }
 
     try {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (typeof event.target?.result === 'string' && event.target.result) {
-                    resolve(event.target.result);
-                } else {
-                    reject(new Error("FileReader result is not a valid string."));
-                }
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
+        const dataUrl = URL.createObjectURL(file);
 
         if (!isMounted.current) return;
 
@@ -402,6 +391,8 @@ export function PdfEditor() {
             reader.readAsDataURL(file);
         });
 
+        const dataUrlWithRemovedBg = await removeImageBackground(dataUrl);
+
         if (!isMounted.current) return;
 
         const newSignatureAnnotation: SignatureAnnotation = {
@@ -412,7 +403,7 @@ export function PdfEditor() {
             width: 150,
             height: 75,
             type: 'signature',
-            dataUrl: dataUrl,
+            dataUrl: dataUrlWithRemovedBg,
         };
 
         setAnnotations(prev => [...prev, newSignatureAnnotation]);
@@ -489,6 +480,16 @@ export function PdfEditor() {
         setIsSignatureModalOpen(false);
     }
   }
+
+  const clearSignaturePad = () => {
+    const canvas = signaturePadRef.current;
+    if (canvas) {
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  };
 
   const clearAllEdits = () => {
     setAnnotations([]);
@@ -570,7 +571,12 @@ export function PdfEditor() {
           </Button>
           <input type="file" id="image-upload-btn" accept="image/png, image/jpeg" className="hidden" onChange={(e) => handleImageUpload(e)} />
 
-          <Dialog open={isSignatureModalOpen} onOpenChange={setIsSignatureModalOpen}>
+          <Dialog open={isSignatureModalOpen} onOpenChange={(isOpen) => {
+              setIsSignatureModalOpen(isOpen);
+              if (!isOpen) {
+                  clearSignaturePad();
+              }
+          }}>
               <DialogTrigger asChild>
                   <Button variant="outline"><Signature className="mr-2" /> Signature</Button>
               </DialogTrigger>

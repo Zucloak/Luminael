@@ -172,11 +172,8 @@ export function AnnotationComponent({ annotation, isSelected, onSelect, onDelete
                     {annotation.text}
                 </div>
             )}
-            {type === 'image' && (annotation as ImageAnnotation).dataUrl && (
+            {(type === 'image' || type === 'signature') && (annotation as ImageAnnotation | SignatureAnnotation).dataUrl && (
                  <Image src={annotation.dataUrl} layout="fill" objectFit="contain" alt="annotation" />
-            )}
-            {type === 'signature' && (annotation as SignatureAnnotation).dataUrl && (
-                 <img src={annotation.dataUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="signature" />
             )}
         </div>
     );
