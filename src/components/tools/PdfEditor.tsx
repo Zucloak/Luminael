@@ -1,18 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { PDFDocument, rgb, StandardFonts, PDFTextField } from 'pdf-lib';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import Image from 'next/image';
-import { Upload, Download, Type, Image as ImageIcon, AlertTriangle, Trash2, Bold, Italic, Underline, MousePointerClick, Signature } from 'lucide-react';
+import { Upload, Download, Type, Image as ImageIcon, AlertTriangle, Trash2, Bold, Italic, Underline, MousePointerClick, Signature, Undo, Redo } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
 import * as pdfjsLib from 'pdfjs-dist';
 import { AnnotationComponent } from './AnnotationComponent';
-import { toast } from "sonner"
 import { SignatureTool } from './SignatureTool';
+import { useHistory } from '@/hooks/use-history';
 
 const generateUniqueId = () => {
     return `ann_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -58,7 +55,7 @@ if (typeof window !== 'undefined') {
 export function PdfEditor() {
   const [pdfDoc, setPdfDoc] = useState<PDFDocument | null>(null);
   const [pdfPages, setPdfPages] = useState<any[]>([]);
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const { state: annotations, set: setAnnotations, undo, redo, reset: resetAnnotations, canUndo, canRedo } = useHistory<Annotation[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<'text' | 'image' | 'signature' | 'select' | null>(null);
@@ -69,44 +66,6 @@ export function PdfEditor() {
 
   // The overlay refs are still needed for positioning and interaction
   const pageOverlayRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  // History for undo/redo
-  const [history, setHistory] = useState<Annotation[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-
-  // Save state to history
-  const saveStateToHistory = React.useCallback((newState: Annotation[]) => {
-    setHistory(prevHistory => {
-        const newHistory = prevHistory.slice(0, historyIndex + 1);
-        newHistory.push(newState);
-        return newHistory;
-    });
-    setHistoryIndex(prevIndex => prevIndex + 1);
-  }, [historyIndex]);
-
-  // Handle undo
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      setAnnotations(history[newIndex]);
-    }
-  };
-
-  // Handle redo
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setAnnotations(history[newIndex + 1] ? history[newIndex + 1] : annotations);
-    }
-  };
-
-  useEffect(() => {
-    if (annotations.length > 0) {
-        saveStateToHistory(annotations);
-    }
-  }, [annotations]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -123,8 +82,6 @@ export function PdfEditor() {
     setPdfPages([]);
     setPdfDoc(null);
     setAnnotations([]);
-    setHistory([]);
-    setHistoryIndex(-1);
     setSelectedElementId(null);
 
     try {
@@ -304,7 +261,7 @@ export function PdfEditor() {
             isUnderline: false,
             color: { r: 0, g: 0, b: 0 },
         };
-        setAnnotations(prev => [...prev, newTextAnnotation]);
+        setAnnotations([...annotations, newTextAnnotation]);
         setSelectedElementId(newId);
         setActiveTool('select');
     } else {
@@ -315,11 +272,10 @@ export function PdfEditor() {
     }
   };
 
-  const updateAnnotation = React.useCallback((updatedAnnotation: Annotation) => {
-    setAnnotations(prevAnnotations =>
-      prevAnnotations.map(ann => (ann.id === updatedAnnotation.id ? updatedAnnotation : ann))
-    );
-  }, []);
+  const updateAnnotation = useCallback((updatedAnnotation: Annotation) => {
+    const newAnnotations = annotations.map(ann => (ann.id === updatedAnnotation.id ? updatedAnnotation : ann));
+    setAnnotations(newAnnotations);
+  }, [annotations, setAnnotations]);
 
   const deleteAnnotation = (id: string) => {
     const newAnnotations = annotations.filter(ann => ann.id !== id);
@@ -356,7 +312,7 @@ export function PdfEditor() {
             dataUrl: dataUrl,
         };
 
-        setAnnotations(prev => [...prev, newImageAnnotation]);
+        setAnnotations([...annotations, newImageAnnotation]);
         e.target.value = ''; // Reset file input
     } catch (err) {
         console.error("Failed to load image", err);
@@ -374,13 +330,11 @@ export function PdfEditor() {
         type: 'signature',
         dataUrl: dataUrl,
     };
-    setAnnotations(prev => [...prev, newSignatureAnnotation]);
+    setAnnotations([...annotations, newSignatureAnnotation]);
   };
 
   const clearAllEdits = () => {
     setAnnotations([]);
-    setHistory([]);
-    setHistoryIndex(-1);
   }
 
   const selectedAnnotation = annotations.find(a => a.id === selectedElementId);
@@ -441,10 +395,10 @@ export function PdfEditor() {
           />
 
           <Button onClick={exportPdf} disabled={!pdfDoc}><Download className="mr-2 h-4 w-4" /> Export as PDF</Button>
-          <Button variant="outline" onClick={clearAllEdits}><Trash2 className="mr-2 h-4 w-4" /> Clear All</Button>
+          <Button variant="destructive" onClick={clearAllEdits} disabled={annotations.length === 0}><Trash2 className="mr-2 h-4 w-4" /> Clear All</Button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleUndo} disabled={historyIndex <= 0}>Undo</Button>
-            <Button variant="outline" onClick={handleRedo} disabled={historyIndex >= history.length - 1}>Redo</Button>
+            <Button variant="outline" onClick={undo} disabled={!canUndo}><Undo className="mr-2 h-4 w-4" />Undo</Button>
+            <Button variant="outline" onClick={redo} disabled={!canRedo}><Redo className="mr-2 h-4 w-4" />Redo</Button>
           </div>
         </div>
       </CardHeader>
@@ -504,7 +458,13 @@ export function PdfEditor() {
                     </div>
                 </div>
             ))}
-            {!pdfDoc && !error && <div className="flex items-center justify-center h-full text-muted-foreground">Upload a PDF to begin editing.</div>}
+            {!pdfDoc && !error && (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                    <Upload size={48} className="mb-4" />
+                    <h3 className="text-lg font-semibold">Upload a PDF to Begin</h3>
+                    <p className="text-sm">Your secure, client-side PDF editor.</p>
+                </div>
+            )}
         </div>
       </CardContent>
     </Card>
